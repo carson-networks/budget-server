@@ -1,0 +1,58 @@
+services:
+  budget-postgres:
+    container_name: budget-postgres
+    environment:
+      POSTGRES_PASSWORD: testpassword
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    image: postgres:18
+    profiles:
+      - serve-local
+      - serve
+    restart: always
+    ports:
+      - "5433:5432"
+
+  budget-server:
+    depends_on:
+      budget-postgres:
+        condition: service_healthy
+    container_name: budget-server
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 60s
+    environment:
+      POSTGRES_ADDRESS: budget-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: postgres
+      POSTGRES_USERNAME: postgres
+      POSTGRES_PASSWORD: testpassword
+    hostname: budget-server
+    image: git.prod.carsonnetworks.net/cdmeyer/budget-server:latest-release
+    ports:
+      - "9446:9446"
+    profiles:
+      - serve
+
+  budget-server-local:
+    build: .
+    container_name: budget-server-local
+    depends_on:
+      budget-postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_ADDRESS: budget-postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: postgres
+      POSTGRES_USERNAME: postgres
+      POSTGRES_PASSWORD: testpassword
+    image: git.prod.carsonnetworks.net/cdmeyer/budget-server:local
+    hostname: weather-server
+    ports:
+      - "9446:9446"
+    profiles:
+      - serve-local
