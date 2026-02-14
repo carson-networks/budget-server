@@ -1,0 +1,16 @@
+# Use bobgen-psql: connect to a running Postgres, run migrations first.
+# Override with: PSQL_DSN=postgres://user:pass@host:port/db?sslmode=disable
+psql:
+  dsn: "postgres://postgres:testpassword@localhost:5433/postgres?sslmode=disable"
+  schemas: ["public"]
+
+plugins:
+  models:
+    pkgname: "bobgen"
+    destination: "internal/storage/sqlconfig/bobgen"
+  factory:
+    disabled: true
+  enums:
+    disabled: true
+
+no_tests: true
