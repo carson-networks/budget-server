@@ -12,7 +12,7 @@ import (
 
 type Storage struct {
 	DB           *sql.DB
-	Transactions sqlconfig.TransactionsTable
+	Transactions sqlconfig.ITransactionTable
 }
 
 func NewStorage(env *config.Config) *Storage {
@@ -25,8 +25,9 @@ func NewStorage(env *config.Config) *Storage {
 		log.Fatal(err)
 	}
 
+	transactionsTable := sqlconfig.NewTransactionsTable(db)
 	return &Storage{
 		DB:           db,
-		Transactions: sqlconfig.NewTransactionsTable(db),
+		Transactions: &transactionsTable,
 	}
 }
