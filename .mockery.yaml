@@ -1,0 +1,9 @@
+with-expecter: true
+filename: "mock_{{.InterfaceName}}.go"
+mockname: "Mock{{.InterfaceName}}"
+inpackage: true
+dir: "{{.InterfaceDir}}"
+packages:
+  github.com/carson-networks/budget-server/internal/storage/sqlconfig:
+    interfaces:
+      ITransactionTable:

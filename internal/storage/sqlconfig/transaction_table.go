@@ -41,9 +41,11 @@ type TransactionFilter struct {
 	CategoryID *uuid.UUID
 }
 
-// transactionTable defines the interface for transaction storage operations.
+// ITransactionTable defines the interface for transaction storage operations.
 // This abstraction allows swapping the implementation (e.g. Bob) without changing callers.
-type transactionTable interface {
+//
+//go:generate mockery --name ITransactionTable --output mock_ITransactionTable.go
+type ITransactionTable interface {
 	FindByID(ctx context.Context, id uuid.UUID) (*Transaction, error)
 	Insert(ctx context.Context, create *TransactionCreate) (*Transaction, error)
 	List(ctx context.Context, filter *TransactionFilter) ([]*Transaction, error)
@@ -54,8 +56,8 @@ type TransactionsTable struct {
 	exec bob.Executor
 }
 
-// Ensure TransactionsTable implements transactionTable at compile time.
-var _ transactionTable = (*TransactionsTable)(nil)
+// Ensure TransactionsTable implements ITransactionTable at compile time.
+var _ ITransactionTable = (*TransactionsTable)(nil)
 
 // NewTransactionsTable creates a TransactionsTable for the given database.
 func NewTransactionsTable(db *sql.DB) TransactionsTable {
