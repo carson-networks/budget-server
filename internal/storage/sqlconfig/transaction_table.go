@@ -47,7 +47,7 @@ type TransactionFilter struct {
 //go:generate mockery --name ITransactionTable --output mock_ITransactionTable.go
 type ITransactionTable interface {
 	FindByID(ctx context.Context, id uuid.UUID) (*Transaction, error)
-	Insert(ctx context.Context, create *TransactionCreate) (*Transaction, error)
+	Insert(ctx context.Context, create *TransactionCreate) (uuid.UUID, error)
 	List(ctx context.Context, filter *TransactionFilter) ([]*Transaction, error)
 }
 
@@ -73,8 +73,8 @@ func (t *TransactionsTable) FindByID(ctx context.Context, id uuid.UUID) (*Transa
 	return bobTransactionToTransaction(row), nil
 }
 
-// Insert creates a new transaction and returns it (with generated ID).
-func (t *TransactionsTable) Insert(ctx context.Context, create *TransactionCreate) (*Transaction, error) {
+// Insert creates a new transaction and returns its generated ID.
+func (t *TransactionsTable) Insert(ctx context.Context, create *TransactionCreate) (uuid.UUID, error) {
 	setter := &bobgen.TransactionSetter{
 		AccountID:       omit.From(create.AccountID),
 		CategoryID:      omit.From(create.CategoryID),
@@ -86,9 +86,9 @@ func (t *TransactionsTable) Insert(ctx context.Context, create *TransactionCreat
 	}
 	row, err := bobgen.Transactions.Insert(setter).One(ctx, t.exec)
 	if err != nil {
-		return nil, err
+		return uuid.Nil, err
 	}
-	return bobTransactionToTransaction(row), nil
+	return row.ID, err
 }
 
 // List returns transactions matching the filter. Nil filter returns all.
