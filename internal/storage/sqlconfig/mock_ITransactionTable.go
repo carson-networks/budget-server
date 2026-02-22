@@ -82,24 +82,22 @@ func (_c *MockITransactionTable_FindByID_Call) RunAndReturn(run func(context.Con
 }
 
 // Insert provides a mock function with given fields: ctx, create
-func (_m *MockITransactionTable) Insert(ctx context.Context, create *TransactionCreate) (*Transaction, error) {
+func (_m *MockITransactionTable) Insert(ctx context.Context, create *TransactionCreate) (uuid.UUID, error) {
 	ret := _m.Called(ctx, create)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Insert")
 	}
 
-	var r0 *Transaction
+	var r0 uuid.UUID
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *TransactionCreate) (*Transaction, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *TransactionCreate) (uuid.UUID, error)); ok {
 		return rf(ctx, create)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, *TransactionCreate) *Transaction); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *TransactionCreate) uuid.UUID); ok {
 		r0 = rf(ctx, create)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*Transaction)
-		}
+		r0 = ret.Get(0).(uuid.UUID)
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, *TransactionCreate) error); ok {
@@ -130,12 +128,12 @@ func (_c *MockITransactionTable_Insert_Call) Run(run func(ctx context.Context, c
 	return _c
 }
 
-func (_c *MockITransactionTable_Insert_Call) Return(_a0 *Transaction, _a1 error) *MockITransactionTable_Insert_Call {
+func (_c *MockITransactionTable_Insert_Call) Return(_a0 uuid.UUID, _a1 error) *MockITransactionTable_Insert_Call {
 	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockITransactionTable_Insert_Call) RunAndReturn(run func(context.Context, *TransactionCreate) (*Transaction, error)) *MockITransactionTable_Insert_Call {
+func (_c *MockITransactionTable_Insert_Call) RunAndReturn(run func(context.Context, *TransactionCreate) (uuid.UUID, error)) *MockITransactionTable_Insert_Call {
 	_c.Call.Return(run)
 	return _c
 }

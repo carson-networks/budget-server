@@ -8,6 +8,7 @@ import (
 	"github.com/carson-networks/budget-server/api"
 	"github.com/carson-networks/budget-server/internal/config"
 	"github.com/carson-networks/budget-server/internal/logging"
+	"github.com/carson-networks/budget-server/internal/service"
 	"github.com/carson-networks/budget-server/internal/storage"
 )
 
@@ -22,6 +23,7 @@ func main() {
 	}
 
 	dbStorage := storage.NewStorage(envConfig)
+	svc := service.NewService(dbStorage)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -30,7 +32,7 @@ func main() {
 		httpRest := api.Rest{
 			Logger:  logger,
 			Port:    "9446",
-			Storage: *dbStorage,
+			Service: svc,
 		}
 		httpRest.Serve()
 	}()
