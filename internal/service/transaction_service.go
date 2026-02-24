@@ -38,9 +38,8 @@ type TransactionListQuery struct {
 
 // TransactionListResult is the output of a paginated transaction list.
 type TransactionListResult struct {
-	Transactions    []Transaction
-	MaxCreationTime time.Time
-	NextCursor      *TransactionCursor
+	Transactions []Transaction
+	NextCursor   *TransactionCursor
 }
 
 // TransactionService handles transaction business logic.
@@ -88,25 +87,24 @@ func (s *TransactionService) ListTransactions(ctx context.Context, query Transac
 
 	result := &TransactionListResult{}
 
-	if maxCreationTime != nil {
-		result.MaxCreationTime = *maxCreationTime
-	}
-
 	if len(rows) == 0 {
 		return result, nil
 	}
 
-	// If no maxCreationTime was provided, use the first row (most recent due to DESC order).
-	if result.MaxCreationTime.IsZero() {
-		result.MaxCreationTime = rows[0].CreatedAt
-	}
-
 	if query.Limit > 0 && len(rows) > query.Limit {
 		rows = rows[:query.Limit]
+
+		// Resolve maxCreationTime for the cursor: use the cursor value if provided,
+		// otherwise use the first row's CreatedAt (most recent due to DESC order).
+		cursorMaxCreationTime := rows[0].CreatedAt
+		if maxCreationTime != nil {
+			cursorMaxCreationTime = *maxCreationTime
+		}
+
 		result.NextCursor = &TransactionCursor{
 			Position:        offset + query.Limit,
 			Limit:           query.Limit,
-			MaxCreationTime: result.MaxCreationTime,
+			MaxCreationTime: cursorMaxCreationTime,
 		}
 	}
 
