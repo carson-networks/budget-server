@@ -45,7 +45,6 @@ func TestParseListTransactionsInput_NoCursor(t *testing.T) {
 
 	query, err := parseListTransactionsInput(input)
 	assert.NoError(t, err)
-	assert.Equal(t, defaultLimit, query.Limit)
 	assert.Nil(t, query.Cursor)
 }
 
@@ -64,7 +63,6 @@ func TestParseListTransactionsInput_WithCursor(t *testing.T) {
 
 	query, err := parseListTransactionsInput(input)
 	assert.NoError(t, err)
-	assert.Equal(t, 10, query.Limit, "limit comes from cursor")
 
 	expectedMax, _ := time.Parse(time.RFC3339, cursorMaxTime)
 	assert.NotNil(t, query.Cursor)
@@ -113,7 +111,7 @@ func TestHTTP_ListTransactions_SinglePage(t *testing.T) {
 
 	mockSvc := new(mockTransactionLister)
 	mockSvc.On("ListTransactions", mock.Anything, mock.MatchedBy(func(q service.TransactionListQuery) bool {
-		return q.Limit == defaultLimit && q.Cursor == nil
+		return q.Cursor == nil
 	})).Return(&service.TransactionListResult{
 		Transactions: []service.Transaction{
 			{
@@ -141,6 +139,7 @@ func TestHTTP_ListTransactions_SinglePage(t *testing.T) {
 
 func TestHTTP_ListTransactions_MultiplePages(t *testing.T) {
 	now := time.Date(2025, 6, 1, 12, 0, 0, 0, time.UTC)
+	svcDefaultLimit := 20
 
 	txs := make([]service.Transaction, 2)
 	for i := range txs {
@@ -157,12 +156,12 @@ func TestHTTP_ListTransactions_MultiplePages(t *testing.T) {
 
 	mockSvc := new(mockTransactionLister)
 	mockSvc.On("ListTransactions", mock.Anything, mock.MatchedBy(func(q service.TransactionListQuery) bool {
-		return q.Limit == defaultLimit && q.Cursor == nil
+		return q.Cursor == nil
 	})).Return(&service.TransactionListResult{
 		Transactions: txs,
 		NextCursor: &service.TransactionCursor{
-			Position:        defaultLimit,
-			Limit:           defaultLimit,
+			Position:        svcDefaultLimit,
+			Limit:           svcDefaultLimit,
 			MaxCreationTime: now,
 		},
 	}, nil)
@@ -174,8 +173,8 @@ func TestHTTP_ListTransactions_MultiplePages(t *testing.T) {
 	assert.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
 	assert.Len(t, body.Transactions, 2)
 	assert.NotNil(t, body.NextCursor)
-	assert.Equal(t, defaultLimit, body.NextCursor.Position)
-	assert.Equal(t, defaultLimit, body.NextCursor.Limit)
+	assert.Equal(t, svcDefaultLimit, body.NextCursor.Position)
+	assert.Equal(t, svcDefaultLimit, body.NextCursor.Limit)
 	assert.Equal(t, now.Format(time.RFC3339), body.NextCursor.MaxCreationTime)
 	mockSvc.AssertExpectations(t)
 }
@@ -187,7 +186,7 @@ func TestHTTP_ListTransactions_WithCursor(t *testing.T) {
 	mockSvc.On("ListTransactions", mock.Anything, mock.MatchedBy(func(q service.TransactionListQuery) bool {
 		return q.Cursor != nil &&
 			q.Cursor.Position == 40 &&
-			q.Limit == 10 &&
+			q.Cursor.Limit == 10 &&
 			q.Cursor.MaxCreationTime.Equal(maxTime)
 	})).Return(&service.TransactionListResult{}, nil)
 
