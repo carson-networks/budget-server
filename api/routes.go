@@ -32,6 +32,9 @@ func (r *Rest) Serve() {
 	createTransactionHandler := transaction.NewCreateTransactionHandler(r.Service.Transaction)
 	createTransactionHandler.Register(api)
 
+	listTransactionsHandler := transaction.NewListTransactionsHandler(r.Service.Transaction)
+	listTransactionsHandler.Register(api)
+
 	server := http.Server{
 		Addr:              ":" + r.Port,
 		Handler:           mux,

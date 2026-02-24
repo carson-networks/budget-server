@@ -9,4 +9,5 @@ type Transaction struct {
 	Amount          string `json:"amount" doc:"Decimal amount"`
 	TransactionName string `json:"transactionName" doc:"Name of the transaction"`
 	TransactionDate string `json:"transactionDate" doc:"RFC3339 transaction date"`
+	CreatedAt       string `json:"createdAt" doc:"RFC3339 creation timestamp"`
 }

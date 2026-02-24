@@ -28,6 +28,7 @@ type Transaction struct {
 	Amount          decimal.Decimal `db:"amount" `
 	TransactionName string          `db:"transaction_name" `
 	TransactionDate time.Time       `db:"transaction_date" `
+	CreatedAt       time.Time       `db:"created_at" `
 }
 
 // TransactionSlice is an alias for a slice of pointers to Transaction.
@@ -43,7 +44,7 @@ type TransactionsQuery = *psql.ViewQuery[*Transaction, TransactionSlice]
 func buildTransactionColumns(alias string) transactionColumns {
 	return transactionColumns{
 		ColumnsExpr: expr.NewColumnsExpr(
-			"id", "account_id", "category_id", "amount", "transaction_name", "transaction_date",
+			"id", "account_id", "category_id", "amount", "transaction_name", "transaction_date", "created_at",
 		).WithParent("transactions"),
 		tableAlias:      alias,
 		ID:              psql.Quote(alias, "id"),
@@ -52,6 +53,7 @@ func buildTransactionColumns(alias string) transactionColumns {
 		Amount:          psql.Quote(alias, "amount"),
 		TransactionName: psql.Quote(alias, "transaction_name"),
 		TransactionDate: psql.Quote(alias, "transaction_date"),
+		CreatedAt:       psql.Quote(alias, "created_at"),
 	}
 }
 
@@ -64,6 +66,7 @@ type transactionColumns struct {
 	Amount          psql.Expression
 	TransactionName psql.Expression
 	TransactionDate psql.Expression
+	CreatedAt       psql.Expression
 }
 
 func (c transactionColumns) Alias() string {
@@ -84,10 +87,11 @@ type TransactionSetter struct {
 	Amount          omit.Val[decimal.Decimal] `db:"amount" `
 	TransactionName omit.Val[string]          `db:"transaction_name" `
 	TransactionDate omit.Val[time.Time]       `db:"transaction_date" `
+	CreatedAt       omit.Val[time.Time]       `db:"created_at" `
 }
 
 func (s TransactionSetter) SetColumns() []string {
-	vals := make([]string, 0, 6)
+	vals := make([]string, 0, 7)
 	if s.ID.IsValue() {
 		vals = append(vals, "id")
 	}
@@ -105,6 +109,9 @@ func (s TransactionSetter) SetColumns() []string {
 	}
 	if s.TransactionDate.IsValue() {
 		vals = append(vals, "transaction_date")
+	}
+	if s.CreatedAt.IsValue() {
+		vals = append(vals, "created_at")
 	}
 	return vals
 }
@@ -128,6 +135,9 @@ func (s TransactionSetter) Overwrite(t *Transaction) {
 	if s.TransactionDate.IsValue() {
 		t.TransactionDate = s.TransactionDate.MustGet()
 	}
+	if s.CreatedAt.IsValue() {
+		t.CreatedAt = s.CreatedAt.MustGet()
+	}
 }
 
 func (s *TransactionSetter) Apply(q *dialect.InsertQuery) {
@@ -136,7 +146,7 @@ func (s *TransactionSetter) Apply(q *dialect.InsertQuery) {
 	})
 
 	q.AppendValues(bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
-		vals := make([]bob.Expression, 6)
+		vals := make([]bob.Expression, 7)
 		if s.ID.IsValue() {
 			vals[0] = psql.Arg(s.ID.MustGet())
 		} else {
@@ -173,6 +183,12 @@ func (s *TransactionSetter) Apply(q *dialect.InsertQuery) {
 			vals[5] = psql.Raw("DEFAULT")
 		}
 
+		if s.CreatedAt.IsValue() {
+			vals[6] = psql.Arg(s.CreatedAt.MustGet())
+		} else {
+			vals[6] = psql.Raw("DEFAULT")
+		}
+
 		return bob.ExpressSlice(ctx, w, d, start, vals, "", ", ", "")
 	}))
 }
@@ -182,7 +198,7 @@ func (s TransactionSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s TransactionSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 6)
+	exprs := make([]bob.Expression, 0, 7)
 
 	if s.ID.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -223,6 +239,13 @@ func (s TransactionSetter) Expressions(prefix ...string) []bob.Expression {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "transaction_date")...),
 			psql.Arg(s.TransactionDate),
+		}})
+	}
+
+	if s.CreatedAt.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "created_at")...),
+			psql.Arg(s.CreatedAt),
 		}})
 	}
 
@@ -458,6 +481,7 @@ type transactionWhere[Q psql.Filterable] struct {
 	Amount          psql.WhereMod[Q, decimal.Decimal]
 	TransactionName psql.WhereMod[Q, string]
 	TransactionDate psql.WhereMod[Q, time.Time]
+	CreatedAt       psql.WhereMod[Q, time.Time]
 }
 
 func (transactionWhere[Q]) AliasedAs(alias string) transactionWhere[Q] {
@@ -472,5 +496,6 @@ func buildTransactionWhere[Q psql.Filterable](cols transactionColumns) transacti
 		Amount:          psql.Where[Q, decimal.Decimal](cols.Amount),
 		TransactionName: psql.Where[Q, string](cols.TransactionName),
 		TransactionDate: psql.Where[Q, time.Time](cols.TransactionDate),
+		CreatedAt:       psql.Where[Q, time.Time](cols.CreatedAt),
 	}
 }
