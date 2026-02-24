@@ -6,5 +6,6 @@ CREATE TABLE transactions (
     category_id      UUID NOT NULL,
     amount           DECIMAL(100, 4) NOT NULL,
     transaction_name TEXT NOT NULL,
-    transaction_date TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    transaction_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

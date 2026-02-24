@@ -11,6 +11,7 @@ import (
 	"github.com/stephenafamo/bob"
 	"github.com/stephenafamo/bob/dialect/psql"
 	"github.com/stephenafamo/bob/dialect/psql/dialect"
+	"github.com/stephenafamo/bob/dialect/psql/sm"
 	"github.com/stephenafamo/bob/mods"
 
 	"github.com/carson-networks/budget-server/internal/storage/sqlconfig/bobgen"
@@ -24,6 +25,7 @@ type Transaction struct {
 	Amount          decimal.Decimal
 	TransactionName string
 	TransactionDate time.Time
+	CreatedAt       time.Time
 }
 
 // TransactionCreate is the input for creating a new transaction.
@@ -37,8 +39,11 @@ type TransactionCreate struct {
 
 // TransactionFilter specifies filters for listing transactions.
 type TransactionFilter struct {
-	AccountID  *uuid.UUID
-	CategoryID *uuid.UUID
+	AccountID       *uuid.UUID
+	CategoryID      *uuid.UUID
+	Limit           int
+	Offset          int
+	MaxCreationTime *time.Time
 }
 
 // ITransactionTable defines the interface for transaction storage operations.
@@ -102,12 +107,25 @@ func (t *TransactionsTable) List(ctx context.Context, filter *TransactionFilter)
 		if filter.CategoryID != nil {
 			whereMods = append(whereMods, bobgen.SelectWhere.Transactions.CategoryID.EQ(*filter.CategoryID))
 		}
+		if filter.MaxCreationTime != nil {
+			whereMods = append(whereMods, bobgen.SelectWhere.Transactions.CreatedAt.LTE(*filter.MaxCreationTime))
+		}
 		if len(whereMods) == 1 {
 			queryMods = append(queryMods, whereMods[0])
 		} else if len(whereMods) > 1 {
 			queryMods = append(queryMods, psql.WhereAnd(whereMods...))
 		}
+		if filter.Limit > 0 {
+			queryMods = append(queryMods, sm.Limit(filter.Limit+1))
+		}
+		if filter.Offset > 0 {
+			queryMods = append(queryMods, sm.Offset(filter.Offset))
+		}
 	}
+	queryMods = append(queryMods,
+		sm.OrderBy(bobgen.Transactions.Columns.CreatedAt).Desc(),
+		sm.OrderBy(bobgen.Transactions.Columns.ID).Desc(),
+	)
 	rows, err := bobgen.Transactions.Query(queryMods...).All(ctx, t.exec)
 	if err != nil {
 		return nil, err
@@ -127,5 +145,6 @@ func bobTransactionToTransaction(row *bobgen.Transaction) *Transaction {
 		Amount:          row.Amount,
 		TransactionName: row.TransactionName,
 		TransactionDate: row.TransactionDate,
+		CreatedAt:       row.CreatedAt,
 	}
 }

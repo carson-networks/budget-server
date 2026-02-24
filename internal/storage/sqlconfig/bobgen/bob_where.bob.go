@@ -17,14 +17,11 @@ var (
 )
 
 func Where[Q psql.Filterable]() struct {
-	SchemaMigrations schemaMigrationWhere[Q]
-	Transactions     transactionWhere[Q]
+	Transactions transactionWhere[Q]
 } {
 	return struct {
-		SchemaMigrations schemaMigrationWhere[Q]
-		Transactions     transactionWhere[Q]
+		Transactions transactionWhere[Q]
 	}{
-		SchemaMigrations: buildSchemaMigrationWhere[Q](SchemaMigrations.Columns),
-		Transactions:     buildTransactionWhere[Q](Transactions.Columns),
+		Transactions: buildTransactionWhere[Q](Transactions.Columns),
 	}
 }
