@@ -51,34 +51,12 @@ func TestParseListTransactionsInput_LimitOnly(t *testing.T) {
 	assert.Nil(t, query.Cursor)
 }
 
-func TestParseListTransactionsInput_WithMaxCreationTime(t *testing.T) {
-	maxTime := "2025-07-01T00:00:00Z"
-
-	input := &ListTransactionsInput{
-		Body: ListTransactionsBody{
-			Limit:           30,
-			MaxCreationTime: maxTime,
-		},
-	}
-
-	query, err := parseListTransactionsInput(input)
-	assert.NoError(t, err)
-	assert.Equal(t, 30, query.Limit)
-
-	expectedMax, _ := time.Parse(time.RFC3339, maxTime)
-	assert.NotNil(t, query.Cursor, "maxCreationTime creates a cursor at position 0")
-	assert.Equal(t, 0, query.Cursor.Position)
-	assert.Equal(t, 30, query.Cursor.Limit)
-	assert.Equal(t, expectedMax, query.Cursor.MaxCreationTime)
-}
-
 func TestParseListTransactionsInput_WithCursor(t *testing.T) {
 	cursorMaxTime := "2025-06-15T08:00:00Z"
 
 	input := &ListTransactionsInput{
 		Body: ListTransactionsBody{
-			Limit:           99,
-			MaxCreationTime: "2025-12-01T00:00:00Z",
+			Limit: 99,
 			Cursor: &ListTransactionsCursor{
 				Position:        40,
 				Limit:           10,
@@ -107,17 +85,6 @@ func TestParseListTransactionsInput_NoOptionalFields(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, defaultLimit, query.Limit)
 	assert.Nil(t, query.Cursor)
-}
-
-func TestParseListTransactionsInput_InvalidMaxCreationTime(t *testing.T) {
-	input := &ListTransactionsInput{
-		Body: ListTransactionsBody{
-			MaxCreationTime: "not-a-date",
-		},
-	}
-
-	_, err := parseListTransactionsInput(input)
-	assert.Error(t, err)
 }
 
 func TestParseListTransactionsInput_InvalidCursorMaxCreationTime(t *testing.T) {
@@ -173,7 +140,6 @@ func TestHTTP_ListTransactions_SinglePage(t *testing.T) {
 				CreatedAt:       now,
 			},
 		},
-		MaxCreationTime: now,
 	}, nil)
 
 	resp := newListTestAPI(t, mockSvc).Post("/v1/transaction/list", ListTransactionsBody{})
@@ -184,7 +150,6 @@ func TestHTTP_ListTransactions_SinglePage(t *testing.T) {
 	assert.Len(t, body.Transactions, 1)
 	assert.Equal(t, txID.String(), body.Transactions[0].ID)
 	assert.Nil(t, body.NextCursor)
-	assert.Equal(t, now.Format(time.RFC3339), body.MaxCreationTime)
 	mockSvc.AssertExpectations(t)
 }
 
@@ -208,8 +173,7 @@ func TestHTTP_ListTransactions_MultiplePages(t *testing.T) {
 	mockSvc.On("ListTransactions", mock.Anything, mock.MatchedBy(func(q service.TransactionListQuery) bool {
 		return q.Limit == 2
 	})).Return(&service.TransactionListResult{
-		Transactions:    txs,
-		MaxCreationTime: now,
+		Transactions: txs,
 		NextCursor: &service.TransactionCursor{
 			Position:        2,
 			Limit:           2,
@@ -229,7 +193,6 @@ func TestHTTP_ListTransactions_MultiplePages(t *testing.T) {
 	assert.Equal(t, 2, body.NextCursor.Position)
 	assert.Equal(t, 2, body.NextCursor.Limit)
 	assert.Equal(t, now.Format(time.RFC3339), body.NextCursor.MaxCreationTime)
-	assert.Equal(t, now.Format(time.RFC3339), body.MaxCreationTime)
 	mockSvc.AssertExpectations(t)
 }
 
@@ -242,9 +205,7 @@ func TestHTTP_ListTransactions_WithCursor(t *testing.T) {
 			q.Cursor.Position == 40 &&
 			q.Limit == 10 &&
 			q.Cursor.MaxCreationTime.Equal(maxTime)
-	})).Return(&service.TransactionListResult{
-		MaxCreationTime: maxTime,
-	}, nil)
+	})).Return(&service.TransactionListResult{}, nil)
 
 	resp := newListTestAPI(t, mockSvc).Post("/v1/transaction/list", ListTransactionsBody{
 		Cursor: &ListTransactionsCursor{
@@ -258,30 +219,7 @@ func TestHTTP_ListTransactions_WithCursor(t *testing.T) {
 	var body ListTransactionsResponseBody
 	assert.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
 	assert.Empty(t, body.Transactions)
-	assert.Equal(t, maxTime.Format(time.RFC3339), body.MaxCreationTime)
-	mockSvc.AssertExpectations(t)
-}
-
-func TestHTTP_ListTransactions_WithMaxCreationTime(t *testing.T) {
-	maxTime := time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC)
-
-	mockSvc := new(mockTransactionLister)
-	mockSvc.On("ListTransactions", mock.Anything, mock.MatchedBy(func(q service.TransactionListQuery) bool {
-		return q.Cursor != nil &&
-			q.Cursor.Position == 0 &&
-			q.Cursor.MaxCreationTime.Equal(maxTime)
-	})).Return(&service.TransactionListResult{
-		MaxCreationTime: maxTime,
-	}, nil)
-
-	resp := newListTestAPI(t, mockSvc).Post("/v1/transaction/list", ListTransactionsBody{
-		MaxCreationTime: maxTime.Format(time.RFC3339),
-	})
-
-	assert.Equal(t, http.StatusOK, resp.Code)
-	var body ListTransactionsResponseBody
-	assert.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
-	assert.Equal(t, maxTime.Format(time.RFC3339), body.MaxCreationTime)
+	assert.Nil(t, body.NextCursor)
 	mockSvc.AssertExpectations(t)
 }
 
@@ -297,7 +235,6 @@ func TestHTTP_ListTransactions_NoResults(t *testing.T) {
 	assert.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
 	assert.Empty(t, body.Transactions)
 	assert.Nil(t, body.NextCursor)
-	assert.Empty(t, body.MaxCreationTime)
 	mockSvc.AssertExpectations(t)
 }
 
@@ -310,17 +247,6 @@ func TestHTTP_ListTransactions_ServiceError(t *testing.T) {
 
 	assert.Equal(t, http.StatusInternalServerError, resp.Code)
 	mockSvc.AssertExpectations(t)
-}
-
-func TestHTTP_ListTransactions_InvalidMaxCreationTime(t *testing.T) {
-	mockSvc := new(mockTransactionLister)
-
-	resp := newListTestAPI(t, mockSvc).Post("/v1/transaction/list", ListTransactionsBody{
-		MaxCreationTime: "not-a-date",
-	})
-
-	assert.Equal(t, http.StatusUnprocessableEntity, resp.Code)
-	mockSvc.AssertNotCalled(t, "ListTransactions")
 }
 
 func TestHTTP_ListTransactions_InvalidCursorMaxCreationTime(t *testing.T) {

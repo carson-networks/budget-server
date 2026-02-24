@@ -20,9 +20,8 @@ type ListTransactionsCursor struct {
 
 // ListTransactionsBody is the request body for listing transactions.
 type ListTransactionsBody struct {
-	Limit           int                     `json:"limit,omitempty" minimum:"1" maximum:"100" doc:"Page size (1-100, default 20)"`
-	MaxCreationTime string                  `json:"maxCreationTime,omitempty" format:"date-time" doc:"Upper bound on created_at (RFC3339). If omitted, uses the most recent record's created_at."`
-	Cursor          *ListTransactionsCursor `json:"cursor,omitempty" doc:"Cursor from a previous response to fetch the next page"`
+	Limit  int                     `json:"limit,omitempty" minimum:"1" maximum:"100" doc:"Page size (1-100, default 20)"`
+	Cursor *ListTransactionsCursor `json:"cursor,omitempty" doc:"Cursor from a previous response to fetch the next page"`
 }
 
 // ListTransactionsInput is the Huma input for listing transactions.
@@ -32,9 +31,8 @@ type ListTransactionsInput struct {
 
 // ListTransactionsResponseBody is the response body for listing transactions.
 type ListTransactionsResponseBody struct {
-	Transactions    []Transaction           `json:"transactions" doc:"Page of transactions"`
-	MaxCreationTime string                  `json:"maxCreationTime" format:"date-time" doc:"The max creation time used for this query"`
-	NextCursor      *ListTransactionsCursor `json:"nextCursor,omitempty" doc:"Cursor to fetch the next page, absent on the last page"`
+	Transactions []Transaction           `json:"transactions" doc:"Page of transactions"`
+	NextCursor   *ListTransactionsCursor `json:"nextCursor,omitempty" doc:"Cursor to fetch the next page, absent on the last page"`
 }
 
 // ListTransactionsOutput is the Huma output for listing transactions.
@@ -98,18 +96,6 @@ func parseListTransactionsInput(input *ListTransactionsInput) (query service.Tra
 		query.Limit = defaultLimit
 	}
 
-	if input.Body.MaxCreationTime != "" {
-		t, parseErr := time.Parse(time.RFC3339, input.Body.MaxCreationTime)
-		if parseErr != nil {
-			return query, huma.NewError(http.StatusBadRequest, "invalid maxCreationTime", parseErr)
-		}
-		query.Cursor = &service.TransactionCursor{
-			Position:        0,
-			Limit:           query.Limit,
-			MaxCreationTime: t,
-		}
-	}
-
 	return query, nil
 }
 
@@ -138,10 +124,6 @@ func (h *ListTransactionsHandler) handle(ctx context.Context, input *ListTransac
 			TransactionDate: tx.TransactionDate.Format(time.RFC3339),
 			CreatedAt:       tx.CreatedAt.Format(time.RFC3339),
 		}
-	}
-
-	if !result.MaxCreationTime.IsZero() {
-		resp.MaxCreationTime = result.MaxCreationTime.Format(time.RFC3339)
 	}
 
 	if result.NextCursor != nil {

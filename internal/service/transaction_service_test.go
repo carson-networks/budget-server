@@ -100,7 +100,6 @@ func TestListTransactions_NoResults(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Empty(t, result.Transactions)
-	assert.True(t, result.MaxCreationTime.IsZero())
 	assert.Nil(t, result.NextCursor)
 }
 
@@ -119,7 +118,6 @@ func TestListTransactions_SinglePage(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, result.Transactions, 2)
 	assert.Nil(t, result.NextCursor)
-	assert.Equal(t, now, result.MaxCreationTime, "derived from first row")
 
 	tx := result.Transactions[0]
 	assert.Equal(t, rows[0].ID, tx.ID)
@@ -143,12 +141,11 @@ func TestListTransactions_HasNextPage(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Len(t, result.Transactions, 2, "truncated to limit")
-	assert.Equal(t, now, result.MaxCreationTime)
 
 	assert.NotNil(t, result.NextCursor)
 	assert.Equal(t, 2, result.NextCursor.Position)
 	assert.Equal(t, 2, result.NextCursor.Limit)
-	assert.Equal(t, now, result.NextCursor.MaxCreationTime)
+	assert.Equal(t, now, result.NextCursor.MaxCreationTime, "derived from first row")
 }
 
 func TestListTransactions_WithCursor(t *testing.T) {
@@ -176,12 +173,11 @@ func TestListTransactions_WithCursor(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Len(t, result.Transactions, 2)
-	assert.Equal(t, cursorTime, result.MaxCreationTime, "echoed from cursor, not overridden by row data")
 
 	assert.NotNil(t, result.NextCursor)
 	assert.Equal(t, 22, result.NextCursor.Position)
 	assert.Equal(t, 2, result.NextCursor.Limit)
-	assert.Equal(t, cursorTime, result.NextCursor.MaxCreationTime)
+	assert.Equal(t, cursorTime, result.NextCursor.MaxCreationTime, "echoed from cursor, not overridden by row data")
 }
 
 func TestListTransactions_StorageError(t *testing.T) {
