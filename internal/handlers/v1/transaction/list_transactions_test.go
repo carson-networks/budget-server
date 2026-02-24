@@ -38,16 +38,14 @@ func newListTestAPI(t *testing.T, svc transactionLister) humatest.TestAPI {
 
 // -- parseListTransactionsInput unit tests --
 
-func TestParseListTransactionsInput_LimitOnly(t *testing.T) {
+func TestParseListTransactionsInput_NoCursor(t *testing.T) {
 	input := &ListTransactionsInput{
-		Body: ListTransactionsBody{
-			Limit: 50,
-		},
+		Body: ListTransactionsBody{},
 	}
 
 	query, err := parseListTransactionsInput(input)
 	assert.NoError(t, err)
-	assert.Equal(t, 50, query.Limit)
+	assert.Equal(t, defaultLimit, query.Limit)
 	assert.Nil(t, query.Cursor)
 }
 
@@ -56,7 +54,6 @@ func TestParseListTransactionsInput_WithCursor(t *testing.T) {
 
 	input := &ListTransactionsInput{
 		Body: ListTransactionsBody{
-			Limit: 99,
 			Cursor: &ListTransactionsCursor{
 				Position:        40,
 				Limit:           10,
@@ -67,24 +64,13 @@ func TestParseListTransactionsInput_WithCursor(t *testing.T) {
 
 	query, err := parseListTransactionsInput(input)
 	assert.NoError(t, err)
-	assert.Equal(t, 10, query.Limit, "cursor limit overrides top-level limit")
+	assert.Equal(t, 10, query.Limit, "limit comes from cursor")
 
 	expectedMax, _ := time.Parse(time.RFC3339, cursorMaxTime)
 	assert.NotNil(t, query.Cursor)
 	assert.Equal(t, 40, query.Cursor.Position)
 	assert.Equal(t, 10, query.Cursor.Limit)
 	assert.Equal(t, expectedMax, query.Cursor.MaxCreationTime)
-}
-
-func TestParseListTransactionsInput_NoOptionalFields(t *testing.T) {
-	input := &ListTransactionsInput{
-		Body: ListTransactionsBody{},
-	}
-
-	query, err := parseListTransactionsInput(input)
-	assert.NoError(t, err)
-	assert.Equal(t, defaultLimit, query.Limit)
-	assert.Nil(t, query.Cursor)
 }
 
 func TestParseListTransactionsInput_InvalidCursorMaxCreationTime(t *testing.T) {
@@ -171,27 +157,25 @@ func TestHTTP_ListTransactions_MultiplePages(t *testing.T) {
 
 	mockSvc := new(mockTransactionLister)
 	mockSvc.On("ListTransactions", mock.Anything, mock.MatchedBy(func(q service.TransactionListQuery) bool {
-		return q.Limit == 2
+		return q.Limit == defaultLimit && q.Cursor == nil
 	})).Return(&service.TransactionListResult{
 		Transactions: txs,
 		NextCursor: &service.TransactionCursor{
-			Position:        2,
-			Limit:           2,
+			Position:        defaultLimit,
+			Limit:           defaultLimit,
 			MaxCreationTime: now,
 		},
 	}, nil)
 
-	resp := newListTestAPI(t, mockSvc).Post("/v1/transaction/list", ListTransactionsBody{
-		Limit: 2,
-	})
+	resp := newListTestAPI(t, mockSvc).Post("/v1/transaction/list", ListTransactionsBody{})
 
 	assert.Equal(t, http.StatusOK, resp.Code)
 	var body ListTransactionsResponseBody
 	assert.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
 	assert.Len(t, body.Transactions, 2)
 	assert.NotNil(t, body.NextCursor)
-	assert.Equal(t, 2, body.NextCursor.Position)
-	assert.Equal(t, 2, body.NextCursor.Limit)
+	assert.Equal(t, defaultLimit, body.NextCursor.Position)
+	assert.Equal(t, defaultLimit, body.NextCursor.Limit)
 	assert.Equal(t, now.Format(time.RFC3339), body.NextCursor.MaxCreationTime)
 	mockSvc.AssertExpectations(t)
 }

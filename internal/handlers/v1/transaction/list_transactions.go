@@ -20,7 +20,6 @@ type ListTransactionsCursor struct {
 
 // ListTransactionsBody is the request body for listing transactions.
 type ListTransactionsBody struct {
-	Limit  int                     `json:"limit,omitempty" minimum:"1" maximum:"100" doc:"Page size (1-100, default 20)"`
 	Cursor *ListTransactionsCursor `json:"cursor,omitempty" doc:"Cursor from a previous response to fetch the next page"`
 }
 
@@ -70,32 +69,29 @@ func (h *ListTransactionsHandler) Register(api huma.API) {
 const defaultLimit = 20
 
 // parseListTransactionsInput parses and validates the API input.
-// When a cursor is provided, its limit and maxCreationTime override the top-level fields.
+// When a cursor is provided, limit and maxCreationTime come from it.
+// Without a cursor, the default limit is used.
 func parseListTransactionsInput(input *ListTransactionsInput) (query service.TransactionListQuery, err error) {
-	if input.Body.Cursor != nil {
-		if input.Body.Cursor.Position < 0 {
-			return query, huma.NewError(http.StatusBadRequest, "cursor position must be non-negative")
-		}
-
-		maxCreationTime, parseErr := time.Parse(time.RFC3339, input.Body.Cursor.MaxCreationTime)
-		if parseErr != nil {
-			return query, huma.NewError(http.StatusBadRequest, "invalid cursor maxCreationTime", parseErr)
-		}
-
-		query.Limit = input.Body.Cursor.Limit
-		query.Cursor = &service.TransactionCursor{
-			Position:        input.Body.Cursor.Position,
-			Limit:           input.Body.Cursor.Limit,
-			MaxCreationTime: maxCreationTime,
-		}
+	if input.Body.Cursor == nil {
+		query.Limit = defaultLimit
 		return query, nil
 	}
 
-	query.Limit = input.Body.Limit
-	if query.Limit == 0 {
-		query.Limit = defaultLimit
+	if input.Body.Cursor.Position < 0 {
+		return query, huma.NewError(http.StatusBadRequest, "cursor position must be non-negative")
 	}
 
+	maxCreationTime, parseErr := time.Parse(time.RFC3339, input.Body.Cursor.MaxCreationTime)
+	if parseErr != nil {
+		return query, huma.NewError(http.StatusBadRequest, "invalid cursor maxCreationTime", parseErr)
+	}
+
+	query.Limit = input.Body.Cursor.Limit
+	query.Cursor = &service.TransactionCursor{
+		Position:        input.Body.Cursor.Position,
+		Limit:           input.Body.Cursor.Limit,
+		MaxCreationTime: maxCreationTime,
+	}
 	return query, nil
 }
 
