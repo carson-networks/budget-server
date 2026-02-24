@@ -66,14 +66,11 @@ func (h *ListTransactionsHandler) Register(api huma.API) {
 	}, h.handle)
 }
 
-const defaultLimit = 20
-
 // parseListTransactionsInput parses and validates the API input.
 // When a cursor is provided, limit and maxCreationTime come from it.
-// Without a cursor, the default limit is used.
+// Without a cursor, the service uses its default limit.
 func parseListTransactionsInput(input *ListTransactionsInput) (query service.TransactionListQuery, err error) {
 	if input.Body.Cursor == nil {
-		query.Limit = defaultLimit
 		return query, nil
 	}
 
@@ -86,7 +83,6 @@ func parseListTransactionsInput(input *ListTransactionsInput) (query service.Tra
 		return query, huma.NewError(http.StatusBadRequest, "invalid cursor maxCreationTime", parseErr)
 	}
 
-	query.Limit = input.Body.Cursor.Limit
 	query.Cursor = &service.TransactionCursor{
 		Position:        input.Body.Cursor.Position,
 		Limit:           input.Body.Cursor.Limit,

@@ -30,9 +30,11 @@ type TransactionCursor struct {
 	MaxCreationTime time.Time
 }
 
+const defaultLimit = 20
+
 // TransactionListQuery is the input for listing transactions with cursor pagination.
+// Limit is derived from Cursor.Limit when a cursor is present, otherwise defaultLimit is used.
 type TransactionListQuery struct {
-	Limit  int
 	Cursor *TransactionCursor
 }
 
@@ -67,15 +69,17 @@ func (s *TransactionService) CreateTransaction(ctx context.Context, transaction 
 
 // ListTransactions returns a page of transactions using cursor-based pagination.
 func (s *TransactionService) ListTransactions(ctx context.Context, query TransactionListQuery) (*TransactionListResult, error) {
+	limit := defaultLimit
 	offset := 0
 	var maxCreationTime *time.Time
 	if query.Cursor != nil {
+		limit = query.Cursor.Limit
 		offset = query.Cursor.Position
 		maxCreationTime = &query.Cursor.MaxCreationTime
 	}
 
 	filter := &sqlconfig.TransactionFilter{
-		Limit:           query.Limit,
+		Limit:           limit,
 		Offset:          offset,
 		MaxCreationTime: maxCreationTime,
 	}
@@ -91,19 +95,17 @@ func (s *TransactionService) ListTransactions(ctx context.Context, query Transac
 		return result, nil
 	}
 
-	if query.Limit > 0 && len(rows) > query.Limit {
-		rows = rows[:query.Limit]
+	if len(rows) > limit {
+		rows = rows[:limit]
 
-		// Resolve maxCreationTime for the cursor: use the cursor value if provided,
-		// otherwise use the first row's CreatedAt (most recent due to DESC order).
 		cursorMaxCreationTime := rows[0].CreatedAt
 		if maxCreationTime != nil {
 			cursorMaxCreationTime = *maxCreationTime
 		}
 
 		result.NextCursor = &TransactionCursor{
-			Position:        offset + query.Limit,
-			Limit:           query.Limit,
+			Position:        offset + limit,
+			Limit:           limit,
 			MaxCreationTime: cursorMaxCreationTime,
 		}
 	}
