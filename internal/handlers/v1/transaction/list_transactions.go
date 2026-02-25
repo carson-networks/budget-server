@@ -7,6 +7,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
+	"github.com/carson-networks/budget-server/internal/logging"
 	"github.com/carson-networks/budget-server/internal/service"
 )
 
@@ -92,14 +93,27 @@ func parseListTransactionsInput(input *ListTransactionsInput) (query service.Tra
 }
 
 func (h *ListTransactionsHandler) handle(ctx context.Context, input *ListTransactionsInput) (*ListTransactionsOutput, error) {
+	logData := logging.GetLogData(ctx)
+
 	query, err := parseListTransactionsInput(input)
 	if err != nil {
 		return nil, err
 	}
 
+	var stopTimer func()
+	if logData != nil {
+		stopTimer = logData.AddTiming("listTransactionsMs")
+	}
 	result, err := h.TransactionService.ListTransactions(ctx, query)
+	if stopTimer != nil {
+		stopTimer()
+	}
 	if err != nil {
 		return nil, huma.NewError(http.StatusInternalServerError, "failed to list transactions", err)
+	}
+
+	if logData != nil {
+		logData.AddData("transactionCount", len(result.Transactions))
 	}
 
 	resp := ListTransactionsResponseBody{

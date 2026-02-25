@@ -9,6 +9,7 @@ import (
 	"github.com/gofrs/uuid/v5"
 	"github.com/shopspring/decimal"
 
+	"github.com/carson-networks/budget-server/internal/logging"
 	"github.com/carson-networks/budget-server/internal/service"
 )
 
@@ -95,9 +96,16 @@ func parseCreateTransactionInput(input *CreateTransactionInput) (accountID uuid.
 }
 
 func (h *CreateTransactionHandler) handle(ctx context.Context, input *CreateTransactionInput) (*CreateTransactionOutput, error) {
+	logData := logging.GetLogData(ctx)
+
 	accountID, categoryID, amount, transactionName, transactionDate, err := parseCreateTransactionInput(input)
 	if err != nil {
 		return nil, err
+	}
+
+	if logData != nil {
+		logData.AddData("accountID", accountID.String())
+		logData.AddData("categoryID", categoryID.String())
 	}
 
 	transaction := service.Transaction{
@@ -107,9 +115,21 @@ func (h *CreateTransactionHandler) handle(ctx context.Context, input *CreateTran
 		TransactionName: transactionName,
 		TransactionDate: transactionDate,
 	}
+
+	var stopTimer func()
+	if logData != nil {
+		stopTimer = logData.AddTiming("createTransactionMs")
+	}
 	id, err := h.TransactionService.CreateTransaction(ctx, transaction)
+	if stopTimer != nil {
+		stopTimer()
+	}
 	if err != nil {
 		return nil, huma.NewError(http.StatusInternalServerError, "failed to create transaction", err)
+	}
+
+	if logData != nil {
+		logData.AddData("transactionID", id.String())
 	}
 
 	return &CreateTransactionOutput{

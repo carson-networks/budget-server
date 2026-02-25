@@ -1,17 +1,34 @@
 package logging
 
 import (
+	"context"
 	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
 )
 
+type contextKey string
+
+const logDataKey contextKey = "logData"
+
 type LogData struct {
 	timeItemsMutex *sync.Mutex
 	timeItems      map[string]int64
 	dataItems      map[string]interface{}
 	logger         *logrus.Logger
+}
+
+func WithLogData(ctx context.Context, logData *LogData) context.Context {
+	return context.WithValue(ctx, logDataKey, logData)
+}
+
+func GetLogData(ctx context.Context) *LogData {
+	logData, ok := ctx.Value(logDataKey).(*LogData)
+	if !ok {
+		return nil
+	}
+	return logData
 }
 
 func NewLogData(logger *logrus.Logger) *LogData {
