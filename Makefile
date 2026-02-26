@@ -1,5 +1,4 @@
-GOCMD=go
-BINARY_NAME=weather-server
+BINARY_NAME=budget-server
 
 GREEN  := $(shell tput -Txterm setaf 2)
 YELLOW := $(shell tput -Txterm setaf 3)
@@ -14,20 +13,20 @@ all: help
 ## Build:
 build: ## Build your project and put the output binary in out/bin/
 	mkdir -p out/bin
-	GO111MODULE=on $(GOCMD) build -mod vendor -o out/bin/$(BINARY_NAME) .
+	GO111MODULE=on go build -mod vendor -o out/bin/$(BINARY_NAME) .
 
 clean: ## Remove build related file
 	rm -fr ./bin
 	rm -fr ./out
 
 vendor: ## Copy of all packages needed to support builds and tests in the vendor directory
-	$(GOCMD) mod vendor
+	go mod vendor
 
 serve: ## Run the go code
 	docker compose --profile serve up
 
 serve-local: ## Run the go code changes that are locally made
-	docker image rm cdmeyer/budget-server:local || true
+	docker image rm ghrc.io/carson-networks/budget-server:local || true
 	docker compose --profile serve-local build
 	docker compose --profile serve-local up
 
@@ -35,7 +34,7 @@ serve-local-rebuild: ## Rebuild the local changes
 	docker compose up --detach --build budget-server-local
 
 rebuild-serve:
-	GO111MODULE=on GOARCH=arm64 GOOS=linux $(GOCMD) build -o out/bin/$(BINARY_NAME) .
+	GO111MODULE=on GOARCH=arm64 GOOS=linux go build -o out/bin/$(BINARY_NAME) .
 	docker stop server-local
 	docker cp out/bin/$(BINARY_NAME) server-local:/budget-server
 	docker start server-local
@@ -53,13 +52,7 @@ help: ## Show this help.
 		}' $(MAKEFILE_LIST)
 
 format: ## Format imports
-	find . -type f -name '*.go' -not -path "./vendor/*" | xargs goimports -local -l -w
+	find . -type f -name '*.go' -not -path "./vendor/*" | xargs go tool goimports -local -l -w
 
 generate-mocks: ## Generate mocks
-	mockery
-
-setup:
-	# Install goimports
-	go install golang.org/x/tools/cmd/goimports@v0.31.0
-	# Install mockery
-	go install github.com/vektra/mockery/v2@v2.53.3
+	go tool mockery
