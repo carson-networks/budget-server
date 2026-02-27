@@ -19,10 +19,11 @@ type CreateAccountInput struct {
 
 // CreateAccountBody is the request body fields for creating an account.
 type CreateAccountBody struct {
-	Name    string `json:"name" minLength:"1" doc:"Account name"`
-	Type    int    `json:"type" minimum:"0" maximum:"4" doc:"Account type: 0=Cash, 1=Credit Cards, 2=Investments, 3=Loans, 4=Assets"`
-	SubType string `json:"subType" doc:"Account sub-type"`
-	Balance string `json:"balance,omitempty" doc:"Initial decimal balance (e.g. '0' or '1234.56'), defaults to 0"`
+	Name            string `json:"name" minLength:"1" doc:"Account name"`
+	Type            int    `json:"type" minimum:"0" maximum:"4" doc:"Account type: 0=Cash, 1=Credit Cards, 2=Investments, 3=Loans, 4=Assets"`
+	SubType         string `json:"subType" doc:"Account sub-type"`
+	Balance         string `json:"balance,omitempty" doc:"Initial current balance (e.g. '0' or '1234.56'), defaults to startingBalance"`
+	StartingBalance string `json:"startingBalance,omitempty" doc:"Starting balance when account is created (e.g. '0' or '1234.56'), defaults to 0"`
 }
 
 // CreateAccountResponse is the response body for creating an account.
@@ -64,9 +65,18 @@ func (h *CreateAccountHandler) Register(api huma.API) {
 }
 
 func parseCreateAccountInput(input *CreateAccountInput) (service.Account, error) {
+	startingBalanceStr := input.Body.StartingBalance
+	if startingBalanceStr == "" {
+		startingBalanceStr = "0"
+	}
+	startingBalance, err := decimal.NewFromString(startingBalanceStr)
+	if err != nil {
+		return service.Account{}, huma.NewError(http.StatusBadRequest, "invalid startingBalance", err)
+	}
+
 	balanceStr := input.Body.Balance
 	if balanceStr == "" {
-		balanceStr = "0"
+		balanceStr = startingBalanceStr
 	}
 	balance, err := decimal.NewFromString(balanceStr)
 	if err != nil {
@@ -78,10 +88,11 @@ func parseCreateAccountInput(input *CreateAccountInput) (service.Account, error)
 	}
 
 	return service.Account{
-		Name:    input.Body.Name,
-		Type:    service.AccountType(input.Body.Type),
-		SubType: input.Body.SubType,
-		Balance: balance,
+		Name:            input.Body.Name,
+		Type:            service.AccountType(input.Body.Type),
+		SubType:         input.Body.SubType,
+		Balance:         balance,
+		StartingBalance: startingBalance,
 	}, nil
 }
 

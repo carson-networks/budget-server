@@ -1,6 +1,8 @@
 package service
 
 import (
+	"time"
+
 	"github.com/carson-networks/budget-server/internal/storage/sqlconfig"
 	"github.com/gofrs/uuid/v5"
 	"github.com/shopspring/decimal"
@@ -19,11 +21,13 @@ const (
 
 // Account represents an account in the service layer.
 type Account struct {
-	ID      uuid.UUID
-	Name    string
-	Type    AccountType
-	SubType string
-	Balance decimal.Decimal
+	ID              uuid.UUID
+	Name            string
+	Type            AccountType
+	SubType         string
+	Balance         decimal.Decimal
+	StartingBalance decimal.Decimal
+	CreatedAt       time.Time
 }
 
 // AccountCursor identifies a position in a paginated result set.

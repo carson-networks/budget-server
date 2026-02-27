@@ -6,6 +6,7 @@ package bobgen
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/aarondl/opt/omit"
 	"github.com/gofrs/uuid/v5"
@@ -21,11 +22,13 @@ import (
 
 // Account is an object representing the database table.
 type Account struct {
-	ID      uuid.UUID       `db:"id,pk" `
-	Name    string          `db:"name" `
-	Type    int16           `db:"type" `
-	SubType string          `db:"sub_type" `
-	Balance decimal.Decimal `db:"balance" `
+	ID              uuid.UUID       `db:"id,pk" `
+	Name            string          `db:"name" `
+	Type            int16           `db:"type" `
+	SubType         string          `db:"sub_type" `
+	Balance         decimal.Decimal `db:"balance" `
+	StartingBalance decimal.Decimal `db:"starting_balance" `
+	CreatedAt       time.Time       `db:"created_at" `
 }
 
 // AccountSlice is an alias for a slice of pointers to Account.
@@ -41,25 +44,29 @@ type AccountsQuery = *psql.ViewQuery[*Account, AccountSlice]
 func buildAccountColumns(alias string) accountColumns {
 	return accountColumns{
 		ColumnsExpr: expr.NewColumnsExpr(
-			"id", "name", "type", "sub_type", "balance",
+			"id", "name", "type", "sub_type", "balance", "starting_balance", "created_at",
 		).WithParent("accounts"),
-		tableAlias: alias,
-		ID:         psql.Quote(alias, "id"),
-		Name:       psql.Quote(alias, "name"),
-		Type:       psql.Quote(alias, "type"),
-		SubType:    psql.Quote(alias, "sub_type"),
-		Balance:    psql.Quote(alias, "balance"),
+		tableAlias:      alias,
+		ID:              psql.Quote(alias, "id"),
+		Name:            psql.Quote(alias, "name"),
+		Type:            psql.Quote(alias, "type"),
+		SubType:         psql.Quote(alias, "sub_type"),
+		Balance:         psql.Quote(alias, "balance"),
+		StartingBalance: psql.Quote(alias, "starting_balance"),
+		CreatedAt:       psql.Quote(alias, "created_at"),
 	}
 }
 
 type accountColumns struct {
 	expr.ColumnsExpr
-	tableAlias string
-	ID         psql.Expression
-	Name       psql.Expression
-	Type       psql.Expression
-	SubType    psql.Expression
-	Balance    psql.Expression
+	tableAlias      string
+	ID              psql.Expression
+	Name            psql.Expression
+	Type            psql.Expression
+	SubType         psql.Expression
+	Balance         psql.Expression
+	StartingBalance psql.Expression
+	CreatedAt       psql.Expression
 }
 
 func (c accountColumns) Alias() string {
@@ -74,15 +81,17 @@ func (accountColumns) AliasedAs(alias string) accountColumns {
 // All values are optional, and do not have to be set
 // Generated columns are not included
 type AccountSetter struct {
-	ID      omit.Val[uuid.UUID]       `db:"id,pk" `
-	Name    omit.Val[string]          `db:"name" `
-	Type    omit.Val[int16]           `db:"type" `
-	SubType omit.Val[string]          `db:"sub_type" `
-	Balance omit.Val[decimal.Decimal] `db:"balance" `
+	ID              omit.Val[uuid.UUID]       `db:"id,pk" `
+	Name            omit.Val[string]          `db:"name" `
+	Type            omit.Val[int16]           `db:"type" `
+	SubType         omit.Val[string]          `db:"sub_type" `
+	Balance         omit.Val[decimal.Decimal] `db:"balance" `
+	StartingBalance omit.Val[decimal.Decimal] `db:"starting_balance" `
+	CreatedAt       omit.Val[time.Time]       `db:"created_at" `
 }
 
 func (s AccountSetter) SetColumns() []string {
-	vals := make([]string, 0, 5)
+	vals := make([]string, 0, 7)
 	if s.ID.IsValue() {
 		vals = append(vals, "id")
 	}
@@ -97,6 +106,12 @@ func (s AccountSetter) SetColumns() []string {
 	}
 	if s.Balance.IsValue() {
 		vals = append(vals, "balance")
+	}
+	if s.StartingBalance.IsValue() {
+		vals = append(vals, "starting_balance")
+	}
+	if s.CreatedAt.IsValue() {
+		vals = append(vals, "created_at")
 	}
 	return vals
 }
@@ -117,6 +132,12 @@ func (s AccountSetter) Overwrite(t *Account) {
 	if s.Balance.IsValue() {
 		t.Balance = s.Balance.MustGet()
 	}
+	if s.StartingBalance.IsValue() {
+		t.StartingBalance = s.StartingBalance.MustGet()
+	}
+	if s.CreatedAt.IsValue() {
+		t.CreatedAt = s.CreatedAt.MustGet()
+	}
 }
 
 func (s *AccountSetter) Apply(q *dialect.InsertQuery) {
@@ -125,7 +146,7 @@ func (s *AccountSetter) Apply(q *dialect.InsertQuery) {
 	})
 
 	q.AppendValues(bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
-		vals := make([]bob.Expression, 5)
+		vals := make([]bob.Expression, 7)
 		if s.ID.IsValue() {
 			vals[0] = psql.Arg(s.ID.MustGet())
 		} else {
@@ -156,6 +177,18 @@ func (s *AccountSetter) Apply(q *dialect.InsertQuery) {
 			vals[4] = psql.Raw("DEFAULT")
 		}
 
+		if s.StartingBalance.IsValue() {
+			vals[5] = psql.Arg(s.StartingBalance.MustGet())
+		} else {
+			vals[5] = psql.Raw("DEFAULT")
+		}
+
+		if s.CreatedAt.IsValue() {
+			vals[6] = psql.Arg(s.CreatedAt.MustGet())
+		} else {
+			vals[6] = psql.Raw("DEFAULT")
+		}
+
 		return bob.ExpressSlice(ctx, w, d, start, vals, "", ", ", "")
 	}))
 }
@@ -165,7 +198,7 @@ func (s AccountSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s AccountSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 5)
+	exprs := make([]bob.Expression, 0, 7)
 
 	if s.ID.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -199,6 +232,20 @@ func (s AccountSetter) Expressions(prefix ...string) []bob.Expression {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "balance")...),
 			psql.Arg(s.Balance),
+		}})
+	}
+
+	if s.StartingBalance.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "starting_balance")...),
+			psql.Arg(s.StartingBalance),
+		}})
+	}
+
+	if s.CreatedAt.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "created_at")...),
+			psql.Arg(s.CreatedAt),
 		}})
 	}
 
@@ -354,8 +401,8 @@ func (o AccountSlice) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 				o.copyMatchingRows(retrieved...)
 			default:
 				// If the retrieved value is not a Account or a slice of Account
-				// then run the AfterDeleteHooks on the slice
-				_, err = Accounts.AfterDeleteHooks.RunHooks(ctx, exec, o)
+				// then run the AfterUpdateHooks on the slice
+				_, err = Accounts.AfterUpdateHooks.RunHooks(ctx, exec, o)
 			}
 
 			return err
@@ -384,7 +431,7 @@ func (o AccountSlice) DeleteMod() bob.Mod[*dialect.DeleteQuery] {
 			default:
 				// If the retrieved value is not a Account or a slice of Account
 				// then run the AfterDeleteHooks on the slice
-				_, err = Accounts.AfterUpdateHooks.RunHooks(ctx, exec, o)
+				_, err = Accounts.AfterDeleteHooks.RunHooks(ctx, exec, o)
 			}
 
 			return err
@@ -428,11 +475,13 @@ func (o AccountSlice) ReloadAll(ctx context.Context, exec bob.Executor) error {
 }
 
 type accountWhere[Q psql.Filterable] struct {
-	ID      psql.WhereMod[Q, uuid.UUID]
-	Name    psql.WhereMod[Q, string]
-	Type    psql.WhereMod[Q, int16]
-	SubType psql.WhereMod[Q, string]
-	Balance psql.WhereMod[Q, decimal.Decimal]
+	ID              psql.WhereMod[Q, uuid.UUID]
+	Name            psql.WhereMod[Q, string]
+	Type            psql.WhereMod[Q, int16]
+	SubType         psql.WhereMod[Q, string]
+	Balance         psql.WhereMod[Q, decimal.Decimal]
+	StartingBalance psql.WhereMod[Q, decimal.Decimal]
+	CreatedAt       psql.WhereMod[Q, time.Time]
 }
 
 func (accountWhere[Q]) AliasedAs(alias string) accountWhere[Q] {
@@ -441,10 +490,12 @@ func (accountWhere[Q]) AliasedAs(alias string) accountWhere[Q] {
 
 func buildAccountWhere[Q psql.Filterable](cols accountColumns) accountWhere[Q] {
 	return accountWhere[Q]{
-		ID:      psql.Where[Q, uuid.UUID](cols.ID),
-		Name:    psql.Where[Q, string](cols.Name),
-		Type:    psql.Where[Q, int16](cols.Type),
-		SubType: psql.Where[Q, string](cols.SubType),
-		Balance: psql.Where[Q, decimal.Decimal](cols.Balance),
+		ID:              psql.Where[Q, uuid.UUID](cols.ID),
+		Name:            psql.Where[Q, string](cols.Name),
+		Type:            psql.Where[Q, int16](cols.Type),
+		SubType:         psql.Where[Q, string](cols.SubType),
+		Balance:         psql.Where[Q, decimal.Decimal](cols.Balance),
+		StartingBalance: psql.Where[Q, decimal.Decimal](cols.StartingBalance),
+		CreatedAt:       psql.Where[Q, time.Time](cols.CreatedAt),
 	}
 }

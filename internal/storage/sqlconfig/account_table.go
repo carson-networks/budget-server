@@ -3,6 +3,7 @@ package sqlconfig
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/aarondl/opt/omit"
 	"github.com/gofrs/uuid/v5"
@@ -18,19 +19,22 @@ import (
 
 // Account represents an account record.
 type Account struct {
-	ID      uuid.UUID
-	Name    string
-	Type    AccountType
-	SubType string
-	Balance decimal.Decimal
+	ID              uuid.UUID
+	Name            string
+	Type            AccountType
+	SubType         string
+	Balance         decimal.Decimal
+	StartingBalance decimal.Decimal
+	CreatedAt       time.Time
 }
 
 // AccountCreate is the input for creating a new account.
 type AccountCreate struct {
-	Name    string
-	Type    AccountType
-	SubType string
-	Balance decimal.Decimal
+	Name            string
+	Type            AccountType
+	SubType         string
+	Balance         decimal.Decimal
+	StartingBalance decimal.Decimal
 }
 
 // AccountFilter specifies filters for listing accounts.
@@ -75,10 +79,11 @@ func (t *AccountsTable) FindByID(ctx context.Context, id uuid.UUID) (*Account, e
 // Insert creates a new account and returns its generated ID.
 func (t *AccountsTable) Insert(ctx context.Context, create *AccountCreate) (uuid.UUID, error) {
 	setter := &bobgen.AccountSetter{
-		Name:    omit.From(create.Name),
-		Type:    omit.From(int16(create.Type)),
-		SubType: omit.From(create.SubType),
-		Balance: omit.From(create.Balance),
+		Name:            omit.From(create.Name),
+		Type:            omit.From(int16(create.Type)),
+		SubType:         omit.From(create.SubType),
+		Balance:         omit.From(create.Balance),
+		StartingBalance: omit.From(create.StartingBalance),
 	}
 	row, err := bobgen.Accounts.Insert(setter).One(ctx, t.exec)
 	if err != nil {
@@ -124,10 +129,12 @@ func (t *AccountsTable) UpdateBalance(ctx context.Context, id uuid.UUID, balance
 
 func bobAccountToAccount(row *bobgen.Account) *Account {
 	return &Account{
-		ID:      row.ID,
-		Name:    row.Name,
-		Type:    AccountType(row.Type),
-		SubType: row.SubType,
-		Balance: row.Balance,
+		ID:              row.ID,
+		Name:            row.Name,
+		Type:            AccountType(row.Type),
+		SubType:         row.SubType,
+		Balance:         row.Balance,
+		StartingBalance: row.StartingBalance,
+		CreatedAt:       row.CreatedAt,
 	}
 }

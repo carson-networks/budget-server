@@ -25,10 +25,11 @@ func NewAccountService(store *storage.Storage) *AccountService {
 // CreateAccount creates a new account and returns its ID.
 func (s *AccountService) CreateAccount(ctx context.Context, account Account) (uuid.UUID, error) {
 	storageCreate := &sqlconfig.AccountCreate{
-		Name:    account.Name,
-		Type:    accountTypeToStorage(account.Type),
-		SubType: account.SubType,
-		Balance: account.Balance,
+		Name:            account.Name,
+		Type:            accountTypeToStorage(account.Type),
+		SubType:         account.SubType,
+		Balance:         account.Balance,
+		StartingBalance: account.StartingBalance,
 	}
 
 	return s.storage.Accounts.Insert(ctx, storageCreate)
@@ -41,11 +42,13 @@ func (s *AccountService) GetAccount(ctx context.Context, id uuid.UUID) (*Account
 		return nil, err
 	}
 	return &Account{
-		ID:      row.ID,
-		Name:    row.Name,
-		Type:    accountTypeFromStorage(row.Type),
-		SubType: row.SubType,
-		Balance: row.Balance,
+		ID:              row.ID,
+		Name:            row.Name,
+		Type:            accountTypeFromStorage(row.Type),
+		SubType:         row.SubType,
+		Balance:         row.Balance,
+		StartingBalance: row.StartingBalance,
+		CreatedAt:       row.CreatedAt,
 	}, nil
 }
 
@@ -84,11 +87,13 @@ func (s *AccountService) ListAccounts(ctx context.Context, cursor *AccountCursor
 	convertedAccounts := make([]Account, len(accounts))
 	for i, account := range accounts {
 		convertedAccounts[i] = Account{
-			ID:      account.ID,
-			Name:    account.Name,
-			Type:    accountTypeFromStorage(account.Type),
-			SubType: account.SubType,
-			Balance: account.Balance,
+			ID:              account.ID,
+			Name:            account.Name,
+			Type:            accountTypeFromStorage(account.Type),
+			SubType:         account.SubType,
+			Balance:         account.Balance,
+			StartingBalance: account.StartingBalance,
+			CreatedAt:       account.CreatedAt,
 		}
 	}
 

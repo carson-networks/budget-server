@@ -60,6 +60,24 @@ var Accounts = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
+		StartingBalance: column{
+			Name:      "starting_balance",
+			DBType:    "numeric",
+			Default:   "0",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		CreatedAt: column{
+			Name:      "created_at",
+			DBType:    "timestamp with time zone",
+			Default:   "now()",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
 	},
 	Indexes: accountIndexes{
 		AccountsPkey: index{
@@ -90,16 +108,18 @@ var Accounts = Table[
 }
 
 type accountColumns struct {
-	ID      column
-	Name    column
-	Type    column
-	SubType column
-	Balance column
+	ID              column
+	Name            column
+	Type            column
+	SubType         column
+	Balance         column
+	StartingBalance column
+	CreatedAt       column
 }
 
 func (c accountColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.Name, c.Type, c.SubType, c.Balance,
+		c.ID, c.Name, c.Type, c.SubType, c.Balance, c.StartingBalance, c.CreatedAt,
 	}
 }
 

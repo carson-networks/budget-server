@@ -3,6 +3,7 @@ package account
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/danielgtaylor/huma/v2"
 
@@ -97,11 +98,13 @@ func (h *ListAccountsHandler) handle(ctx context.Context, input *ListAccountsInp
 
 	for i, acc := range accounts {
 		resp.Accounts[i] = Account{
-			ID:      acc.ID.String(),
-			Name:    acc.Name,
-			Type:    int(acc.Type),
-			SubType: acc.SubType,
-			Balance: acc.Balance.String(),
+			ID:              acc.ID.String(),
+			Name:            acc.Name,
+			Type:            int(acc.Type),
+			SubType:         acc.SubType,
+			Balance:         acc.Balance.String(),
+			StartingBalance: acc.StartingBalance.String(),
+			CreatedAt:       acc.CreatedAt.Format(time.RFC3339),
 		}
 	}
 
