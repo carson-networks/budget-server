@@ -96,11 +96,11 @@ func TestListTransactions_NoResults(t *testing.T) {
 	mockTable.EXPECT().List(mock.Anything, mock.Anything).
 		Return([]*sqlconfig.Transaction{}, nil)
 
-	result, err := svc.ListTransactions(context.Background(), TransactionListQuery{})
+	txs, nextCursor, err := svc.ListTransactions(context.Background(), nil)
 
 	assert.NoError(t, err)
-	assert.Empty(t, result.Transactions)
-	assert.Nil(t, result.NextCursor)
+	assert.Nil(t, txs)
+	assert.Nil(t, nextCursor)
 }
 
 func TestListTransactions_SinglePage(t *testing.T) {
@@ -113,13 +113,13 @@ func TestListTransactions_SinglePage(t *testing.T) {
 		return f.Limit == defaultLimit && f.Offset == 0 && f.MaxCreationTime == nil
 	})).Return(rows, nil)
 
-	result, err := svc.ListTransactions(context.Background(), TransactionListQuery{})
+	txs, nextCursor, err := svc.ListTransactions(context.Background(), nil)
 
 	assert.NoError(t, err)
-	assert.Len(t, result.Transactions, 2)
-	assert.Nil(t, result.NextCursor)
+	assert.Len(t, txs, 2)
+	assert.Nil(t, nextCursor)
 
-	tx := result.Transactions[0]
+	tx := txs[0]
 	assert.Equal(t, rows[0].ID, tx.ID)
 	assert.Equal(t, rows[0].AccountID, tx.AccountID)
 	assert.Equal(t, rows[0].CategoryID, tx.CategoryID)
@@ -137,15 +137,15 @@ func TestListTransactions_HasNextPage(t *testing.T) {
 
 	mockTable.EXPECT().List(mock.Anything, mock.Anything).Return(rows, nil)
 
-	result, err := svc.ListTransactions(context.Background(), TransactionListQuery{})
+	txs, nextCursor, err := svc.ListTransactions(context.Background(), nil)
 
 	assert.NoError(t, err)
-	assert.Len(t, result.Transactions, defaultLimit, "truncated to default limit")
+	assert.Len(t, txs, defaultLimit, "truncated to default limit")
 
-	assert.NotNil(t, result.NextCursor)
-	assert.Equal(t, defaultLimit, result.NextCursor.Position)
-	assert.Equal(t, defaultLimit, result.NextCursor.Limit)
-	assert.Equal(t, now, result.NextCursor.MaxCreationTime, "derived from first row")
+	assert.NotNil(t, nextCursor)
+	assert.Equal(t, defaultLimit, nextCursor.Position)
+	assert.Equal(t, defaultLimit, nextCursor.Limit)
+	assert.Equal(t, now, nextCursor.MaxCreationTime, "derived from first row")
 }
 
 func TestListTransactions_WithCursor(t *testing.T) {
@@ -162,21 +162,19 @@ func TestListTransactions_WithCursor(t *testing.T) {
 			f.MaxCreationTime.Equal(cursorTime)
 	})).Return(rows, nil)
 
-	result, err := svc.ListTransactions(context.Background(), TransactionListQuery{
-		Cursor: &TransactionCursor{
-			Position:        20,
-			Limit:           2,
-			MaxCreationTime: cursorTime,
-		},
+	txs, nextCursor, err := svc.ListTransactions(context.Background(), &TransactionCursor{
+		Position:        20,
+		Limit:           2,
+		MaxCreationTime: cursorTime,
 	})
 
 	assert.NoError(t, err)
-	assert.Len(t, result.Transactions, 2)
+	assert.Len(t, txs, 2)
 
-	assert.NotNil(t, result.NextCursor)
-	assert.Equal(t, 22, result.NextCursor.Position)
-	assert.Equal(t, 2, result.NextCursor.Limit)
-	assert.Equal(t, cursorTime, result.NextCursor.MaxCreationTime, "echoed from cursor, not overridden by row data")
+	assert.NotNil(t, nextCursor)
+	assert.Equal(t, 22, nextCursor.Position)
+	assert.Equal(t, 2, nextCursor.Limit)
+	assert.Equal(t, cursorTime, nextCursor.MaxCreationTime, "echoed from cursor, not overridden by row data")
 }
 
 func TestListTransactions_StorageError(t *testing.T) {
@@ -185,9 +183,10 @@ func TestListTransactions_StorageError(t *testing.T) {
 	mockTable.EXPECT().List(mock.Anything, mock.Anything).
 		Return(nil, errors.New("database unavailable"))
 
-	result, err := svc.ListTransactions(context.Background(), TransactionListQuery{})
+	txs, nextCursor, err := svc.ListTransactions(context.Background(), nil)
 
 	assert.Error(t, err)
 	assert.Equal(t, "database unavailable", err.Error())
-	assert.Nil(t, result)
+	assert.Nil(t, txs)
+	assert.Nil(t, nextCursor)
 }
