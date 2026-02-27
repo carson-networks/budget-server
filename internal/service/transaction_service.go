@@ -5,44 +5,12 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid/v5"
-	"github.com/shopspring/decimal"
 
 	"github.com/carson-networks/budget-server/internal/storage"
 	"github.com/carson-networks/budget-server/internal/storage/sqlconfig"
 )
 
-// Transaction represents a transaction in the service layer.
-type Transaction struct {
-	ID              uuid.UUID
-	AccountID       uuid.UUID
-	CategoryID      uuid.UUID
-	Amount          decimal.Decimal
-	TransactionName string
-	TransactionDate time.Time
-	CreatedAt       time.Time
-}
-
-// TransactionCursor identifies a position in a paginated result set
-// and carries the limit and maxCreationTime so subsequent pages are consistent.
-type TransactionCursor struct {
-	Position        int
-	Limit           int
-	MaxCreationTime time.Time
-}
-
 const defaultLimit = 20
-
-// TransactionListQuery is the input for listing transactions with cursor pagination.
-// Limit is derived from Cursor.Limit when a cursor is present, otherwise defaultLimit is used.
-type TransactionListQuery struct {
-	Cursor *TransactionCursor
-}
-
-// TransactionListResult is the output of a paginated transaction list.
-type TransactionListResult struct {
-	Transactions []Transaction
-	NextCursor   *TransactionCursor
-}
 
 // TransactionService handles transaction business logic.
 type TransactionService struct {
@@ -68,14 +36,14 @@ func (s *TransactionService) CreateTransaction(ctx context.Context, transaction 
 }
 
 // ListTransactions returns a page of transactions using cursor-based pagination.
-func (s *TransactionService) ListTransactions(ctx context.Context, query TransactionListQuery) (*TransactionListResult, error) {
+func (s *TransactionService) ListTransactions(ctx context.Context, cursor *TransactionCursor) ([]Transaction, *TransactionCursor, error) {
 	limit := defaultLimit
 	offset := 0
 	var maxCreationTime *time.Time
-	if query.Cursor != nil {
-		limit = query.Cursor.Limit
-		offset = query.Cursor.Position
-		maxCreationTime = &query.Cursor.MaxCreationTime
+	if cursor != nil {
+		limit = cursor.Limit
+		offset = cursor.Position
+		maxCreationTime = &cursor.MaxCreationTime
 	}
 
 	filter := &sqlconfig.TransactionFilter{
@@ -86,15 +54,14 @@ func (s *TransactionService) ListTransactions(ctx context.Context, query Transac
 
 	rows, err := s.storage.Transactions.List(ctx, filter)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-
-	result := &TransactionListResult{}
 
 	if len(rows) == 0 {
-		return result, nil
+		return nil, nil, nil
 	}
 
+	var nextCursor *TransactionCursor
 	if len(rows) > limit {
 		rows = rows[:limit]
 
@@ -103,16 +70,16 @@ func (s *TransactionService) ListTransactions(ctx context.Context, query Transac
 			cursorMaxCreationTime = *maxCreationTime
 		}
 
-		result.NextCursor = &TransactionCursor{
+		nextCursor = &TransactionCursor{
 			Position:        offset + limit,
 			Limit:           limit,
 			MaxCreationTime: cursorMaxCreationTime,
 		}
 	}
 
-	result.Transactions = make([]Transaction, len(rows))
+	convertedTransactions := make([]Transaction, len(rows))
 	for i, row := range rows {
-		result.Transactions[i] = Transaction{
+		convertedTransactions[i] = Transaction{
 			ID:              row.ID,
 			AccountID:       row.AccountID,
 			CategoryID:      row.CategoryID,
@@ -123,5 +90,5 @@ func (s *TransactionService) ListTransactions(ctx context.Context, query Transac
 		}
 	}
 
-	return result, nil
+	return convertedTransactions, nextCursor, nil
 }

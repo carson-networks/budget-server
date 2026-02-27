@@ -5,16 +5,16 @@ package dbinfo
 
 import "github.com/aarondl/opt/null"
 
-var Transactions = Table[
-	transactionColumns,
-	transactionIndexes,
-	transactionForeignKeys,
-	transactionUniques,
-	transactionChecks,
+var Accounts = Table[
+	accountColumns,
+	accountIndexes,
+	accountForeignKeys,
+	accountUniques,
+	accountChecks,
 ]{
 	Schema: "",
-	Name:   "transactions",
-	Columns: transactionColumns{
+	Name:   "accounts",
+	Columns: accountColumns{
 		ID: column{
 			Name:      "id",
 			DBType:    "uuid",
@@ -24,35 +24,8 @@ var Transactions = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
-		AccountID: column{
-			Name:      "account_id",
-			DBType:    "uuid",
-			Default:   "",
-			Comment:   "",
-			Nullable:  false,
-			Generated: false,
-			AutoIncr:  false,
-		},
-		CategoryID: column{
-			Name:      "category_id",
-			DBType:    "uuid",
-			Default:   "",
-			Comment:   "",
-			Nullable:  false,
-			Generated: false,
-			AutoIncr:  false,
-		},
-		Amount: column{
-			Name:      "amount",
-			DBType:    "numeric",
-			Default:   "",
-			Comment:   "",
-			Nullable:  false,
-			Generated: false,
-			AutoIncr:  false,
-		},
-		TransactionName: column{
-			Name:      "transaction_name",
+		Name: column{
+			Name:      "name",
 			DBType:    "text",
 			Default:   "",
 			Comment:   "",
@@ -60,10 +33,37 @@ var Transactions = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
-		TransactionDate: column{
-			Name:      "transaction_date",
-			DBType:    "timestamp with time zone",
-			Default:   "now()",
+		Type: column{
+			Name:      "type",
+			DBType:    "smallint",
+			Default:   "",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		SubType: column{
+			Name:      "sub_type",
+			DBType:    "text",
+			Default:   "",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		Balance: column{
+			Name:      "balance",
+			DBType:    "numeric",
+			Default:   "0",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
+		StartingBalance: column{
+			Name:      "starting_balance",
+			DBType:    "numeric",
+			Default:   "0",
 			Comment:   "",
 			Nullable:  false,
 			Generated: false,
@@ -79,10 +79,10 @@ var Transactions = Table[
 			AutoIncr:  false,
 		},
 	},
-	Indexes: transactionIndexes{
-		TransactionsPkey: index{
+	Indexes: accountIndexes{
+		AccountsPkey: index{
 			Type: "btree",
-			Name: "transactions_pkey",
+			Name: "accounts_pkey",
 			Columns: []indexColumn{
 				{
 					Name:         "id",
@@ -99,7 +99,7 @@ var Transactions = Table[
 		},
 	},
 	PrimaryKey: &constraint{
-		Name:    "transactions_pkey",
+		Name:    "accounts_pkey",
 		Columns: []string{"id"},
 		Comment: "",
 	},
@@ -107,46 +107,46 @@ var Transactions = Table[
 	Comment: "",
 }
 
-type transactionColumns struct {
+type accountColumns struct {
 	ID              column
-	AccountID       column
-	CategoryID      column
-	Amount          column
-	TransactionName column
-	TransactionDate column
+	Name            column
+	Type            column
+	SubType         column
+	Balance         column
+	StartingBalance column
 	CreatedAt       column
 }
 
-func (c transactionColumns) AsSlice() []column {
+func (c accountColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.AccountID, c.CategoryID, c.Amount, c.TransactionName, c.TransactionDate, c.CreatedAt,
+		c.ID, c.Name, c.Type, c.SubType, c.Balance, c.StartingBalance, c.CreatedAt,
 	}
 }
 
-type transactionIndexes struct {
-	TransactionsPkey index
+type accountIndexes struct {
+	AccountsPkey index
 }
 
-func (i transactionIndexes) AsSlice() []index {
+func (i accountIndexes) AsSlice() []index {
 	return []index{
-		i.TransactionsPkey,
+		i.AccountsPkey,
 	}
 }
 
-type transactionForeignKeys struct{}
+type accountForeignKeys struct{}
 
-func (f transactionForeignKeys) AsSlice() []foreignKey {
+func (f accountForeignKeys) AsSlice() []foreignKey {
 	return []foreignKey{}
 }
 
-type transactionUniques struct{}
+type accountUniques struct{}
 
-func (u transactionUniques) AsSlice() []constraint {
+func (u accountUniques) AsSlice() []constraint {
 	return []constraint{}
 }
 
-type transactionChecks struct{}
+type accountChecks struct{}
 
-func (c transactionChecks) AsSlice() []check {
+func (c accountChecks) AsSlice() []check {
 	return []check{}
 }

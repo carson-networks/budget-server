@@ -17,11 +17,14 @@ var (
 )
 
 func Where[Q psql.Filterable]() struct {
+	Accounts     accountWhere[Q]
 	Transactions transactionWhere[Q]
 } {
 	return struct {
+		Accounts     accountWhere[Q]
 		Transactions transactionWhere[Q]
 	}{
+		Accounts:     buildAccountWhere[Q](Accounts.Columns),
 		Transactions: buildTransactionWhere[Q](Transactions.Columns),
 	}
 }

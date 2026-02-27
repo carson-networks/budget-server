@@ -21,12 +21,11 @@ type mockTransactionLister struct {
 	mock.Mock
 }
 
-func (m *mockTransactionLister) ListTransactions(ctx context.Context, query service.TransactionListQuery) (*service.TransactionListResult, error) {
-	args := m.Called(ctx, query)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*service.TransactionListResult), args.Error(1)
+func (m *mockTransactionLister) ListTransactions(ctx context.Context, cursor *service.TransactionCursor) ([]service.Transaction, *service.TransactionCursor, error) {
+	args := m.Called(ctx, cursor)
+	txs, _ := args.Get(0).([]service.Transaction)
+	next, _ := args.Get(1).(*service.TransactionCursor)
+	return txs, next, args.Error(2)
 }
 
 func newListTestAPI(t *testing.T, svc transactionLister) humatest.TestAPI {
@@ -43,9 +42,9 @@ func TestParseListTransactionsInput_NoCursor(t *testing.T) {
 		Body: ListTransactionsBody{},
 	}
 
-	query, err := parseListTransactionsInput(input)
+	cursor, err := parseListTransactionsInput(input)
 	assert.NoError(t, err)
-	assert.Nil(t, query.Cursor)
+	assert.Nil(t, cursor)
 }
 
 func TestParseListTransactionsInput_WithCursor(t *testing.T) {
@@ -61,14 +60,14 @@ func TestParseListTransactionsInput_WithCursor(t *testing.T) {
 		},
 	}
 
-	query, err := parseListTransactionsInput(input)
+	cursor, err := parseListTransactionsInput(input)
 	assert.NoError(t, err)
 
 	expectedMax, _ := time.Parse(time.RFC3339, cursorMaxTime)
-	assert.NotNil(t, query.Cursor)
-	assert.Equal(t, 40, query.Cursor.Position)
-	assert.Equal(t, 10, query.Cursor.Limit)
-	assert.Equal(t, expectedMax, query.Cursor.MaxCreationTime)
+	assert.NotNil(t, cursor)
+	assert.Equal(t, 40, cursor.Position)
+	assert.Equal(t, 10, cursor.Limit)
+	assert.Equal(t, expectedMax, cursor.MaxCreationTime)
 }
 
 func TestParseListTransactionsInput_InvalidCursorMaxCreationTime(t *testing.T) {
@@ -97,10 +96,10 @@ func TestParseListTransactionsInput_CursorPositionZero(t *testing.T) {
 		},
 	}
 
-	query, err := parseListTransactionsInput(input)
+	cursor, err := parseListTransactionsInput(input)
 	assert.NoError(t, err)
-	assert.NotNil(t, query.Cursor)
-	assert.Equal(t, 0, query.Cursor.Position)
+	assert.NotNil(t, cursor)
+	assert.Equal(t, 0, cursor.Position)
 }
 
 // -- HTTP integration tests --
@@ -110,10 +109,8 @@ func TestHTTP_ListTransactions_SinglePage(t *testing.T) {
 	txID := uuid.Must(uuid.NewV4())
 
 	mockSvc := new(mockTransactionLister)
-	mockSvc.On("ListTransactions", mock.Anything, mock.MatchedBy(func(q service.TransactionListQuery) bool {
-		return q.Cursor == nil
-	})).Return(&service.TransactionListResult{
-		Transactions: []service.Transaction{
+	mockSvc.On("ListTransactions", mock.Anything, (*service.TransactionCursor)(nil)).
+		Return([]service.Transaction{
 			{
 				ID:              txID,
 				AccountID:       uuid.Must(uuid.NewV4()),
@@ -123,8 +120,7 @@ func TestHTTP_ListTransactions_SinglePage(t *testing.T) {
 				TransactionDate: now,
 				CreatedAt:       now,
 			},
-		},
-	}, nil)
+		}, (*service.TransactionCursor)(nil), nil)
 
 	resp := newListTestAPI(t, mockSvc).Post("/v1/transaction/list", ListTransactionsBody{})
 
@@ -155,16 +151,12 @@ func TestHTTP_ListTransactions_MultiplePages(t *testing.T) {
 	}
 
 	mockSvc := new(mockTransactionLister)
-	mockSvc.On("ListTransactions", mock.Anything, mock.MatchedBy(func(q service.TransactionListQuery) bool {
-		return q.Cursor == nil
-	})).Return(&service.TransactionListResult{
-		Transactions: txs,
-		NextCursor: &service.TransactionCursor{
+	mockSvc.On("ListTransactions", mock.Anything, (*service.TransactionCursor)(nil)).
+		Return(txs, &service.TransactionCursor{
 			Position:        svcDefaultLimit,
 			Limit:           svcDefaultLimit,
 			MaxCreationTime: now,
-		},
-	}, nil)
+		}, nil)
 
 	resp := newListTestAPI(t, mockSvc).Post("/v1/transaction/list", ListTransactionsBody{})
 
@@ -183,12 +175,12 @@ func TestHTTP_ListTransactions_WithCursor(t *testing.T) {
 	maxTime := time.Date(2025, 5, 1, 10, 0, 0, 0, time.UTC)
 
 	mockSvc := new(mockTransactionLister)
-	mockSvc.On("ListTransactions", mock.Anything, mock.MatchedBy(func(q service.TransactionListQuery) bool {
-		return q.Cursor != nil &&
-			q.Cursor.Position == 40 &&
-			q.Cursor.Limit == 10 &&
-			q.Cursor.MaxCreationTime.Equal(maxTime)
-	})).Return(&service.TransactionListResult{}, nil)
+	mockSvc.On("ListTransactions", mock.Anything, mock.MatchedBy(func(c *service.TransactionCursor) bool {
+		return c != nil &&
+			c.Position == 40 &&
+			c.Limit == 10 &&
+			c.MaxCreationTime.Equal(maxTime)
+	})).Return(([]service.Transaction)(nil), (*service.TransactionCursor)(nil), nil)
 
 	resp := newListTestAPI(t, mockSvc).Post("/v1/transaction/list", ListTransactionsBody{
 		Cursor: &ListTransactionsCursor{
@@ -209,7 +201,7 @@ func TestHTTP_ListTransactions_WithCursor(t *testing.T) {
 func TestHTTP_ListTransactions_NoResults(t *testing.T) {
 	mockSvc := new(mockTransactionLister)
 	mockSvc.On("ListTransactions", mock.Anything, mock.Anything).
-		Return(&service.TransactionListResult{}, nil)
+		Return(([]service.Transaction)(nil), (*service.TransactionCursor)(nil), nil)
 
 	resp := newListTestAPI(t, mockSvc).Post("/v1/transaction/list", ListTransactionsBody{})
 
@@ -224,7 +216,7 @@ func TestHTTP_ListTransactions_NoResults(t *testing.T) {
 func TestHTTP_ListTransactions_ServiceError(t *testing.T) {
 	mockSvc := new(mockTransactionLister)
 	mockSvc.On("ListTransactions", mock.Anything, mock.Anything).
-		Return(nil, errors.New("database unavailable"))
+		Return(([]service.Transaction)(nil), (*service.TransactionCursor)(nil), errors.New("database unavailable"))
 
 	resp := newListTestAPI(t, mockSvc).Post("/v1/transaction/list", ListTransactionsBody{})
 

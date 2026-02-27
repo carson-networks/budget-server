@@ -42,7 +42,7 @@ type ListTransactionsOutput struct {
 
 // transactionLister is the interface for listing transactions.
 type transactionLister interface {
-	ListTransactions(ctx context.Context, query service.TransactionListQuery) (*service.TransactionListResult, error)
+	ListTransactions(ctx context.Context, cursor *service.TransactionCursor) ([]service.Transaction, *service.TransactionCursor, error)
 }
 
 // ListTransactionsHandler handles POST /v1/transaction/list.
@@ -70,32 +70,30 @@ func (h *ListTransactionsHandler) Register(api huma.API) {
 // parseListTransactionsInput parses and validates the API input.
 // When a cursor is provided, limit and maxCreationTime come from it.
 // Without a cursor, the service uses its default limit.
-func parseListTransactionsInput(input *ListTransactionsInput) (query service.TransactionListQuery, err error) {
+func parseListTransactionsInput(input *ListTransactionsInput) (cursor *service.TransactionCursor, err error) {
 	if input.Body.Cursor == nil {
-		return query, nil
+		return nil, nil
 	}
 
 	if input.Body.Cursor.Position < 0 {
-		return query, huma.NewError(http.StatusBadRequest, "cursor position must be non-negative")
+		return nil, huma.NewError(http.StatusBadRequest, "cursor position must be non-negative")
 	}
 
 	maxCreationTime, parseErr := time.Parse(time.RFC3339, input.Body.Cursor.MaxCreationTime)
 	if parseErr != nil {
-		return query, huma.NewError(http.StatusBadRequest, "invalid cursor maxCreationTime", parseErr)
+		return nil, huma.NewError(http.StatusBadRequest, "invalid cursor maxCreationTime", parseErr)
 	}
 
-	query.Cursor = &service.TransactionCursor{
+	return &service.TransactionCursor{
 		Position:        input.Body.Cursor.Position,
 		Limit:           input.Body.Cursor.Limit,
 		MaxCreationTime: maxCreationTime,
-	}
-	return query, nil
+	}, nil
 }
 
 func (h *ListTransactionsHandler) handle(ctx context.Context, input *ListTransactionsInput) (*ListTransactionsOutput, error) {
 	logData := logging.GetLogData(ctx)
-
-	query, err := parseListTransactionsInput(input)
+	requestCursor, err := parseListTransactionsInput(input)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +102,7 @@ func (h *ListTransactionsHandler) handle(ctx context.Context, input *ListTransac
 	if logData != nil {
 		stopTimer = logData.AddTiming("listTransactionsMs")
 	}
-	result, err := h.TransactionService.ListTransactions(ctx, query)
+	transactions, nextCursor, err := h.TransactionService.ListTransactions(ctx, requestCursor)
 	if stopTimer != nil {
 		stopTimer()
 	}
@@ -113,14 +111,14 @@ func (h *ListTransactionsHandler) handle(ctx context.Context, input *ListTransac
 	}
 
 	if logData != nil {
-		logData.AddData("transactionCount", len(result.Transactions))
+		logData.AddData("transactionCount", len(transactions))
 	}
 
 	resp := ListTransactionsResponseBody{
-		Transactions: make([]Transaction, len(result.Transactions)),
+		Transactions: make([]Transaction, len(transactions)),
 	}
 
-	for i, tx := range result.Transactions {
+	for i, tx := range transactions {
 		resp.Transactions[i] = Transaction{
 			ID:              tx.ID.String(),
 			AccountID:       tx.AccountID.String(),
@@ -132,11 +130,11 @@ func (h *ListTransactionsHandler) handle(ctx context.Context, input *ListTransac
 		}
 	}
 
-	if result.NextCursor != nil {
+	if nextCursor != nil {
 		resp.NextCursor = &ListTransactionsCursor{
-			Position:        result.NextCursor.Position,
-			Limit:           result.NextCursor.Limit,
-			MaxCreationTime: result.NextCursor.MaxCreationTime.Format(time.RFC3339),
+			Position:        nextCursor.Position,
+			Limit:           nextCursor.Limit,
+			MaxCreationTime: nextCursor.MaxCreationTime.Format(time.RFC3339),
 		}
 	}
 

@@ -1,6 +1,6 @@
 services:
   postgres:
-    container_name: postgres
+    container_name: budget-postgres
     environment:
       POSTGRES_PASSWORD: testpassword
     healthcheck:
@@ -20,13 +20,13 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    container_name: server
+    container_name: budget-server
     deploy:
       restart_policy:
         condition: on-failure
         delay: 60s
     environment:
-      POSTGRES_ADDRESS: postgres
+      POSTGRES_ADDRESS: budget-postgres
       POSTGRES_PORT: 5432
       POSTGRES_DB: postgres
       POSTGRES_USERNAME: postgres
@@ -40,12 +40,12 @@ services:
 
   budget-server-local:
     build: .
-    container_name: server-local
+    container_name: budget-server-local
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      POSTGRES_ADDRESS: postgres
+      POSTGRES_ADDRESS: budget-postgres
       POSTGRES_PORT: 5432
       POSTGRES_DB: postgres
       POSTGRES_USERNAME: postgres
