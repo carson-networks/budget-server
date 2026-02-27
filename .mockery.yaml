@@ -7,3 +7,4 @@ packages:
   github.com/carson-networks/budget-server/internal/storage/sqlconfig:
     interfaces:
       ITransactionTable:
+      IAccountTable:

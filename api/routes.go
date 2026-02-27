@@ -8,6 +8,7 @@ import (
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
 	"github.com/sirupsen/logrus"
 
+	"github.com/carson-networks/budget-server/internal/handlers/v1/account"
 	"github.com/carson-networks/budget-server/internal/handlers/v1/status"
 	"github.com/carson-networks/budget-server/internal/handlers/v1/transaction"
 	"github.com/carson-networks/budget-server/internal/logging"
@@ -85,6 +86,12 @@ func (r *Rest) Serve() {
 
 	listTransactionsHandler := transaction.NewListTransactionsHandler(r.Service.Transaction)
 	listTransactionsHandler.Register(api)
+
+	createAccountHandler := account.NewCreateAccountHandler(r.Service.Account)
+	createAccountHandler.Register(api)
+
+	listAccountsHandler := account.NewListAccountsHandler(r.Service.Account)
+	listAccountsHandler.Register(api)
 
 	handler := loggingMiddleware(r.Logger)(corsMiddleware(mux))
 

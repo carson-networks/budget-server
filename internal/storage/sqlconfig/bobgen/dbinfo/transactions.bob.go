@@ -69,6 +69,15 @@ var Transactions = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
+		CreatedAt: column{
+			Name:      "created_at",
+			DBType:    "timestamp with time zone",
+			Default:   "now()",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
 	},
 	Indexes: transactionIndexes{
 		TransactionsPkey: index{
@@ -105,11 +114,12 @@ type transactionColumns struct {
 	Amount          column
 	TransactionName column
 	TransactionDate column
+	CreatedAt       column
 }
 
 func (c transactionColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.AccountID, c.CategoryID, c.Amount, c.TransactionName, c.TransactionDate,
+		c.ID, c.AccountID, c.CategoryID, c.Amount, c.TransactionName, c.TransactionDate, c.CreatedAt,
 	}
 }
 
