@@ -4,9 +4,10 @@ import (
 	"context"
 	"time"
 
+	"github.com/gofrs/uuid/v5"
+
 	"github.com/carson-networks/budget-server/internal/storage"
 	"github.com/carson-networks/budget-server/internal/storage/sqlconfig"
-	"github.com/gofrs/uuid/v5"
 )
 
 const defaultLimit = 20

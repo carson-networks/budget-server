@@ -3,7 +3,6 @@ package sqlconfig
 import (
 	"context"
 	"database/sql"
-	"time"
 
 	"github.com/aarondl/opt/omit"
 	"github.com/gofrs/uuid/v5"
@@ -17,52 +16,12 @@ import (
 	"github.com/carson-networks/budget-server/internal/storage/sqlconfig/bobgen"
 )
 
-// Account represents an account record.
-type Account struct {
-	ID              uuid.UUID
-	Name            string
-	Type            AccountType
-	SubType         string
-	Balance         decimal.Decimal
-	StartingBalance decimal.Decimal
-	CreatedAt       time.Time
-}
+var _ IAccountTable = (*AccountsTable)(nil)
 
-// AccountCreate is the input for creating a new account.
-type AccountCreate struct {
-	Name            string
-	Type            AccountType
-	SubType         string
-	Balance         decimal.Decimal
-	StartingBalance decimal.Decimal
-}
-
-// AccountFilter specifies filters for listing accounts.
-type AccountFilter struct {
-	Limit  int
-	Offset int
-}
-
-// IAccountTable defines the interface for account storage operations.
-// This abstraction allows swapping the implementation (e.g. Bob) without changing callers.
-//
-//go:generate mockery --name IAccountTable --output mock_IAccountTable.go
-type IAccountTable interface {
-	FindByID(ctx context.Context, id uuid.UUID) (*Account, error)
-	Insert(ctx context.Context, create *AccountCreate) (uuid.UUID, error)
-	List(ctx context.Context, filter *AccountFilter) ([]*Account, error)
-	UpdateBalance(ctx context.Context, id uuid.UUID, balance decimal.Decimal) error
-}
-
-// AccountsTable provides access to the accounts table.
 type AccountsTable struct {
 	exec bob.Executor
 }
 
-// Ensure AccountsTable implements IAccountTable at compile time.
-var _ IAccountTable = (*AccountsTable)(nil)
-
-// NewAccountsTable creates an AccountsTable for the given database.
 func NewAccountsTable(db *sql.DB) AccountsTable {
 	return AccountsTable{exec: bob.NewDB(db)}
 }
@@ -125,16 +84,4 @@ func (t *AccountsTable) UpdateBalance(ctx context.Context, id uuid.UUID, balance
 	}
 	_, err := bobgen.Accounts.Update(setter.UpdateMod(), um.Where(bobgen.Accounts.Columns.ID.EQ(psql.Arg(id)))).Exec(ctx, t.exec)
 	return err
-}
-
-func bobAccountToAccount(row *bobgen.Account) *Account {
-	return &Account{
-		ID:              row.ID,
-		Name:            row.Name,
-		Type:            AccountType(row.Type),
-		SubType:         row.SubType,
-		Balance:         row.Balance,
-		StartingBalance: row.StartingBalance,
-		CreatedAt:       row.CreatedAt,
-	}
 }
