@@ -1,4 +1,4 @@
-package sqlconfig
+package account
 
 import (
 	"context"
@@ -20,19 +20,30 @@ type Account struct {
 	CreatedAt       time.Time
 }
 
+// AccountFilter specifies filters for listing accounts.
+type AccountFilter struct {
+	Limit  int
+	Offset int
+}
+
+// AccountCursor identifies a position in a paginated result set.
+type AccountCursor struct {
+	Position int
+	Limit    int
+}
+
+// AccountListResult contains a page of accounts and an optional next cursor.
+type AccountListResult struct {
+	Accounts   []*Account
+	NextCursor *AccountCursor
+}
+
 // AccountCreate is the input for creating a new account.
 type AccountCreate struct {
 	Name            string
 	Type            AccountType
 	SubType         string
-	Balance         decimal.Decimal
 	StartingBalance decimal.Decimal
-}
-
-// AccountFilter specifies filters for listing accounts.
-type AccountFilter struct {
-	Limit  int
-	Offset int
 }
 
 // IAccountTable defines the interface for account storage operations.
@@ -40,7 +51,7 @@ type AccountFilter struct {
 //
 //go:generate mockery --name IAccountTable --output mock_IAccountTable.go
 type IAccountTable interface {
-	FindByID(ctx context.Context, id uuid.UUID) (*Account, error)
+	FindByID(ctx context.Context, id uuid.UUID, forUpdate bool) (*Account, error)
 	Insert(ctx context.Context, create *AccountCreate) (uuid.UUID, error)
 	List(ctx context.Context, filter *AccountFilter) ([]*Account, error)
 	UpdateBalance(ctx context.Context, id uuid.UUID, balance decimal.Decimal) error

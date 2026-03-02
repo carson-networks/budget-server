@@ -1,19 +1,31 @@
 package storage
 
 import (
-	"database/sql"
+	"context"
 	"log"
 
 	_ "github.com/lib/pq"
+	"github.com/stephenafamo/bob"
 
 	"github.com/carson-networks/budget-server/internal/config"
-	"github.com/carson-networks/budget-server/internal/storage/sqlconfig"
 )
 
 type Storage struct {
-	DB           *sql.DB
-	Transactions sqlconfig.ITransactionTable
-	Accounts     sqlconfig.IAccountTable
+	sql bob.DB
+}
+
+func (s *Storage) Read() *Reader {
+	return NewReader(s.sql)
+}
+
+func (s *Storage) Write(ctx context.Context) (*Writer, error) {
+	tx, err := s.sql.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	w := NewWriter(tx)
+	return &w, nil
 }
 
 func NewStorage(env *config.Config) *Storage {
@@ -21,16 +33,10 @@ func NewStorage(env *config.Config) *Storage {
 		env.PostgresPassword + "@" + env.PostgresAddress + ":" +
 		env.PostgresPort + "/" + env.PostgresDB + "?sslmode=disable"
 
-	db, err := sql.Open("postgres", connStr)
+	db, err := bob.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	transactionsTable := sqlconfig.NewTransactionsTable(db)
-	accountsTable := sqlconfig.NewAccountsTable(db)
-	return &Storage{
-		DB:           db,
-		Transactions: &transactionsTable,
-		Accounts:     &accountsTable,
-	}
+	return &Storage{sql: db}
 }

@@ -8,7 +8,8 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	"github.com/carson-networks/budget-server/internal/logging"
-	"github.com/carson-networks/budget-server/internal/service"
+	"github.com/carson-networks/budget-server/internal/operator"
+	"github.com/carson-networks/budget-server/internal/storage/account"
 )
 
 // ListAccountsCursor represents a pagination cursor in request query params.
@@ -37,19 +38,20 @@ type ListAccountsOutput struct {
 	Body ListAccountsResponseBody
 }
 
-// accountLister is the interface for listing accounts.
-type accountLister interface {
-	ListAccounts(ctx context.Context, cursor *service.AccountCursor) ([]service.Account, *service.AccountCursor, error)
+// accountReader is the interface for listing accounts.
+type accountReader interface {
+	List(ctx context.Context, filter *account.AccountFilter) (*account.AccountListResult, error)
 }
 
 // ListAccountsHandler handles GET /v1/accounts.
 type ListAccountsHandler struct {
-	AccountService accountLister
+	AccountReader accountReader
+	Operator      *operator.OperatorDelegator
 }
 
 // NewListAccountsHandler creates a new ListAccountsHandler.
-func NewListAccountsHandler(svc accountLister) *ListAccountsHandler {
-	return &ListAccountsHandler{AccountService: svc}
+func NewListAccountsHandler(reader accountReader, op *operator.OperatorDelegator) *ListAccountsHandler {
+	return &ListAccountsHandler{AccountReader: reader, Operator: op}
 }
 
 // Register registers the list accounts endpoint with the Huma API.
@@ -71,21 +73,26 @@ func (h *ListAccountsHandler) handle(ctx context.Context, input *ListAccountsInp
 	if limit == 0 {
 		limit = 20
 	}
-	cursor := &service.AccountCursor{
-		Position: input.Position,
-		Limit:    limit,
+	filter := &account.AccountFilter{
+		Limit:  limit,
+		Offset: input.Position,
 	}
 
 	var stopTimer func()
 	if logData != nil {
 		stopTimer = logData.AddTiming("listAccountsMs")
 	}
-	accounts, nextCursor, err := h.AccountService.ListAccounts(ctx, cursor)
+	result, err := h.AccountReader.List(ctx, filter)
 	if stopTimer != nil {
 		stopTimer()
 	}
 	if err != nil {
 		return nil, huma.NewError(http.StatusInternalServerError, "failed to list accounts", err)
+	}
+
+	accounts := result.Accounts
+	if accounts == nil {
+		accounts = []*account.Account{}
 	}
 
 	if logData != nil {
@@ -108,13 +115,13 @@ func (h *ListAccountsHandler) handle(ctx context.Context, input *ListAccountsInp
 		}
 	}
 
-	if nextCursor != nil {
+	if result.NextCursor != nil {
 		resp.NextCursor = &struct {
 			Position int `json:"position" doc:"Offset for next page"`
 			Limit    int `json:"limit" doc:"Page size"`
 		}{
-			Position: nextCursor.Position,
-			Limit:    nextCursor.Limit,
+			Position: result.NextCursor.Position,
+			Limit:    result.NextCursor.Limit,
 		}
 	}
 

@@ -6,5 +6,10 @@ dir: "{{.InterfaceDir}}"
 packages:
   github.com/carson-networks/budget-server/internal/storage/sqlconfig:
     interfaces:
-      ITransactionTable:
       IAccountTable:
+  github.com/carson-networks/budget-server/internal/storage/transaction:
+    interfaces:
+      ITransactionTable:
+  github.com/carson-networks/budget-server/internal/storage:
+    interfaces:
+      TransactionStore:

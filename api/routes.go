@@ -12,7 +12,8 @@ import (
 	"github.com/carson-networks/budget-server/internal/handlers/v1/status"
 	"github.com/carson-networks/budget-server/internal/handlers/v1/transaction"
 	"github.com/carson-networks/budget-server/internal/logging"
-	"github.com/carson-networks/budget-server/internal/service"
+	"github.com/carson-networks/budget-server/internal/operator"
+	"github.com/carson-networks/budget-server/internal/storage"
 )
 
 func corsMiddleware(next http.Handler) http.Handler {
@@ -67,9 +68,10 @@ func loggingMiddleware(logger *logrus.Logger) func(http.Handler) http.Handler {
 }
 
 type Rest struct {
-	Logger  *logrus.Logger
-	Port    string
-	Service *service.Service
+	Logger   *logrus.Logger
+	Port     string
+	Storage  *storage.Storage
+	Operator *operator.OperatorDelegator
 }
 
 func (r *Rest) Serve() {
@@ -78,20 +80,20 @@ func (r *Rest) Serve() {
 	config := huma.DefaultConfig("Budget API", "1.0.0")
 	api := humago.New(mux, config)
 
-	statusHandler := status.NewHandler()
+	statusHandler := status.NewHandler(r.Operator)
 	mux.HandleFunc("/status", logging.LoggingWrapper("Status", r.Logger, statusHandler.Handler))
 
-	createTransactionHandler := transaction.NewCreateTransactionHandler(r.Service.Transaction)
-	createTransactionHandler.Register(api)
-
-	listTransactionsHandler := transaction.NewListTransactionsHandler(r.Service.Transaction)
+	listTransactionsHandler := transaction.NewListTransactionsHandler(r.Storage.Read().Transactions)
 	listTransactionsHandler.Register(api)
 
-	createAccountHandler := account.NewCreateAccountHandler(r.Service.Account)
+	listAccountsHandler := account.NewListAccountsHandler(r.Storage.Read().Accounts, r.Operator)
+	listAccountsHandler.Register(api)
+
+	createAccountHandler := account.NewCreateAccountHandler(r.Operator)
 	createAccountHandler.Register(api)
 
-	listAccountsHandler := account.NewListAccountsHandler(r.Service.Account)
-	listAccountsHandler.Register(api)
+	createTransactionHandler := transaction.NewCreateTransactionHandler(r.Operator)
+	createTransactionHandler.Register(api)
 
 	handler := loggingMiddleware(r.Logger)(corsMiddleware(mux))
 

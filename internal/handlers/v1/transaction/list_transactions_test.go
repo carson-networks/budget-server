@@ -14,24 +14,23 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github.com/carson-networks/budget-server/internal/service"
+	"github.com/carson-networks/budget-server/internal/storage/transaction"
 )
 
-type mockTransactionLister struct {
+type mockTransactionReader struct {
 	mock.Mock
 }
 
-func (m *mockTransactionLister) ListTransactions(ctx context.Context, cursor *service.TransactionCursor) ([]service.Transaction, *service.TransactionCursor, error) {
-	args := m.Called(ctx, cursor)
-	txs, _ := args.Get(0).([]service.Transaction)
-	next, _ := args.Get(1).(*service.TransactionCursor)
-	return txs, next, args.Error(2)
+func (m *mockTransactionReader) List(ctx context.Context, filter *transaction.TransactionFilter) (*transaction.TransactionListResult, error) {
+	args := m.Called(ctx, filter)
+	result, _ := args.Get(0).(*transaction.TransactionListResult)
+	return result, args.Error(1)
 }
 
-func newListTestAPI(t *testing.T, svc transactionLister) humatest.TestAPI {
+func newListTestAPI(t *testing.T, reader transactionReader) humatest.TestAPI {
 	t.Helper()
 	_, api := humatest.New(t)
-	NewListTransactionsHandler(svc).Register(api)
+	NewListTransactionsHandler(reader).Register(api)
 	return api
 }
 
@@ -42,9 +41,12 @@ func TestParseListTransactionsInput_NoCursor(t *testing.T) {
 		Body: ListTransactionsBody{},
 	}
 
-	cursor, err := parseListTransactionsInput(input)
+	filter, err := parseListTransactionsInput(input)
 	assert.NoError(t, err)
-	assert.Nil(t, cursor)
+	assert.NotNil(t, filter)
+	assert.Equal(t, 20, filter.Limit)
+	assert.Equal(t, 0, filter.Offset)
+	assert.Nil(t, filter.MaxCreationTime)
 }
 
 func TestParseListTransactionsInput_WithCursor(t *testing.T) {
@@ -60,14 +62,15 @@ func TestParseListTransactionsInput_WithCursor(t *testing.T) {
 		},
 	}
 
-	cursor, err := parseListTransactionsInput(input)
+	filter, err := parseListTransactionsInput(input)
 	assert.NoError(t, err)
 
 	expectedMax, _ := time.Parse(time.RFC3339, cursorMaxTime)
-	assert.NotNil(t, cursor)
-	assert.Equal(t, 40, cursor.Position)
-	assert.Equal(t, 10, cursor.Limit)
-	assert.Equal(t, expectedMax, cursor.MaxCreationTime)
+	assert.NotNil(t, filter)
+	assert.Equal(t, 40, filter.Offset)
+	assert.Equal(t, 10, filter.Limit)
+	assert.NotNil(t, filter.MaxCreationTime)
+	assert.True(t, filter.MaxCreationTime.Equal(expectedMax))
 }
 
 func TestParseListTransactionsInput_InvalidCursorMaxCreationTime(t *testing.T) {
@@ -96,10 +99,10 @@ func TestParseListTransactionsInput_CursorPositionZero(t *testing.T) {
 		},
 	}
 
-	cursor, err := parseListTransactionsInput(input)
+	filter, err := parseListTransactionsInput(input)
 	assert.NoError(t, err)
-	assert.NotNil(t, cursor)
-	assert.Equal(t, 0, cursor.Position)
+	assert.NotNil(t, filter)
+	assert.Equal(t, 0, filter.Offset)
 }
 
 // -- HTTP integration tests --
@@ -108,21 +111,24 @@ func TestHTTP_ListTransactions_SinglePage(t *testing.T) {
 	now := time.Date(2025, 6, 1, 12, 0, 0, 0, time.UTC)
 	txID := uuid.Must(uuid.NewV4())
 
-	mockSvc := new(mockTransactionLister)
-	mockSvc.On("ListTransactions", mock.Anything, (*service.TransactionCursor)(nil)).
-		Return([]service.Transaction{
-			{
-				ID:              txID,
-				AccountID:       uuid.Must(uuid.NewV4()),
-				CategoryID:      uuid.Must(uuid.NewV4()),
-				Amount:          decimal.RequireFromString("10.00"),
-				TransactionName: "Coffee",
-				TransactionDate: now,
-				CreatedAt:       now,
+	mockReader := new(mockTransactionReader)
+	mockReader.On("List", mock.Anything, mock.Anything).
+		Return(&transaction.TransactionListResult{
+			Transactions: []*transaction.Transaction{
+				{
+					ID:              txID,
+					AccountID:       uuid.Must(uuid.NewV4()),
+					CategoryID:      uuid.Must(uuid.NewV4()),
+					Amount:          decimal.RequireFromString("10.00"),
+					TransactionName: "Coffee",
+					TransactionDate: now,
+					CreatedAt:       now,
+				},
 			},
-		}, (*service.TransactionCursor)(nil), nil)
+			NextCursor: nil,
+		}, nil)
 
-	resp := newListTestAPI(t, mockSvc).Post("/v1/transaction/list", ListTransactionsBody{})
+	resp := newListTestAPI(t, mockReader).Post("/v1/transaction/list", ListTransactionsBody{})
 
 	assert.Equal(t, http.StatusOK, resp.Code)
 	var body ListTransactionsResponseBody
@@ -130,16 +136,15 @@ func TestHTTP_ListTransactions_SinglePage(t *testing.T) {
 	assert.Len(t, body.Transactions, 1)
 	assert.Equal(t, txID.String(), body.Transactions[0].ID)
 	assert.Nil(t, body.NextCursor)
-	mockSvc.AssertExpectations(t)
+	mockReader.AssertExpectations(t)
 }
 
 func TestHTTP_ListTransactions_MultiplePages(t *testing.T) {
 	now := time.Date(2025, 6, 1, 12, 0, 0, 0, time.UTC)
 	svcDefaultLimit := 20
 
-	txs := make([]service.Transaction, 2)
-	for i := range txs {
-		txs[i] = service.Transaction{
+	txs := []*transaction.Transaction{
+		{
 			ID:              uuid.Must(uuid.NewV4()),
 			AccountID:       uuid.Must(uuid.NewV4()),
 			CategoryID:      uuid.Must(uuid.NewV4()),
@@ -147,18 +152,30 @@ func TestHTTP_ListTransactions_MultiplePages(t *testing.T) {
 			TransactionName: "Item",
 			TransactionDate: now,
 			CreatedAt:       now,
-		}
+		},
+		{
+			ID:              uuid.Must(uuid.NewV4()),
+			AccountID:       uuid.Must(uuid.NewV4()),
+			CategoryID:      uuid.Must(uuid.NewV4()),
+			Amount:          decimal.RequireFromString("5.00"),
+			TransactionName: "Item",
+			TransactionDate: now,
+			CreatedAt:       now,
+		},
 	}
 
-	mockSvc := new(mockTransactionLister)
-	mockSvc.On("ListTransactions", mock.Anything, (*service.TransactionCursor)(nil)).
-		Return(txs, &service.TransactionCursor{
-			Position:        svcDefaultLimit,
-			Limit:           svcDefaultLimit,
-			MaxCreationTime: now,
+	mockReader := new(mockTransactionReader)
+	mockReader.On("List", mock.Anything, mock.Anything).
+		Return(&transaction.TransactionListResult{
+			Transactions: txs,
+			NextCursor: &transaction.TransactionCursor{
+				Position:        svcDefaultLimit,
+				Limit:           svcDefaultLimit,
+				MaxCreationTime: now,
+			},
 		}, nil)
 
-	resp := newListTestAPI(t, mockSvc).Post("/v1/transaction/list", ListTransactionsBody{})
+	resp := newListTestAPI(t, mockReader).Post("/v1/transaction/list", ListTransactionsBody{})
 
 	assert.Equal(t, http.StatusOK, resp.Code)
 	var body ListTransactionsResponseBody
@@ -168,21 +185,25 @@ func TestHTTP_ListTransactions_MultiplePages(t *testing.T) {
 	assert.Equal(t, svcDefaultLimit, body.NextCursor.Position)
 	assert.Equal(t, svcDefaultLimit, body.NextCursor.Limit)
 	assert.Equal(t, now.Format(time.RFC3339), body.NextCursor.MaxCreationTime)
-	mockSvc.AssertExpectations(t)
+	mockReader.AssertExpectations(t)
 }
 
 func TestHTTP_ListTransactions_WithCursor(t *testing.T) {
 	maxTime := time.Date(2025, 5, 1, 10, 0, 0, 0, time.UTC)
 
-	mockSvc := new(mockTransactionLister)
-	mockSvc.On("ListTransactions", mock.Anything, mock.MatchedBy(func(c *service.TransactionCursor) bool {
-		return c != nil &&
-			c.Position == 40 &&
-			c.Limit == 10 &&
-			c.MaxCreationTime.Equal(maxTime)
-	})).Return(([]service.Transaction)(nil), (*service.TransactionCursor)(nil), nil)
+	mockReader := new(mockTransactionReader)
+	mockReader.On("List", mock.Anything, mock.MatchedBy(func(f *transaction.TransactionFilter) bool {
+		return f != nil &&
+			f.Offset == 40 &&
+			f.Limit == 10 &&
+			f.MaxCreationTime != nil &&
+			f.MaxCreationTime.Equal(maxTime)
+	})).Return(&transaction.TransactionListResult{
+		Transactions: nil,
+		NextCursor:   nil,
+	}, nil)
 
-	resp := newListTestAPI(t, mockSvc).Post("/v1/transaction/list", ListTransactionsBody{
+	resp := newListTestAPI(t, mockReader).Post("/v1/transaction/list", ListTransactionsBody{
 		Cursor: &ListTransactionsCursor{
 			Position:        40,
 			Limit:           10,
@@ -195,39 +216,42 @@ func TestHTTP_ListTransactions_WithCursor(t *testing.T) {
 	assert.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
 	assert.Empty(t, body.Transactions)
 	assert.Nil(t, body.NextCursor)
-	mockSvc.AssertExpectations(t)
+	mockReader.AssertExpectations(t)
 }
 
 func TestHTTP_ListTransactions_NoResults(t *testing.T) {
-	mockSvc := new(mockTransactionLister)
-	mockSvc.On("ListTransactions", mock.Anything, mock.Anything).
-		Return(([]service.Transaction)(nil), (*service.TransactionCursor)(nil), nil)
+	mockReader := new(mockTransactionReader)
+	mockReader.On("List", mock.Anything, mock.Anything).
+		Return(&transaction.TransactionListResult{
+			Transactions: nil,
+			NextCursor:   nil,
+		}, nil)
 
-	resp := newListTestAPI(t, mockSvc).Post("/v1/transaction/list", ListTransactionsBody{})
+	resp := newListTestAPI(t, mockReader).Post("/v1/transaction/list", ListTransactionsBody{})
 
 	assert.Equal(t, http.StatusOK, resp.Code)
 	var body ListTransactionsResponseBody
 	assert.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
 	assert.Empty(t, body.Transactions)
 	assert.Nil(t, body.NextCursor)
-	mockSvc.AssertExpectations(t)
+	mockReader.AssertExpectations(t)
 }
 
 func TestHTTP_ListTransactions_ServiceError(t *testing.T) {
-	mockSvc := new(mockTransactionLister)
-	mockSvc.On("ListTransactions", mock.Anything, mock.Anything).
-		Return(([]service.Transaction)(nil), (*service.TransactionCursor)(nil), errors.New("database unavailable"))
+	mockReader := new(mockTransactionReader)
+	mockReader.On("List", mock.Anything, mock.Anything).
+		Return((*transaction.TransactionListResult)(nil), errors.New("database unavailable"))
 
-	resp := newListTestAPI(t, mockSvc).Post("/v1/transaction/list", ListTransactionsBody{})
+	resp := newListTestAPI(t, mockReader).Post("/v1/transaction/list", ListTransactionsBody{})
 
 	assert.Equal(t, http.StatusInternalServerError, resp.Code)
-	mockSvc.AssertExpectations(t)
+	mockReader.AssertExpectations(t)
 }
 
 func TestHTTP_ListTransactions_InvalidCursorMaxCreationTime(t *testing.T) {
-	mockSvc := new(mockTransactionLister)
+	mockReader := new(mockTransactionReader)
 
-	resp := newListTestAPI(t, mockSvc).Post("/v1/transaction/list", ListTransactionsBody{
+	resp := newListTestAPI(t, mockReader).Post("/v1/transaction/list", ListTransactionsBody{
 		Cursor: &ListTransactionsCursor{
 			Position:        0,
 			Limit:           10,
@@ -236,5 +260,5 @@ func TestHTTP_ListTransactions_InvalidCursorMaxCreationTime(t *testing.T) {
 	})
 
 	assert.Equal(t, http.StatusUnprocessableEntity, resp.Code)
-	mockSvc.AssertNotCalled(t, "ListTransactions")
+	mockReader.AssertNotCalled(t, "List")
 }

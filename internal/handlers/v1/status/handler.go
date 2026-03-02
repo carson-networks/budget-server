@@ -5,12 +5,15 @@ import (
 	"net/http"
 
 	"github.com/carson-networks/budget-server/internal/logging"
+	"github.com/carson-networks/budget-server/internal/operator"
 )
 
-type Handler struct{}
+type Handler struct {
+	Operator *operator.OperatorDelegator
+}
 
-func NewHandler() Handler {
-	return Handler{}
+func NewHandler(op *operator.OperatorDelegator) Handler {
+	return Handler{Operator: op}
 }
 
 func (h *Handler) Handler(w http.ResponseWriter, req *http.Request, logData *logging.LogData) error {
