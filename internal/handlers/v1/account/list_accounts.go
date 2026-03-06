@@ -8,7 +8,6 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 
 	"github.com/carson-networks/budget-server/internal/logging"
-	"github.com/carson-networks/budget-server/internal/operator"
 	"github.com/carson-networks/budget-server/internal/storage/account"
 )
 
@@ -46,12 +45,11 @@ type accountReader interface {
 // ListAccountsHandler handles GET /v1/accounts.
 type ListAccountsHandler struct {
 	AccountReader accountReader
-	Operator      *operator.OperatorDelegator
 }
 
 // NewListAccountsHandler creates a new ListAccountsHandler.
-func NewListAccountsHandler(reader accountReader, op *operator.OperatorDelegator) *ListAccountsHandler {
-	return &ListAccountsHandler{AccountReader: reader, Operator: op}
+func NewListAccountsHandler(reader accountReader) *ListAccountsHandler {
+	return &ListAccountsHandler{AccountReader: reader}
 }
 
 // Register registers the list accounts endpoint with the Huma API.

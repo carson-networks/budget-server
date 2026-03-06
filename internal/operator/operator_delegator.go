@@ -7,6 +7,11 @@ import (
 	"github.com/carson-networks/budget-server/internal/operator/actions"
 )
 
+// IProcessor defines the interface for processing actions. Used by handlers to enqueue work.
+type IProcessor interface {
+	Process(ctx context.Context, action actions.IAction) error
+}
+
 // OperatorDelegator manages the queue, starts/stops Operators (workers), and enqueues items.
 type OperatorDelegator struct {
 	storage    IStorage

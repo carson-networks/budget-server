@@ -34,11 +34,11 @@ type CreateTransactionOutput struct {
 
 // CreateTransactionHandler handles POST /v1/transaction.
 type CreateTransactionHandler struct {
-	Operator *operator.OperatorDelegator
+	Operator operator.IProcessor
 }
 
 // NewCreateTransactionHandler creates a new CreateTransactionHandler.
-func NewCreateTransactionHandler(op *operator.OperatorDelegator) *CreateTransactionHandler {
+func NewCreateTransactionHandler(op operator.IProcessor) *CreateTransactionHandler {
 	return &CreateTransactionHandler{Operator: op}
 }
 

@@ -32,11 +32,11 @@ type CreateAccountOutput struct {
 
 // CreateAccountHandler handles POST /v1/accounts.
 type CreateAccountHandler struct {
-	Operator *operator.OperatorDelegator
+	Operator operator.IProcessor
 }
 
 // NewCreateAccountHandler creates a new CreateAccountHandler.
-func NewCreateAccountHandler(op *operator.OperatorDelegator) *CreateAccountHandler {
+func NewCreateAccountHandler(op operator.IProcessor) *CreateAccountHandler {
 	return &CreateAccountHandler{Operator: op}
 }
 

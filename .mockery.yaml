@@ -11,6 +11,7 @@ packages:
   github.com/carson-networks/budget-server/internal/operator:
     interfaces:
       IStorage:
+      IProcessor:
   github.com/carson-networks/budget-server/internal/operator/actions:
     interfaces:
       IAction:

@@ -86,7 +86,7 @@ func (r *Rest) Serve() {
 	listTransactionsHandler := transaction.NewListTransactionsHandler(r.Storage.Read().Transactions)
 	listTransactionsHandler.Register(api)
 
-	listAccountsHandler := account.NewListAccountsHandler(r.Storage.Read().Accounts, r.Operator)
+	listAccountsHandler := account.NewListAccountsHandler(r.Storage.Read().Accounts)
 	listAccountsHandler.Register(api)
 
 	createAccountHandler := account.NewCreateAccountHandler(r.Operator)
