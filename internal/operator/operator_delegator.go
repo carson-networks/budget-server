@@ -5,19 +5,18 @@ import (
 	"sync"
 
 	"github.com/carson-networks/budget-server/internal/operator/actions"
-	"github.com/carson-networks/budget-server/internal/storage"
 )
 
 // OperatorDelegator manages the queue, starts/stops Operators (workers), and enqueues items.
 type OperatorDelegator struct {
-	storage    *storage.Storage
+	storage    IStorage
 	queue      chan ActionItem
 	numWorkers int
 	wg         sync.WaitGroup
 	stopOnce   sync.Once
 }
 
-func NewOperatorDelegator(s *storage.Storage, numWorkers int) *OperatorDelegator {
+func NewOperatorDelegator(s IStorage, numWorkers int) *OperatorDelegator {
 	if numWorkers < 1 {
 		numWorkers = 1
 	}

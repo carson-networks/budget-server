@@ -7,13 +7,18 @@ import (
 	"github.com/carson-networks/budget-server/internal/storage"
 )
 
+// IStorage defines the storage write operations used by the operator.
+type IStorage interface {
+	Write(ctx context.Context) (*storage.Writer, error)
+}
+
 // Operator is the worker that processes items from the queue.
 type Operator struct {
-	storage *storage.Storage
+	storage IStorage
 	queue   chan ActionItem
 }
 
-func NewOperator(s *storage.Storage, queue chan ActionItem) *Operator {
+func NewOperator(s IStorage, queue chan ActionItem) *Operator {
 	return &Operator{
 		storage: s,
 		queue:   queue,

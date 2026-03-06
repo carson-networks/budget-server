@@ -16,7 +16,7 @@ func createTestLogData() *logging.LogData {
 }
 
 func TestHandler_GoodMethod(t *testing.T) {
-	statusHandler := NewHandler()
+	statusHandler := NewHandler(nil)
 	req := httptest.NewRequest(http.MethodGet, "/status", nil)
 
 	w := httptest.NewRecorder()
@@ -29,7 +29,7 @@ func TestHandler_GoodMethod(t *testing.T) {
 }
 
 func TestHandler_BadMethod(t *testing.T) {
-	statusHandler := NewHandler()
+	statusHandler := NewHandler(nil)
 	req := httptest.NewRequest(http.MethodPost, "/status", nil)
 	w := httptest.NewRecorder()
 

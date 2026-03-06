@@ -4,12 +4,13 @@ mockname: "Mock{{.InterfaceName}}"
 inpackage: true
 dir: "{{.InterfaceDir}}"
 packages:
-  github.com/carson-networks/budget-server/internal/storage/sqlconfig:
-    interfaces:
-      IAccountTable:
-  github.com/carson-networks/budget-server/internal/storage/transaction:
-    interfaces:
-      ITransactionTable:
   github.com/carson-networks/budget-server/internal/storage:
     interfaces:
-      TransactionStore:
+      IAccountWriter:
+      ITransactionWriter:
+  github.com/carson-networks/budget-server/internal/operator:
+    interfaces:
+      IStorage:
+  github.com/carson-networks/budget-server/internal/operator/actions:
+    interfaces:
+      IAction:
