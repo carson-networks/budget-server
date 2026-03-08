@@ -8,6 +8,7 @@ packages:
     interfaces:
       IAccountWriter:
       ITransactionWriter:
+      ICategoryWriter:
   github.com/carson-networks/budget-server/internal/operator:
     interfaces:
       IStorage:

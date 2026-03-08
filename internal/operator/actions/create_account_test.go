@@ -14,11 +14,6 @@ import (
 	"github.com/carson-networks/budget-server/internal/storage/account"
 )
 
-type noopTx struct{}
-
-func (noopTx) Commit(context.Context) error   { return nil }
-func (noopTx) Rollback(context.Context) error { return nil }
-
 func TestCreateAccount_Perform_Success(t *testing.T) {
 	mockAccount := &storage.MockIAccountWriter{}
 	mockAccount.EXPECT().
@@ -31,7 +26,8 @@ func TestCreateAccount_Perform_Success(t *testing.T) {
 		).
 		Return(nil)
 
-	writer := storage.NewWriterForTest(noopTx{}, mockAccount, &storage.MockITransactionWriter{})
+	wt := storage.NewWriterForTest()
+	wt.Account = mockAccount
 	action := &CreateAccount{
 		Name:            "Checking",
 		Type:            account.AccountTypeCash,
@@ -39,7 +35,7 @@ func TestCreateAccount_Perform_Success(t *testing.T) {
 		StartingBalance: decimal.Zero,
 	}
 
-	err := action.Perform(context.Background(), &writer)
+	err := action.Perform(context.Background(), wt)
 	require.NoError(t, err)
 	mockAccount.AssertExpectations(t)
 }
@@ -57,7 +53,8 @@ func TestCreateAccount_Perform_CreateFails(t *testing.T) {
 		).
 		Return(createErr)
 
-	writer := storage.NewWriterForTest(noopTx{}, mockAccount, &storage.MockITransactionWriter{})
+	wt := storage.NewWriterForTest()
+	wt.Account = mockAccount
 	action := &CreateAccount{
 		Name:            "Savings",
 		Type:            account.AccountTypeAssets,
@@ -65,7 +62,7 @@ func TestCreateAccount_Perform_CreateFails(t *testing.T) {
 		StartingBalance: decimal.NewFromInt(1000),
 	}
 
-	err := action.Perform(context.Background(), &writer)
+	err := action.Perform(context.Background(), wt)
 	assert.ErrorIs(t, err, createErr)
 	mockAccount.AssertExpectations(t)
 }
