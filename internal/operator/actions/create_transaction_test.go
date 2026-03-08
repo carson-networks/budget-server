@@ -48,7 +48,9 @@ func TestCreateTransaction_Perform_Success(t *testing.T) {
 		}).
 		Return(txnID, nil)
 
-	writer := storage.NewWriterForTest(noopTx{}, mockAccount, mockTxn)
+	wt := storage.NewWriterForTest()
+	wt.Account = mockAccount
+	wt.Transaction = mockTxn
 	action := &CreateTransaction{
 		AccountID:       accountID,
 		CategoryID:      categoryID,
@@ -57,7 +59,7 @@ func TestCreateTransaction_Perform_Success(t *testing.T) {
 		TransactionDate: txnDate,
 	}
 
-	err := action.Perform(context.Background(), &writer)
+	err := action.Perform(context.Background(), wt)
 	require.NoError(t, err)
 	mockAccount.AssertExpectations(t)
 	mockTxn.AssertExpectations(t)
@@ -72,7 +74,8 @@ func TestCreateTransaction_Perform_AccountNotFound(t *testing.T) {
 		FindByIDForUpdate(mock.Anything, accountID).
 		Return(nil, nil)
 
-	writer := storage.NewWriterForTest(noopTx{}, mockAccount, &storage.MockITransactionWriter{})
+	wt := storage.NewWriterForTest()
+	wt.Account = mockAccount
 
 	action := &CreateTransaction{
 		AccountID:       accountID,
@@ -82,7 +85,7 @@ func TestCreateTransaction_Perform_AccountNotFound(t *testing.T) {
 		TransactionDate: time.Now(),
 	}
 
-	err := action.Perform(context.Background(), &writer)
+	err := action.Perform(context.Background(), wt)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "account not found")
 	mockAccount.AssertExpectations(t)
@@ -98,7 +101,8 @@ func TestCreateTransaction_Perform_FindByIDForUpdateError(t *testing.T) {
 		FindByIDForUpdate(mock.Anything, accountID).
 		Return(nil, findErr)
 
-	writer := storage.NewWriterForTest(noopTx{}, mockAccount, &storage.MockITransactionWriter{})
+	wt := storage.NewWriterForTest()
+	wt.Account = mockAccount
 
 	action := &CreateTransaction{
 		AccountID:       accountID,
@@ -108,7 +112,7 @@ func TestCreateTransaction_Perform_FindByIDForUpdateError(t *testing.T) {
 		TransactionDate: time.Now(),
 	}
 
-	err := action.Perform(context.Background(), &writer)
+	err := action.Perform(context.Background(), wt)
 	assert.ErrorIs(t, err, findErr)
 	mockAccount.AssertExpectations(t)
 }
@@ -128,7 +132,9 @@ func TestCreateTransaction_Perform_InsertError(t *testing.T) {
 		Insert(mock.Anything, mock.Anything).
 		Return(uuid.Nil, insertErr)
 
-	writer := storage.NewWriterForTest(noopTx{}, mockAccount, mockTxn)
+	wt := storage.NewWriterForTest()
+	wt.Account = mockAccount
+	wt.Transaction = mockTxn
 
 	action := &CreateTransaction{
 		AccountID:       accountID,
@@ -138,7 +144,7 @@ func TestCreateTransaction_Perform_InsertError(t *testing.T) {
 		TransactionDate: time.Now(),
 	}
 
-	err := action.Perform(context.Background(), &writer)
+	err := action.Perform(context.Background(), wt)
 	assert.ErrorIs(t, err, insertErr)
 	mockAccount.AssertExpectations(t)
 	mockTxn.AssertExpectations(t)
@@ -166,7 +172,9 @@ func TestCreateTransaction_Perform_UpdateBalanceError(t *testing.T) {
 		Insert(mock.Anything, mock.Anything).
 		Return(txnID, nil)
 
-	writer := storage.NewWriterForTest(noopTx{}, mockAccount, mockTxn)
+	wt := storage.NewWriterForTest()
+	wt.Account = mockAccount
+	wt.Transaction = mockTxn
 
 	action := &CreateTransaction{
 		AccountID:       accountID,
@@ -176,7 +184,7 @@ func TestCreateTransaction_Perform_UpdateBalanceError(t *testing.T) {
 		TransactionDate: time.Now(),
 	}
 
-	err := action.Perform(context.Background(), &writer)
+	err := action.Perform(context.Background(), wt)
 	assert.ErrorIs(t, err, updateErr)
 	mockAccount.AssertExpectations(t)
 	mockTxn.AssertExpectations(t)

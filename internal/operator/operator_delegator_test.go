@@ -22,14 +22,14 @@ func TestNewOperatorDelegator_NumWorkersLessThanOne_DefaultsToOne(t *testing.T) 
 
 	// With 1 worker, Process should succeed
 	tx := &mockTx{}
-	writer := storage.NewWriterForTest(tx, &storage.MockIAccountWriter{}, &storage.MockITransactionWriter{})
+	wt := storage.NewWriterForTestWithTx(tx)
 	mockStorage.EXPECT().
 		Write(mock.Anything).
-		Return(&writer, nil)
+		Return(wt, nil)
 
 	mockAction := &actions.MockIAction{}
 	mockAction.EXPECT().
-		Perform(mock.Anything, &writer).
+		Perform(mock.Anything, wt).
 		Return(nil)
 
 	err := d.Process(context.Background(), mockAction)
@@ -45,14 +45,14 @@ func TestOperatorDelegator_Process_Success(t *testing.T) {
 	defer d.Stop()
 
 	tx := &mockTx{}
-	writer := storage.NewWriterForTest(tx, &storage.MockIAccountWriter{}, &storage.MockITransactionWriter{})
+	wt := storage.NewWriterForTestWithTx(tx)
 	mockStorage.EXPECT().
 		Write(mock.Anything).
-		Return(&writer, nil)
+		Return(wt, nil)
 
 	mockAction := &actions.MockIAction{}
 	mockAction.EXPECT().
-		Perform(mock.Anything, &writer).
+		Perform(mock.Anything, wt).
 		Return(nil)
 
 	err := d.Process(context.Background(), mockAction)
@@ -70,14 +70,14 @@ func TestOperatorDelegator_Process_Error(t *testing.T) {
 	defer d.Stop()
 
 	tx := &mockTx{}
-	writer := storage.NewWriterForTest(tx, &storage.MockIAccountWriter{}, &storage.MockITransactionWriter{})
+	wt := storage.NewWriterForTestWithTx(tx)
 	mockStorage.EXPECT().
 		Write(mock.Anything).
-		Return(&writer, nil)
+		Return(wt, nil)
 
 	mockAction := &actions.MockIAction{}
 	mockAction.EXPECT().
-		Perform(mock.Anything, &writer).
+		Perform(mock.Anything, wt).
 		Return(performErr)
 
 	err := d.Process(context.Background(), mockAction)
@@ -102,8 +102,8 @@ func TestOperatorDelegator_Process_ContextCancelled(t *testing.T) {
 	// The worker may still process the item in the background, so we allow
 	// mock calls with Maybe() to avoid panics from unexpected calls.
 	tx := &mockTx{}
-	writer := storage.NewWriterForTest(tx, &storage.MockIAccountWriter{}, &storage.MockITransactionWriter{})
-	mockStorage.On("Write", mock.Anything).Maybe().Return(&writer, nil)
+	wt := storage.NewWriterForTestWithTx(tx)
+	mockStorage.On("Write", mock.Anything).Maybe().Return(wt, nil)
 	mockAction.On("Perform", mock.Anything, mock.Anything).Maybe().Return(nil)
 
 	err := d.Process(ctx, mockAction)

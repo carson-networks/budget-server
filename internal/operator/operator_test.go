@@ -20,13 +20,13 @@ func TestOperator_processItem_Success(t *testing.T) {
 	mockAction := &actions.MockIAction{}
 
 	tx := &mockTx{}
-	writer := storage.NewWriterForTest(tx, &storage.MockIAccountWriter{}, &storage.MockITransactionWriter{})
+	wt := storage.NewWriterForTestWithTx(tx)
 
 	mockStorage.EXPECT().
 		Write(mock.Anything).
-		Return(&writer, nil)
+		Return(wt, nil)
 	mockAction.EXPECT().
-		Perform(mock.Anything, &writer).
+		Perform(mock.Anything, wt).
 		Return(nil)
 
 	queue := make(chan ActionItem, 1)
@@ -78,13 +78,13 @@ func TestOperator_processItem_PerformFails(t *testing.T) {
 	mockAction := &actions.MockIAction{}
 
 	tx := &mockTx{}
-	writer := storage.NewWriterForTest(tx, &storage.MockIAccountWriter{}, &storage.MockITransactionWriter{})
+	wt := storage.NewWriterForTestWithTx(tx)
 
 	mockStorage.EXPECT().
 		Write(mock.Anything).
-		Return(&writer, nil)
+		Return(wt, nil)
 	mockAction.EXPECT().
-		Perform(mock.Anything, &writer).
+		Perform(mock.Anything, wt).
 		Return(performErr)
 
 	queue := make(chan ActionItem, 1)
@@ -111,13 +111,13 @@ func TestOperator_processItem_CommitFails(t *testing.T) {
 	mockAction := &actions.MockIAction{}
 
 	tx := &mockTx{commitErr: commitErr}
-	writer := storage.NewWriterForTest(tx, &storage.MockIAccountWriter{}, &storage.MockITransactionWriter{})
+	wt := storage.NewWriterForTestWithTx(tx)
 
 	mockStorage.EXPECT().
 		Write(mock.Anything).
-		Return(&writer, nil)
+		Return(wt, nil)
 	mockAction.EXPECT().
-		Perform(mock.Anything, &writer).
+		Perform(mock.Anything, wt).
 		Return(nil)
 
 	queue := make(chan ActionItem, 1)
