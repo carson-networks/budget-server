@@ -61,18 +61,9 @@ func (r *Reader) List(ctx context.Context, filter *CategoryFilter) ([]*Category,
 		return nil, nil
 	}
 
-	// Load parent names for parent_id display
-	if err := rows.LoadParent(ctx, r.exec); err != nil {
-		return nil, err
-	}
-
 	result := make([]*Category, len(rows))
 	for i, row := range rows {
-		parentName := ""
-		if row.R.Parent != nil {
-			parentName = row.R.Parent.Name
-		}
-		result[i] = bobCategoryToCategory(row, parentName)
+		result[i] = bobCategoryToCategory(row)
 	}
 	return result, nil
 }
@@ -82,12 +73,5 @@ func (r *Reader) GetByID(ctx context.Context, id uuid.UUID) (*Category, error) {
 	if err != nil {
 		return nil, err
 	}
-	parentName := ""
-	if row.ParentID.IsValue() {
-		parent, err := row.Parent().One(ctx, r.exec)
-		if err == nil && parent != nil {
-			parentName = parent.Name
-		}
-	}
-	return bobCategoryToCategory(row, parentName), nil
+	return bobCategoryToCategory(row), nil
 }

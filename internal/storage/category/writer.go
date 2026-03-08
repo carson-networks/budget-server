@@ -2,8 +2,8 @@ package category
 
 import (
 	"context"
+	"errors"
 
-	"github.com/aarondl/opt/null"
 	"github.com/aarondl/opt/omit"
 	"github.com/aarondl/opt/omitnull"
 	"github.com/carson-networks/budget-server/internal/storage/sqlconfig/bobgen"
@@ -37,6 +37,8 @@ func (w *Writer) Create(ctx context.Context, create *CategoryCreate) (uuid.UUID,
 	}
 	if create.ParentID != nil {
 		setter.ParentID = omitnull.From(*create.ParentID)
+	} else if create.ParentID == nil && create.IsGroup == false {
+		return uuid.Nil, errors.New("parentID must be set if IsGroup is false")
 	}
 	row, err := bobgen.Categories.Insert(setter).One(ctx, w.tx)
 	if err != nil {
@@ -52,8 +54,6 @@ func (w *Writer) Update(ctx context.Context, id uuid.UUID, update *CategoryUpdat
 	}
 	if update.ParentID != nil {
 		setter.ParentID = omitnull.From(*update.ParentID)
-	} else if update.ClearParentID {
-		setter.ParentID = omitnull.FromNull(null.FromPtr((*uuid.UUID)(nil)))
 	}
 	if update.ShouldBeBudgeted != nil {
 		setter.ShouldBeBudgeted = omit.From(*update.ShouldBeBudgeted)
