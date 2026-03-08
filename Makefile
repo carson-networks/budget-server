@@ -52,7 +52,13 @@ help: ## Show this help.
 		}' $(MAKEFILE_LIST)
 
 format: ## Format imports
-	find . -type f -name '*.go' -not -path "./vendor/*" | xargs go tool goimports -local -l -w
+	find . -type f -name '*.go' ! -path "*/vendor/*" | xargs go tool goimports -local -l -w
 
 generate-mocks: ## Generate mocks
 	go tool mockery
+
+migrate: ## Run DB migrations (requires Postgres; use serve or serve-local first, or set POSTGRES_* env)
+	cd scripts/db_migrations && go run .
+
+generate: ## Run Bob codegen for storage (requires Postgres with migrations applied; run migrate first)
+	go generate ./internal/storage/sqlconfig/bobgen/

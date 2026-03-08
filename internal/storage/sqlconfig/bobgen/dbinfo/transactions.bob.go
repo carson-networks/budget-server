@@ -103,6 +103,17 @@ var Transactions = Table[
 		Columns: []string{"id"},
 		Comment: "",
 	},
+	ForeignKeys: transactionForeignKeys{
+		TransactionsFKTransactionsCategoryID: foreignKey{
+			constraint: constraint{
+				Name:    "transactions.fk_transactions_category_id",
+				Columns: []string{"category_id"},
+				Comment: "",
+			},
+			ForeignTable:   "categories",
+			ForeignColumns: []string{"id"},
+		},
+	},
 
 	Comment: "",
 }
@@ -133,10 +144,14 @@ func (i transactionIndexes) AsSlice() []index {
 	}
 }
 
-type transactionForeignKeys struct{}
+type transactionForeignKeys struct {
+	TransactionsFKTransactionsCategoryID foreignKey
+}
 
 func (f transactionForeignKeys) AsSlice() []foreignKey {
-	return []foreignKey{}
+	return []foreignKey{
+		f.TransactionsFKTransactionsCategoryID,
+	}
 }
 
 type transactionUniques struct{}

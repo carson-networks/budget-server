@@ -1,13 +1,24 @@
 # Use bobgen-psql: connect to a running Postgres, run migrations first.
 # Override with: PSQL_DSN=postgres://user:pass@host:port/db?sslmode=disable
+#
+# schema_migrations is created by golang-migrate to track migration versions.
+# We exclude it so Bob only generates for app tables (accounts, transactions, categories).
 psql:
   dsn: "postgres://postgres:testpassword@localhost:5433/postgres?sslmode=disable"
   schemas: ["public"]
+  except:
+    schema_migrations: []
 
 plugins:
   models:
     pkgname: "bobgen"
     destination: "internal/storage/sqlconfig/bobgen"
+  dbinfo:
+    destination: "internal/storage/sqlconfig/bobgen/dbinfo"
+    pkgname: "dbinfo"
+  dberrors:
+    destination: "internal/storage/sqlconfig/bobgen/dberrors"
+    pkgname: "dberrors"
   factory:
     disabled: true
   enums:

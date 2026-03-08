@@ -5,6 +5,7 @@ package bobgen
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
 
@@ -18,6 +19,9 @@ import (
 	"github.com/stephenafamo/bob/dialect/psql/sm"
 	"github.com/stephenafamo/bob/dialect/psql/um"
 	"github.com/stephenafamo/bob/expr"
+	"github.com/stephenafamo/bob/mods"
+	"github.com/stephenafamo/bob/orm"
+	"github.com/stephenafamo/bob/types/pgtypes"
 )
 
 // Transaction is an object representing the database table.
@@ -29,6 +33,8 @@ type Transaction struct {
 	TransactionName string          `db:"transaction_name" `
 	TransactionDate time.Time       `db:"transaction_date" `
 	CreatedAt       time.Time       `db:"created_at" `
+
+	R transactionR `db:"-" `
 }
 
 // TransactionSlice is an alias for a slice of pointers to Transaction.
@@ -40,6 +46,11 @@ var Transactions = psql.NewTablex[*Transaction, TransactionSlice, *TransactionSe
 
 // TransactionsQuery is a query on the transactions table
 type TransactionsQuery = *psql.ViewQuery[*Transaction, TransactionSlice]
+
+// transactionR is where relationships are stored.
+type transactionR struct {
+	Category *Category // transactions.fk_transactions_category_id
+}
 
 func buildTransactionColumns(alias string) transactionColumns {
 	return transactionColumns{
@@ -310,6 +321,7 @@ func (o *Transaction) Update(ctx context.Context, exec bob.Executor, s *Transact
 		return err
 	}
 
+	o.R = v.R
 	*o = *v
 
 	return nil
@@ -329,7 +341,7 @@ func (o *Transaction) Reload(ctx context.Context, exec bob.Executor) error {
 	if err != nil {
 		return err
 	}
-
+	o2.R = o.R
 	*o = *o2
 
 	return nil
@@ -376,7 +388,7 @@ func (o TransactionSlice) copyMatchingRows(from ...*Transaction) {
 			if new.ID != old.ID {
 				continue
 			}
-
+			new.R = old.R
 			o[i] = new
 			break
 		}
@@ -474,6 +486,78 @@ func (o TransactionSlice) ReloadAll(ctx context.Context, exec bob.Executor) erro
 	return nil
 }
 
+// Category starts a query for related objects on categories
+func (o *Transaction) Category(mods ...bob.Mod[*dialect.SelectQuery]) CategoriesQuery {
+	return Categories.Query(append(mods,
+		sm.Where(Categories.Columns.ID.EQ(psql.Arg(o.CategoryID))),
+	)...)
+}
+
+func (os TransactionSlice) Category(mods ...bob.Mod[*dialect.SelectQuery]) CategoriesQuery {
+	pkCategoryID := make(pgtypes.Array[uuid.UUID], 0, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		pkCategoryID = append(pkCategoryID, o.CategoryID)
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkCategoryID), "uuid[]")),
+	))
+
+	return Categories.Query(append(mods,
+		sm.Where(psql.Group(Categories.Columns.ID).OP("IN", PKArgExpr)),
+	)...)
+}
+
+func attachTransactionCategory0(ctx context.Context, exec bob.Executor, count int, transaction0 *Transaction, category1 *Category) (*Transaction, error) {
+	setter := &TransactionSetter{
+		CategoryID: omit.From(category1.ID),
+	}
+
+	err := transaction0.Update(ctx, exec, setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachTransactionCategory0: %w", err)
+	}
+
+	return transaction0, nil
+}
+
+func (transaction0 *Transaction) InsertCategory(ctx context.Context, exec bob.Executor, related *CategorySetter) error {
+	var err error
+
+	category1, err := Categories.Insert(related).One(ctx, exec)
+	if err != nil {
+		return fmt.Errorf("inserting related objects: %w", err)
+	}
+
+	_, err = attachTransactionCategory0(ctx, exec, 1, transaction0, category1)
+	if err != nil {
+		return err
+	}
+
+	transaction0.R.Category = category1
+
+	category1.R.Transactions = append(category1.R.Transactions, transaction0)
+
+	return nil
+}
+
+func (transaction0 *Transaction) AttachCategory(ctx context.Context, exec bob.Executor, category1 *Category) error {
+	var err error
+
+	_, err = attachTransactionCategory0(ctx, exec, 1, transaction0, category1)
+	if err != nil {
+		return err
+	}
+
+	transaction0.R.Category = category1
+
+	category1.R.Transactions = append(category1.R.Transactions, transaction0)
+
+	return nil
+}
+
 type transactionWhere[Q psql.Filterable] struct {
 	ID              psql.WhereMod[Q, uuid.UUID]
 	AccountID       psql.WhereMod[Q, uuid.UUID]
@@ -497,5 +581,150 @@ func buildTransactionWhere[Q psql.Filterable](cols transactionColumns) transacti
 		TransactionName: psql.Where[Q, string](cols.TransactionName),
 		TransactionDate: psql.Where[Q, time.Time](cols.TransactionDate),
 		CreatedAt:       psql.Where[Q, time.Time](cols.CreatedAt),
+	}
+}
+
+func (o *Transaction) Preload(name string, retrieved any) error {
+	if o == nil {
+		return nil
+	}
+
+	switch name {
+	case "Category":
+		rel, ok := retrieved.(*Category)
+		if !ok {
+			return fmt.Errorf("transaction cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.Category = rel
+
+		if rel != nil {
+			rel.R.Transactions = TransactionSlice{o}
+		}
+		return nil
+	default:
+		return fmt.Errorf("transaction has no relationship %q", name)
+	}
+}
+
+type transactionPreloader struct {
+	Category func(...psql.PreloadOption) psql.Preloader
+}
+
+func buildTransactionPreloader() transactionPreloader {
+	return transactionPreloader{
+		Category: func(opts ...psql.PreloadOption) psql.Preloader {
+			return psql.Preload[*Category, CategorySlice](psql.PreloadRel{
+				Name: "Category",
+				Sides: []psql.PreloadSide{
+					{
+						From:        Transactions,
+						To:          Categories,
+						FromColumns: []string{"category_id"},
+						ToColumns:   []string{"id"},
+					},
+				},
+			}, Categories.Columns.Names(), opts...)
+		},
+	}
+}
+
+type transactionThenLoader[Q orm.Loadable] struct {
+	Category func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+}
+
+func buildTransactionThenLoader[Q orm.Loadable]() transactionThenLoader[Q] {
+	type CategoryLoadInterface interface {
+		LoadCategory(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
+
+	return transactionThenLoader[Q]{
+		Category: thenLoadBuilder[Q](
+			"Category",
+			func(ctx context.Context, exec bob.Executor, retrieved CategoryLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadCategory(ctx, exec, mods...)
+			},
+		),
+	}
+}
+
+// LoadCategory loads the transaction's Category into the .R struct
+func (o *Transaction) LoadCategory(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.Category = nil
+
+	related, err := o.Category(mods...).One(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	related.R.Transactions = TransactionSlice{o}
+
+	o.R.Category = related
+	return nil
+}
+
+// LoadCategory loads the transaction's Category into the .R struct
+func (os TransactionSlice) LoadCategory(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	categories, err := os.Category(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		for _, rel := range categories {
+
+			if !(o.CategoryID == rel.ID) {
+				continue
+			}
+
+			rel.R.Transactions = append(rel.R.Transactions, o)
+
+			o.R.Category = rel
+			break
+		}
+	}
+
+	return nil
+}
+
+type transactionJoins[Q dialect.Joinable] struct {
+	typ      string
+	Category modAs[Q, categoryColumns]
+}
+
+func (j transactionJoins[Q]) aliasedAs(alias string) transactionJoins[Q] {
+	return buildTransactionJoins[Q](buildTransactionColumns(alias), j.typ)
+}
+
+func buildTransactionJoins[Q dialect.Joinable](cols transactionColumns, typ string) transactionJoins[Q] {
+	return transactionJoins[Q]{
+		typ: typ,
+		Category: modAs[Q, categoryColumns]{
+			c: Categories.Columns,
+			f: func(to categoryColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, Categories.Name().As(to.Alias())).On(
+						to.ID.EQ(cols.CategoryID),
+					))
+				}
+
+				return mods
+			},
+		},
 	}
 }
