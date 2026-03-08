@@ -25,6 +25,7 @@ type ITransactionWriter interface {
 
 // ICategoryWriter defines the category write operations used by actions.
 type ICategoryWriter interface {
+	GetByID(ctx context.Context, id uuid.UUID) (*category.Category, error)
 	Create(ctx context.Context, create *category.CategoryCreate) (uuid.UUID, error)
 	Update(ctx context.Context, id uuid.UUID, update *category.CategoryUpdate) error
 }

@@ -2,6 +2,7 @@ package actions
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"time"
 
@@ -9,6 +10,12 @@ import (
 	"github.com/carson-networks/budget-server/internal/storage/transaction"
 	"github.com/gofrs/uuid/v5"
 	"github.com/shopspring/decimal"
+)
+
+var (
+	ErrCategoryNotFoundForTransaction = errors.New("category not found")
+	ErrCategoryDisabled               = errors.New("category is disabled")
+	ErrCategoryIsGroup                = errors.New("category is a group; transactions must use a leaf or standalone category")
 )
 
 type CreateTransaction struct {
@@ -21,6 +28,20 @@ type CreateTransaction struct {
 }
 
 func (t *CreateTransaction) Perform(ctx context.Context, writer *storage.Writer) error {
+	cat, err := writer.Category.GetByID(ctx, t.CategoryID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrCategoryNotFoundForTransaction
+		}
+		return err
+	}
+	if cat.IsDisabled {
+		return ErrCategoryDisabled
+	}
+	if cat.IsGroup {
+		return ErrCategoryIsGroup
+	}
+
 	account, err := writer.Account.FindByIDForUpdate(ctx, t.AccountID)
 	if err != nil {
 		return err

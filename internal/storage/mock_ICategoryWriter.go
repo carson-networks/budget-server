@@ -61,6 +61,8 @@ type MockICategoryWriter_Create_Call struct {
 }
 
 // Create is a helper method to define mock.On call
+//   - ctx context.Context
+//   - create *category.CategoryCreate
 func (_e *MockICategoryWriter_Expecter) Create(ctx interface{}, create interface{}) *MockICategoryWriter_Create_Call {
 	return &MockICategoryWriter_Create_Call{Call: _e.mock.On("Create", ctx, create)}
 }
@@ -78,6 +80,65 @@ func (_c *MockICategoryWriter_Create_Call) Return(_a0 uuid.UUID, _a1 error) *Moc
 }
 
 func (_c *MockICategoryWriter_Create_Call) RunAndReturn(run func(context.Context, *category.CategoryCreate) (uuid.UUID, error)) *MockICategoryWriter_Create_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetByID provides a mock function with given fields: ctx, id
+func (_m *MockICategoryWriter) GetByID(ctx context.Context, id uuid.UUID) (*category.Category, error) {
+	ret := _m.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetByID")
+	}
+
+	var r0 *category.Category
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*category.Category, error)); ok {
+		return rf(ctx, id)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *category.Category); ok {
+		r0 = rf(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*category.Category)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockICategoryWriter_GetByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetByID'
+type MockICategoryWriter_GetByID_Call struct {
+	*mock.Call
+}
+
+// GetByID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id uuid.UUID
+func (_e *MockICategoryWriter_Expecter) GetByID(ctx interface{}, id interface{}) *MockICategoryWriter_GetByID_Call {
+	return &MockICategoryWriter_GetByID_Call{Call: _e.mock.On("GetByID", ctx, id)}
+}
+
+func (_c *MockICategoryWriter_GetByID_Call) Run(run func(ctx context.Context, id uuid.UUID)) *MockICategoryWriter_GetByID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *MockICategoryWriter_GetByID_Call) Return(_a0 *category.Category, _a1 error) *MockICategoryWriter_GetByID_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockICategoryWriter_GetByID_Call) RunAndReturn(run func(context.Context, uuid.UUID) (*category.Category, error)) *MockICategoryWriter_GetByID_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -106,6 +167,9 @@ type MockICategoryWriter_Update_Call struct {
 }
 
 // Update is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id uuid.UUID
+//   - update *category.CategoryUpdate
 func (_e *MockICategoryWriter_Expecter) Update(ctx interface{}, id interface{}, update interface{}) *MockICategoryWriter_Update_Call {
 	return &MockICategoryWriter_Update_Call{Call: _e.mock.On("Update", ctx, id, update)}
 }
