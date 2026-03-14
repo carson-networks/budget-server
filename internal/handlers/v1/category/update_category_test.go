@@ -13,7 +13,6 @@ import (
 
 	"github.com/carson-networks/budget-server/internal/operator"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
-	"github.com/carson-networks/budget-server/internal/storage/category"
 )
 
 func TestUpdateCategoryHandler_InvalidID(t *testing.T) {
@@ -36,20 +35,11 @@ func TestUpdateCategoryHandler_Success(t *testing.T) {
 	mockOp.EXPECT().
 		Process(mock.Anything, mock.MatchedBy(func(a actions.IAction) bool {
 			uc, ok := a.(*actions.UpdateCategory)
-			return ok && uc.ID == id && uc.Name != nil && *uc.Name == newName
+			return ok && uc.ID == id && uc.Name != nil && *uc.Name == newName && uc.ParentCategoryID == nil && uc.IsDisabled == nil
 		})).
 		Return(nil)
 
-	mockReader := &mockCategoryReader{}
-	mockReader.On("GetByID", mock.Anything, id).
-		Return(&category.Category{
-			ID:           id,
-			Name:         newName,
-			IsParent:     false,
-			CategoryType: category.CatergoryType_Expense,
-		}, nil)
-
-	h := NewUpdateCategoryHandler(mockOp, mockReader)
+	h := NewUpdateCategoryHandler(mockOp, &mockCategoryReader{})
 	out, err := h.handle(context.Background(), &UpdateCategoryInput{
 		Path: UpdateCategoryPath{ID: id.String()},
 		Body: UpdateCategoryBody{Name: &newName},
@@ -57,7 +47,28 @@ func TestUpdateCategoryHandler_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, out)
 	mockOp.AssertExpectations(t)
-	mockReader.AssertExpectations(t)
+}
+
+func TestUpdateCategoryHandler_Success_WithNewParent(t *testing.T) {
+	id := uuid.Must(uuid.NewV4())
+	parentID := uuid.Must(uuid.NewV4())
+	parentIDStr := parentID.String()
+	mockOp := &operator.MockIProcessor{}
+	mockOp.EXPECT().
+		Process(mock.Anything, mock.MatchedBy(func(a actions.IAction) bool {
+			uc, ok := a.(*actions.UpdateCategory)
+			return ok && uc.ID == id && uc.Name == nil && uc.ParentCategoryID != nil && *uc.ParentCategoryID == parentID && uc.IsDisabled == nil
+		})).
+		Return(nil)
+
+	h := NewUpdateCategoryHandler(mockOp, &mockCategoryReader{})
+	out, err := h.handle(context.Background(), &UpdateCategoryInput{
+		Path: UpdateCategoryPath{ID: id.String()},
+		Body: UpdateCategoryBody{ParentCategoryID: &parentIDStr},
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, out)
+	mockOp.AssertExpectations(t)
 }
 
 func TestUpdateCategoryHandler_NotFound(t *testing.T) {
