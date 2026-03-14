@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -87,7 +88,18 @@ func (h *CreateTransactionHandler) handle(ctx context.Context, input *CreateTran
 	}
 
 	if err := h.Operator.Process(ctx, action); err != nil {
-		return nil, huma.NewError(http.StatusInternalServerError, "failed to create transaction", err)
+		switch {
+		case errors.Is(err, actions.ErrCategoryNotFoundForTransaction):
+			return nil, huma.NewError(http.StatusNotFound, "Category not found", err)
+		case errors.Is(err, actions.ErrCategoryDisabled):
+			return nil, huma.NewError(http.StatusBadRequest, "Category is disabled", err)
+		case errors.Is(err, actions.ErrCategoryIsParent):
+			return nil, huma.NewError(http.StatusBadRequest, "Category is a parent; use a child category", err)
+		case errors.Is(err, actions.ErrAccountNotFound):
+			return nil, huma.NewError(http.StatusNotFound, "Account not found", err)
+		default:
+			return nil, huma.NewError(http.StatusInternalServerError, "failed to create transaction", err)
+		}
 	}
 
 	return &CreateTransactionOutput{Status: http.StatusCreated}, nil

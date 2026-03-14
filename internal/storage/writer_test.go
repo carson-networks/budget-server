@@ -23,9 +23,9 @@ func TestMockICategoryWriter_Create_Update_StructParams(t *testing.T) {
 	catID := uuid.Must(uuid.FromString("550e8400-e29b-41d4-a716-446655440011"))
 	mockCat.EXPECT().
 		Create(mock.Anything, mock.MatchedBy(func(c *category.CategoryCreate) bool {
-			return c != nil && c.Name == "Food" && !c.IsGroup && c.ShouldBeBudgeted && !c.IsDisabled
+			return c != nil && c.Name == "Food" && !c.IsParent && !c.IsDisabled && c.CategoryType == category.CatergoryType_Income
 		})).
-		Return(catID, nil)
+		Return(nil)
 	newName := "Food & Groceries"
 	mockCat.EXPECT().
 		Update(mock.Anything, catID, mock.MatchedBy(func(u *category.CategoryUpdate) bool {
@@ -33,12 +33,11 @@ func TestMockICategoryWriter_Create_Update_StructParams(t *testing.T) {
 		})).
 		Return(nil)
 
-	_, err := mockCat.Create(context.Background(), &category.CategoryCreate{
-		Name:             "Food",
-		IsGroup:          false,
-		ShouldBeBudgeted: true,
-		IsDisabled:       false,
-		CategoryType:     category.CategoryType(0),
+	err := mockCat.Create(context.Background(), &category.CategoryCreate{
+		Name:         "Food",
+		IsParent:     false,
+		IsDisabled:   false,
+		CategoryType: category.CatergoryType_Income,
 	})
 	require.NoError(t, err)
 	err = mockCat.Update(context.Background(), catID, &category.CategoryUpdate{Name: &newName})

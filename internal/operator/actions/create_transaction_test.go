@@ -21,8 +21,8 @@ import (
 
 func validCategoryForTransaction(id uuid.UUID) *category.Category {
 	return &category.Category{
-		ID: id, Name: "Food", IsGroup: false, IsDisabled: false,
-		ShouldBeBudgeted: true, CategoryType: category.CatergoryType_Expense,
+		ID: id, Name: "Food", IsParent: false, IsDisabled: false,
+		CategoryType: category.CatergoryType_Expense,
 	}
 }
 
@@ -133,11 +133,11 @@ func TestCreateTransaction_Perform_CategoryDisabled(t *testing.T) {
 	mockCat.AssertExpectations(t)
 }
 
-func TestCreateTransaction_Perform_CategoryIsGroup(t *testing.T) {
+func TestCreateTransaction_Perform_CategoryIsParent(t *testing.T) {
 	accountID := uuid.Must(uuid.NewV4())
 	categoryID := uuid.Must(uuid.NewV4())
 	cat := validCategoryForTransaction(categoryID)
-	cat.IsGroup = true
+	cat.IsParent = true
 
 	mockCat := &storage.MockICategoryWriter{}
 	mockCat.EXPECT().
@@ -156,7 +156,7 @@ func TestCreateTransaction_Perform_CategoryIsGroup(t *testing.T) {
 
 	err := action.Perform(context.Background(), wt)
 	require.Error(t, err)
-	assert.ErrorIs(t, err, ErrCategoryIsGroup)
+	assert.ErrorIs(t, err, ErrCategoryIsParent)
 	mockCat.AssertExpectations(t)
 }
 
@@ -188,7 +188,7 @@ func TestCreateTransaction_Perform_AccountNotFound(t *testing.T) {
 
 	err := action.Perform(context.Background(), wt)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "account not found")
+	assert.ErrorIs(t, err, ErrAccountNotFound)
 	mockCat.AssertExpectations(t)
 	mockAccount.AssertExpectations(t)
 }

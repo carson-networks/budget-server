@@ -19,8 +19,8 @@ func TestUpdateCategory_Perform_Success(t *testing.T) {
 	catID := uuid.Must(uuid.NewV4())
 	newName := "Food & Groceries"
 	existing := &category.Category{
-		ID: catID, Name: "Food", IsGroup: false, ParentID: nil,
-		ShouldBeBudgeted: true, IsDisabled: false, CategoryType: category.CatergoryType_Expense,
+		ID: catID, Name: "Food", IsParent: false, ParentCategoryID: nil,
+		IsDisabled: false, CategoryType: category.CatergoryType_Expense,
 	}
 
 	mockCat := &storage.MockICategoryWriter{}
@@ -49,12 +49,12 @@ func TestUpdateCategory_Perform_Success_WithNewParent(t *testing.T) {
 	catID := uuid.Must(uuid.NewV4())
 	parentID := uuid.Must(uuid.NewV4())
 	existing := &category.Category{
-		ID: catID, Name: "Food", IsGroup: false, ParentID: nil,
-		ShouldBeBudgeted: true, IsDisabled: false, CategoryType: category.CatergoryType_Expense,
+		ID: catID, Name: "Food", IsParent: false, ParentCategoryID: nil,
+		IsDisabled: false, CategoryType: category.CatergoryType_Expense,
 	}
 	parent := &category.Category{
-		ID: parentID, Name: "Expenses", IsGroup: true, ParentID: nil,
-		ShouldBeBudgeted: true, IsDisabled: false, CategoryType: category.CatergoryType_Expense,
+		ID: parentID, Name: "Expenses", IsParent: true, ParentCategoryID: nil,
+		IsDisabled: false, CategoryType: category.CatergoryType_Expense,
 	}
 
 	mockCat := &storage.MockICategoryWriter{}
@@ -66,15 +66,15 @@ func TestUpdateCategory_Perform_Success_WithNewParent(t *testing.T) {
 		Return(parent, nil)
 	mockCat.EXPECT().
 		Update(mock.Anything, catID, mock.MatchedBy(func(u *category.CategoryUpdate) bool {
-			return u != nil && u.ParentID != nil && *u.ParentID == parentID
+			return u != nil && u.ParentCategoryID != nil && *u.ParentCategoryID == parentID
 		})).
 		Return(nil)
 
 	wt := storage.NewWriterForTest()
 	wt.Category = mockCat
 	action := &UpdateCategory{
-		ID:       catID,
-		ParentID: &parentID,
+		ID:               catID,
+		ParentCategoryID: &parentID,
 	}
 
 	err := action.Perform(context.Background(), wt)
@@ -107,8 +107,8 @@ func TestUpdateCategory_Perform_ParentNotFound(t *testing.T) {
 	catID := uuid.Must(uuid.NewV4())
 	parentID := uuid.Must(uuid.NewV4())
 	existing := &category.Category{
-		ID: catID, Name: "Food", IsGroup: false, ParentID: nil,
-		ShouldBeBudgeted: true, IsDisabled: false, CategoryType: category.CatergoryType_Expense,
+		ID: catID, Name: "Food", IsParent: false, ParentCategoryID: nil,
+		IsDisabled: false, CategoryType: category.CatergoryType_Expense,
 	}
 
 	mockCat := &storage.MockICategoryWriter{}
@@ -122,8 +122,8 @@ func TestUpdateCategory_Perform_ParentNotFound(t *testing.T) {
 	wt := storage.NewWriterForTest()
 	wt.Category = mockCat
 	action := &UpdateCategory{
-		ID:       catID,
-		ParentID: &parentID,
+		ID:               catID,
+		ParentCategoryID: &parentID,
 	}
 
 	err := action.Perform(context.Background(), wt)
@@ -136,12 +136,12 @@ func TestUpdateCategory_Perform_ParentNotAGroup(t *testing.T) {
 	catID := uuid.Must(uuid.NewV4())
 	parentID := uuid.Must(uuid.NewV4())
 	existing := &category.Category{
-		ID: catID, Name: "Food", IsGroup: false, ParentID: nil,
-		ShouldBeBudgeted: true, IsDisabled: false, CategoryType: category.CatergoryType_Expense,
+		ID: catID, Name: "Food", IsParent: false, ParentCategoryID: nil,
+		IsDisabled: false, CategoryType: category.CatergoryType_Expense,
 	}
 	parent := &category.Category{
-		ID: parentID, Name: "Leaf", IsGroup: false, ParentID: nil,
-		ShouldBeBudgeted: true, IsDisabled: false, CategoryType: category.CatergoryType_Expense,
+		ID: parentID, Name: "Leaf", IsParent: false, ParentCategoryID: nil,
+		IsDisabled: false, CategoryType: category.CatergoryType_Expense,
 	}
 
 	mockCat := &storage.MockICategoryWriter{}
@@ -155,13 +155,13 @@ func TestUpdateCategory_Perform_ParentNotAGroup(t *testing.T) {
 	wt := storage.NewWriterForTest()
 	wt.Category = mockCat
 	action := &UpdateCategory{
-		ID:       catID,
-		ParentID: &parentID,
+		ID:               catID,
+		ParentCategoryID: &parentID,
 	}
 
 	err := action.Perform(context.Background(), wt)
 	require.Error(t, err)
-	assert.ErrorIs(t, err, ErrParentMustBeGroup)
+	assert.ErrorIs(t, err, ErrSpecifiedCategoryParentIsNotParent)
 	mockCat.AssertExpectations(t)
 }
 
@@ -169,8 +169,8 @@ func TestUpdateCategory_Perform_UpdateError(t *testing.T) {
 	catID := uuid.Must(uuid.NewV4())
 	updateErr := errors.New("update failed")
 	existing := &category.Category{
-		ID: catID, Name: "Food", IsGroup: false, ParentID: nil,
-		ShouldBeBudgeted: true, IsDisabled: false, CategoryType: category.CatergoryType_Expense,
+		ID: catID, Name: "Food", IsParent: false, ParentCategoryID: nil,
+		IsDisabled: false, CategoryType: category.CatergoryType_Expense,
 	}
 
 	mockCat := &storage.MockICategoryWriter{}

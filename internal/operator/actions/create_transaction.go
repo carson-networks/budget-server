@@ -15,7 +15,8 @@ import (
 var (
 	ErrCategoryNotFoundForTransaction = errors.New("category not found")
 	ErrCategoryDisabled               = errors.New("category is disabled")
-	ErrCategoryIsGroup                = errors.New("category is a group; transactions must use a leaf or standalone category")
+	ErrCategoryIsParent               = errors.New("category is a parent; transactions must us child category")
+	ErrAccountNotFound                = errors.New("account not found")
 )
 
 type CreateTransaction struct {
@@ -38,8 +39,8 @@ func (t *CreateTransaction) Perform(ctx context.Context, writer *storage.Writer)
 	if cat.IsDisabled {
 		return ErrCategoryDisabled
 	}
-	if cat.IsGroup {
-		return ErrCategoryIsGroup
+	if cat.IsParent {
+		return ErrCategoryIsParent
 	}
 
 	account, err := writer.Account.FindByIDForUpdate(ctx, t.AccountID)
@@ -47,7 +48,7 @@ func (t *CreateTransaction) Perform(ctx context.Context, writer *storage.Writer)
 		return err
 	}
 	if account == nil {
-		return errors.New("account not found")
+		return ErrAccountNotFound
 	}
 
 	storageCreate := &transaction.TransactionCreate{
