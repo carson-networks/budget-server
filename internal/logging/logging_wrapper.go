@@ -11,9 +11,8 @@ func LoggingWrapper(
 	log *logrus.Logger,
 	handler func(http.ResponseWriter, *http.Request, *LogData) error,
 ) http.HandlerFunc {
-	logData := NewLogData(log)
-
 	return func(w http.ResponseWriter, req *http.Request) {
+		logData := NewLogData(log)
 		log.Infof("Handler.%v.Start", loggingName)
 
 		endTimer := logData.AddTiming("duration")
