@@ -26,33 +26,21 @@ func (_m *MockICategoryWriter) EXPECT() *MockICategoryWriter_Expecter {
 }
 
 // Create provides a mock function with given fields: ctx, create
-func (_m *MockICategoryWriter) Create(ctx context.Context, create *category.CategoryCreate) (uuid.UUID, error) {
+func (_m *MockICategoryWriter) Create(ctx context.Context, create *category.CategoryCreate) error {
 	ret := _m.Called(ctx, create)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
 	}
 
-	var r0 uuid.UUID
-	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, *category.CategoryCreate) (uuid.UUID, error)); ok {
-		return rf(ctx, create)
-	}
-	if rf, ok := ret.Get(0).(func(context.Context, *category.CategoryCreate) uuid.UUID); ok {
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, *category.CategoryCreate) error); ok {
 		r0 = rf(ctx, create)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(uuid.UUID)
-		}
+		r0 = ret.Error(0)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, *category.CategoryCreate) error); ok {
-		r1 = rf(ctx, create)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+	return r0
 }
 
 // MockICategoryWriter_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
@@ -74,12 +62,12 @@ func (_c *MockICategoryWriter_Create_Call) Run(run func(ctx context.Context, cre
 	return _c
 }
 
-func (_c *MockICategoryWriter_Create_Call) Return(_a0 uuid.UUID, _a1 error) *MockICategoryWriter_Create_Call {
-	_c.Call.Return(_a0, _a1)
+func (_c *MockICategoryWriter_Create_Call) Return(_a0 error) *MockICategoryWriter_Create_Call {
+	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockICategoryWriter_Create_Call) RunAndReturn(run func(context.Context, *category.CategoryCreate) (uuid.UUID, error)) *MockICategoryWriter_Create_Call {
+func (_c *MockICategoryWriter_Create_Call) RunAndReturn(run func(context.Context, *category.CategoryCreate) error) *MockICategoryWriter_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }

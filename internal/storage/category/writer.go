@@ -27,24 +27,24 @@ func NewWriter(tx bob.Tx) *Writer {
 	}
 }
 
-func (w *Writer) Create(ctx context.Context, create *CategoryCreate) (uuid.UUID, error) {
+func (w *Writer) Create(ctx context.Context, create *CategoryCreate) error {
 	setter := &bobgen.CategorySetter{
 		Name:             omit.From(create.Name),
-		IsGroup:          omit.From(create.IsGroup),
-		ShouldBeBudgeted: omit.From(create.ShouldBeBudgeted),
+		IsGroup:          omit.From(create.IsParent),
+		ShouldBeBudgeted: omit.From(true),
 		IsDisabled:       omit.From(create.IsDisabled),
 		CategoryType:     omit.From(int16(create.CategoryType)),
 	}
-	if create.ParentID != nil {
-		setter.ParentID = omitnull.From(*create.ParentID)
-	} else if create.ParentID == nil && create.IsGroup == false {
-		return uuid.Nil, errors.New("parentID must be set if IsGroup is false")
+	if create.ParentCategoryID != nil {
+		setter.ParentID = omitnull.From(*create.ParentCategoryID)
+	} else if create.ParentCategoryID == nil && create.IsParent == false {
+		return errors.New("parentID must be set if IsParent is false")
 	}
-	row, err := bobgen.Categories.Insert(setter).One(ctx, w.tx)
+	_, err := bobgen.Categories.Insert(setter).One(ctx, w.tx)
 	if err != nil {
-		return uuid.Nil, err
+		return err
 	}
-	return row.ID, nil
+	return nil
 }
 
 func (w *Writer) Update(ctx context.Context, id uuid.UUID, update *CategoryUpdate) error {
@@ -52,14 +52,14 @@ func (w *Writer) Update(ctx context.Context, id uuid.UUID, update *CategoryUpdat
 	if update.Name != nil {
 		setter.Name = omit.From(*update.Name)
 	}
-	if update.ParentID != nil {
-		setter.ParentID = omitnull.From(*update.ParentID)
-	}
-	if update.ShouldBeBudgeted != nil {
-		setter.ShouldBeBudgeted = omit.From(*update.ShouldBeBudgeted)
+	if update.ParentCategoryID != nil {
+		setter.ParentID = omitnull.From(*update.ParentCategoryID)
 	}
 	if update.IsDisabled != nil {
 		setter.IsDisabled = omit.From(*update.IsDisabled)
+	}
+	if update.CategoryType != nil {
+		setter.CategoryType = omit.From(int16(*update.CategoryType))
 	}
 	if len(setter.SetColumns()) == 0 {
 		return nil

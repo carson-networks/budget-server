@@ -127,3 +127,54 @@ func TestHTTP_CreateTransaction_ProcessReturnsError(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, resp.Code)
 	mockOp.AssertExpectations(t)
 }
+
+func TestHTTP_CreateTransaction_CategoryNotFound(t *testing.T) {
+	mockOp := &operator.MockIProcessor{}
+	mockOp.EXPECT().
+		Process(mock.Anything, mock.Anything).
+		Return(actions.ErrCategoryNotFoundForTransaction)
+
+	resp := newCreateTransactionTestAPI(t, mockOp).Post("/v1/transaction", CreateTransactionBody{
+		AccountID:       uuid.Must(uuid.NewV4()).String(),
+		CategoryID:      uuid.Must(uuid.NewV4()).String(),
+		Amount:          "10",
+		TransactionName: "Test",
+	})
+
+	assert.Equal(t, http.StatusNotFound, resp.Code)
+	mockOp.AssertExpectations(t)
+}
+
+func TestHTTP_CreateTransaction_CategoryDisabled(t *testing.T) {
+	mockOp := &operator.MockIProcessor{}
+	mockOp.EXPECT().
+		Process(mock.Anything, mock.Anything).
+		Return(actions.ErrCategoryDisabled)
+
+	resp := newCreateTransactionTestAPI(t, mockOp).Post("/v1/transaction", CreateTransactionBody{
+		AccountID:       uuid.Must(uuid.NewV4()).String(),
+		CategoryID:      uuid.Must(uuid.NewV4()).String(),
+		Amount:          "10",
+		TransactionName: "Test",
+	})
+
+	assert.Equal(t, http.StatusBadRequest, resp.Code)
+	mockOp.AssertExpectations(t)
+}
+
+func TestHTTP_CreateTransaction_CategoryIsParent(t *testing.T) {
+	mockOp := &operator.MockIProcessor{}
+	mockOp.EXPECT().
+		Process(mock.Anything, mock.Anything).
+		Return(actions.ErrCategoryIsParent)
+
+	resp := newCreateTransactionTestAPI(t, mockOp).Post("/v1/transaction", CreateTransactionBody{
+		AccountID:       uuid.Must(uuid.NewV4()).String(),
+		CategoryID:      uuid.Must(uuid.NewV4()).String(),
+		Amount:          "10",
+		TransactionName: "Test",
+	})
+
+	assert.Equal(t, http.StatusBadRequest, resp.Code)
+	mockOp.AssertExpectations(t)
+}

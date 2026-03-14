@@ -11,16 +11,15 @@ import (
 )
 
 var (
-	ErrCategoryMustBeInGroup  = errors.New("category must be in a group; parentID is required for non-group categories")
-	ErrParentCategoryNotFound = errors.New("parent category not found")
-	ErrParentMustBeGroup      = errors.New("parent must be a group")
+	ErrParentCategoryIsNotParent      = errors.New("parent category is not parent")
+	ErrParentCategoryNotFound         = errors.New("parent category not found")
+	ErrStandaloneCategoryNotSupported = errors.New("standalone category is not supported")
 )
 
 type CreateCategory struct {
 	Name             string
-	IsGroup          bool
-	ParentID         *uuid.UUID
-	ShouldBeBudgeted bool
+	IsParent         bool
+	ParentCategoryID *uuid.UUID
 	IsDisabled       bool
 	CategoryType     category.CategoryType
 
@@ -28,30 +27,32 @@ type CreateCategory struct {
 }
 
 func (c *CreateCategory) Perform(ctx context.Context, writer *storage.Writer) error {
-	if !c.IsGroup && c.ParentID == nil {
-		return ErrCategoryMustBeInGroup
+	if !c.IsParent && c.ParentCategoryID == nil {
+		return ErrStandaloneCategoryNotSupported
 	}
-	if c.ParentID != nil {
-		parent, err := writer.Category.GetByID(ctx, *c.ParentID)
+	if c.ParentCategoryID != nil {
+		parent, err := writer.Category.GetByID(ctx, *c.ParentCategoryID)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return ErrParentCategoryNotFound
 			}
 			return err
 		}
-		if !parent.IsGroup {
-			return ErrParentMustBeGroup
+		if !parent.IsParent {
+			return ErrParentCategoryIsNotParent
 		}
 	}
 
 	create := &category.CategoryCreate{
 		Name:             c.Name,
-		IsGroup:          c.IsGroup,
-		ParentID:         c.ParentID,
-		ShouldBeBudgeted: c.ShouldBeBudgeted,
+		IsParent:         c.IsParent,
+		ParentCategoryID: c.ParentCategoryID,
 		IsDisabled:       c.IsDisabled,
 		CategoryType:     c.CategoryType,
 	}
-	_, err := writer.Category.Create(ctx, create)
-	return err
+	err := writer.Category.Create(ctx, create)
+	if err != nil {
+		return err
+	}
+	return nil
 }

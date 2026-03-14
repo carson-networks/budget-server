@@ -18,9 +18,8 @@ const (
 type Category struct {
 	ID               uuid.UUID
 	Name             string
-	IsGroup          bool
-	ParentID         *uuid.UUID
-	ShouldBeBudgeted bool
+	IsParent         bool
+	ParentCategoryID *uuid.UUID
 	IsDisabled       bool
 	CategoryType     CategoryType
 	CreatedAt        time.Time
@@ -34,12 +33,23 @@ type CategoryFilter struct {
 	IsDisabled *bool
 }
 
+// CategoryCursor identifies a position in a paginated result set.
+type CategoryCursor struct {
+	Position int
+	Limit    int
+}
+
+// CategoryListResult contains a page of categories and an optional next cursor.
+type CategoryListResult struct {
+	Categories []*Category
+	NextCursor *CategoryCursor
+}
+
 // CategoryCreate is the input for creating a category.
 type CategoryCreate struct {
 	Name             string
-	IsGroup          bool
-	ParentID         *uuid.UUID // required when IsGroup is false; nil for root groups
-	ShouldBeBudgeted bool
+	IsParent         bool
+	ParentCategoryID *uuid.UUID // required when IsParent is false; nil for root groups
 	IsDisabled       bool
 	CategoryType     CategoryType
 }
@@ -47,23 +57,22 @@ type CategoryCreate struct {
 // CategoryUpdate is the input for updating a category (mutable fields only).
 type CategoryUpdate struct {
 	Name             *string
-	ParentID         *uuid.UUID
-	ShouldBeBudgeted *bool
+	ParentCategoryID *uuid.UUID
 	IsDisabled       *bool
+	CategoryType     *CategoryType
 }
 
 func bobCategoryToCategory(row *bobgen.Category) *Category {
-	var parentID *uuid.UUID
+	var parentCategoryID *uuid.UUID
 	if row.ParentID.IsValue() {
 		id := row.ParentID.MustGet()
-		parentID = &id
+		parentCategoryID = &id
 	}
 	return &Category{
 		ID:               row.ID,
 		Name:             row.Name,
-		IsGroup:          row.IsGroup,
-		ParentID:         parentID,
-		ShouldBeBudgeted: row.ShouldBeBudgeted,
+		IsParent:         row.IsGroup,
+		ParentCategoryID: parentCategoryID,
 		IsDisabled:       row.IsDisabled,
 		CategoryType:     CategoryType(row.CategoryType),
 		CreatedAt:        row.CreatedAt,

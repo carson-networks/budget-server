@@ -20,7 +20,7 @@ func NewReader(exec bob.Executor) *Reader {
 	return &Reader{exec: exec}
 }
 
-func (r *Reader) List(ctx context.Context, filter *CategoryFilter) ([]*Category, error) {
+func (r *Reader) List(ctx context.Context, filter *CategoryFilter) (*CategoryListResult, error) {
 	limit := 20
 	offset := 0
 	if filter != nil {
@@ -58,14 +58,23 @@ func (r *Reader) List(ctx context.Context, filter *CategoryFilter) ([]*Category,
 	}
 
 	if len(rows) == 0 {
-		return nil, nil
+		return &CategoryListResult{Categories: nil, NextCursor: nil}, nil
+	}
+
+	var nextCursor *CategoryCursor
+	if len(rows) > limit {
+		rows = rows[:limit]
+		nextCursor = &CategoryCursor{
+			Position: offset + limit,
+			Limit:    limit,
+		}
 	}
 
 	result := make([]*Category, len(rows))
 	for i, row := range rows {
 		result[i] = bobCategoryToCategory(row)
 	}
-	return result, nil
+	return &CategoryListResult{Categories: result, NextCursor: nextCursor}, nil
 }
 
 func (r *Reader) GetByID(ctx context.Context, id uuid.UUID) (*Category, error) {
