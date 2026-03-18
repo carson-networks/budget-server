@@ -2,6 +2,7 @@ package storage
 
 import (
 	"github.com/carson-networks/budget-server/internal/storage/account"
+	"github.com/carson-networks/budget-server/internal/storage/budget"
 	"github.com/carson-networks/budget-server/internal/storage/category"
 	"github.com/carson-networks/budget-server/internal/storage/transaction"
 	"github.com/stephenafamo/bob"
@@ -11,6 +12,7 @@ type Reader struct {
 	Accounts     *account.Reader
 	Transactions *transaction.Reader
 	Categories   *category.Reader
+	Budgets      *budget.Reader
 }
 
 func NewReader(exec bob.Executor) *Reader {
@@ -18,5 +20,6 @@ func NewReader(exec bob.Executor) *Reader {
 		Accounts:     account.NewReader(exec),
 		Transactions: transaction.NewReader(exec),
 		Categories:   category.NewReader(exec),
+		Budgets:      budget.NewReader(exec),
 	}
 }
