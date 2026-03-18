@@ -2,7 +2,6 @@ package budget
 
 import (
 	"context"
-	"time"
 
 	"github.com/aarondl/opt/omit"
 	"github.com/carson-networks/budget-server/internal/storage/sqlconfig/bobgen"
@@ -28,10 +27,17 @@ func NewWriter(tx bob.Tx) *Writer {
 }
 
 // Set inserts or updates a budget row (upsert on category_id, month).
+// If OverwriteFutureMonths is true, deletes budgets for this category in months after the given month first (same transaction).
 func (w *Writer) Set(ctx context.Context, set *BudgetSet) error {
+	monthTime := monthYearToTime(set.Month, set.Year)
+	if set.OverwriteFutureMonths {
+		if err := w.deleteByCategoryAndMonthsAfter(ctx, set.CategoryID, set.Month, set.Year); err != nil {
+			return err
+		}
+	}
 	setter := &bobgen.BudgetSetter{
 		CategoryID: omit.From(set.CategoryID),
-		Month:      omit.From(set.Month),
+		Month:      omit.From(monthTime),
 		Amount:     omit.From(set.Amount),
 	}
 	_, err := bobgen.Budgets.Insert(
@@ -41,12 +47,13 @@ func (w *Writer) Set(ctx context.Context, set *BudgetSet) error {
 	return err
 }
 
-// DeleteByCategoryAndMonthsAfter deletes all budgets for the given category where month > the given month.
-func (w *Writer) DeleteByCategoryAndMonthsAfter(ctx context.Context, categoryID uuid.UUID, month time.Time) error {
+// deleteByCategoryAndMonthsAfter deletes all budgets for the given category where month > the given month/year.
+func (w *Writer) deleteByCategoryAndMonthsAfter(ctx context.Context, categoryID uuid.UUID, month, year int) error {
+	monthTime := monthYearToTime(month, year)
 	_, err := bobgen.Budgets.Delete(
 		dm.Where(psql.And(
 			bobgen.Budgets.Columns.CategoryID.EQ(psql.Arg(categoryID)),
-			bobgen.Budgets.Columns.Month.GT(psql.Arg(month)),
+			bobgen.Budgets.Columns.Month.GT(psql.Arg(monthTime)),
 		)),
 	).Exec(ctx, w.tx)
 	return err

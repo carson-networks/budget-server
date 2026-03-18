@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"time"
 
 	"github.com/carson-networks/budget-server/internal/storage"
 	"github.com/carson-networks/budget-server/internal/storage/budget"
@@ -14,17 +13,23 @@ import (
 
 var (
 	ErrCategoryNotFoundForBudget = errors.New("category not found")
+	ErrInvalidMonth              = errors.New("month must be between 1 and 12")
 )
 
 type SetBudget struct {
 	CategoryID            uuid.UUID
-	Month                 time.Time
+	Month                 int // 1-12
+	Year                  int
 	Amount                decimal.Decimal
 	OverwriteFutureMonths bool
 	IAction
 }
 
 func (a *SetBudget) Perform(ctx context.Context, writer *storage.Writer) error {
+	if a.Month < 1 || a.Month > 12 {
+		return ErrInvalidMonth
+	}
+
 	cat, err := writer.Category.GetByID(ctx, a.CategoryID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -36,16 +41,11 @@ func (a *SetBudget) Perform(ctx context.Context, writer *storage.Writer) error {
 		return ErrCategoryIsParent
 	}
 
-	if a.OverwriteFutureMonths {
-		err = writer.Budget.DeleteByCategoryAndMonthsAfter(ctx, a.CategoryID, a.Month)
-		if err != nil {
-			return err
-		}
-	}
-
 	return writer.Budget.Set(ctx, &budget.BudgetSet{
-		CategoryID: a.CategoryID,
-		Month:      a.Month,
-		Amount:     a.Amount,
+		CategoryID:            a.CategoryID,
+		Month:                 a.Month,
+		Year:                  a.Year,
+		Amount:                a.Amount,
+		OverwriteFutureMonths: a.OverwriteFutureMonths,
 	})
 }

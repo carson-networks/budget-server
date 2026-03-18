@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/gofrs/uuid/v5"
 	"github.com/shopspring/decimal"
@@ -27,7 +26,6 @@ func validLeafCategory(id uuid.UUID) *category.Category {
 
 func TestSetBudget_Perform_Success(t *testing.T) {
 	categoryID := uuid.Must(uuid.NewV4())
-	month := time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC)
 	amount := decimal.NewFromInt(500)
 
 	mockCat := &storage.MockICategoryWriter{}
@@ -38,7 +36,7 @@ func TestSetBudget_Perform_Success(t *testing.T) {
 	mockBudget := &storage.MockIBudgetWriter{}
 	mockBudget.EXPECT().
 		Set(mock.Anything, mock.MatchedBy(func(s *budget.BudgetSet) bool {
-			return s.CategoryID == categoryID && s.Month.Equal(month) && s.Amount.Equal(amount)
+			return s.CategoryID == categoryID && s.Month == 3 && s.Year == 2025 && s.Amount.Equal(amount) && !s.OverwriteFutureMonths
 		})).
 		Return(nil)
 
@@ -48,7 +46,8 @@ func TestSetBudget_Perform_Success(t *testing.T) {
 
 	action := &SetBudget{
 		CategoryID:            categoryID,
-		Month:                 month,
+		Month:                 3,
+		Year:                  2025,
 		Amount:                amount,
 		OverwriteFutureMonths: false,
 	}
@@ -61,7 +60,6 @@ func TestSetBudget_Perform_Success(t *testing.T) {
 
 func TestSetBudget_Perform_WithOverwriteFutureMonths(t *testing.T) {
 	categoryID := uuid.Must(uuid.NewV4())
-	month := time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC)
 	amount := decimal.NewFromInt(500)
 
 	mockCat := &storage.MockICategoryWriter{}
@@ -71,11 +69,8 @@ func TestSetBudget_Perform_WithOverwriteFutureMonths(t *testing.T) {
 
 	mockBudget := &storage.MockIBudgetWriter{}
 	mockBudget.EXPECT().
-		DeleteByCategoryAndMonthsAfter(mock.Anything, categoryID, month).
-		Return(nil)
-	mockBudget.EXPECT().
 		Set(mock.Anything, mock.MatchedBy(func(s *budget.BudgetSet) bool {
-			return s.CategoryID == categoryID && s.Month.Equal(month) && s.Amount.Equal(amount)
+			return s.CategoryID == categoryID && s.Month == 3 && s.Year == 2025 && s.Amount.Equal(amount) && s.OverwriteFutureMonths
 		})).
 		Return(nil)
 
@@ -85,7 +80,8 @@ func TestSetBudget_Perform_WithOverwriteFutureMonths(t *testing.T) {
 
 	action := &SetBudget{
 		CategoryID:            categoryID,
-		Month:                 month,
+		Month:                 3,
+		Year:                  2025,
 		Amount:                amount,
 		OverwriteFutureMonths: true,
 	}
@@ -96,9 +92,25 @@ func TestSetBudget_Perform_WithOverwriteFutureMonths(t *testing.T) {
 	mockBudget.AssertExpectations(t)
 }
 
+func TestSetBudget_Perform_InvalidMonth(t *testing.T) {
+	categoryID := uuid.Must(uuid.NewV4())
+	wt := storage.NewWriterForTest()
+
+	for _, month := range []int{0, 13} {
+		action := &SetBudget{
+			CategoryID: categoryID,
+			Month:      month,
+			Year:       2025,
+			Amount:     decimal.NewFromInt(500),
+		}
+		err := action.Perform(context.Background(), wt)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, ErrInvalidMonth)
+	}
+}
+
 func TestSetBudget_Perform_CategoryNotFound(t *testing.T) {
 	categoryID := uuid.Must(uuid.NewV4())
-	month := time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC)
 
 	mockCat := &storage.MockICategoryWriter{}
 	mockCat.EXPECT().
@@ -110,7 +122,8 @@ func TestSetBudget_Perform_CategoryNotFound(t *testing.T) {
 
 	action := &SetBudget{
 		CategoryID: categoryID,
-		Month:      month,
+		Month:      3,
+		Year:       2025,
 		Amount:     decimal.NewFromInt(500),
 	}
 
@@ -122,7 +135,6 @@ func TestSetBudget_Perform_CategoryNotFound(t *testing.T) {
 
 func TestSetBudget_Perform_CategoryIsParent(t *testing.T) {
 	categoryID := uuid.Must(uuid.NewV4())
-	month := time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC)
 	cat := validLeafCategory(categoryID)
 	cat.IsParent = true
 
@@ -136,7 +148,8 @@ func TestSetBudget_Perform_CategoryIsParent(t *testing.T) {
 
 	action := &SetBudget{
 		CategoryID: categoryID,
-		Month:      month,
+		Month:      3,
+		Year:       2025,
 		Amount:     decimal.NewFromInt(500),
 	}
 
@@ -149,7 +162,6 @@ func TestSetBudget_Perform_CategoryIsParent(t *testing.T) {
 func TestSetBudget_Perform_SetError(t *testing.T) {
 	setErr := errors.New("set failed")
 	categoryID := uuid.Must(uuid.NewV4())
-	month := time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC)
 	amount := decimal.NewFromInt(500)
 
 	mockCat := &storage.MockICategoryWriter{}
@@ -168,7 +180,8 @@ func TestSetBudget_Perform_SetError(t *testing.T) {
 
 	action := &SetBudget{
 		CategoryID: categoryID,
-		Month:      month,
+		Month:      3,
+		Year:       2025,
 		Amount:     amount,
 	}
 
@@ -178,10 +191,9 @@ func TestSetBudget_Perform_SetError(t *testing.T) {
 	mockBudget.AssertExpectations(t)
 }
 
-func TestSetBudget_Perform_DeleteByCategoryAndMonthsAfterError(t *testing.T) {
-	deleteErr := errors.New("delete failed")
+func TestSetBudget_Perform_SetError_WithOverwriteFutureMonths(t *testing.T) {
+	setErr := errors.New("set failed")
 	categoryID := uuid.Must(uuid.NewV4())
-	month := time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC)
 
 	mockCat := &storage.MockICategoryWriter{}
 	mockCat.EXPECT().
@@ -190,8 +202,10 @@ func TestSetBudget_Perform_DeleteByCategoryAndMonthsAfterError(t *testing.T) {
 
 	mockBudget := &storage.MockIBudgetWriter{}
 	mockBudget.EXPECT().
-		DeleteByCategoryAndMonthsAfter(mock.Anything, categoryID, month).
-		Return(deleteErr)
+		Set(mock.Anything, mock.MatchedBy(func(s *budget.BudgetSet) bool {
+			return s.OverwriteFutureMonths
+		})).
+		Return(setErr)
 
 	wt := storage.NewWriterForTest()
 	wt.Category = mockCat
@@ -199,13 +213,14 @@ func TestSetBudget_Perform_DeleteByCategoryAndMonthsAfterError(t *testing.T) {
 
 	action := &SetBudget{
 		CategoryID:            categoryID,
-		Month:                 month,
+		Month:                 3,
+		Year:                  2025,
 		Amount:                decimal.NewFromInt(500),
 		OverwriteFutureMonths: true,
 	}
 
 	err := action.Perform(context.Background(), wt)
-	assert.ErrorIs(t, err, deleteErr)
+	assert.ErrorIs(t, err, setErr)
 	mockCat.AssertExpectations(t)
 	mockBudget.AssertExpectations(t)
 }

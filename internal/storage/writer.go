@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"time"
 
 	"github.com/carson-networks/budget-server/internal/storage/account"
 	"github.com/carson-networks/budget-server/internal/storage/budget"
@@ -35,7 +34,6 @@ type ICategoryWriter interface {
 // IBudgetWriter defines the budget write operations used by actions.
 type IBudgetWriter interface {
 	Set(ctx context.Context, set *budget.BudgetSet) error
-	DeleteByCategoryAndMonthsAfter(ctx context.Context, categoryID uuid.UUID, month time.Time) error
 }
 
 // txRunner is the minimal interface for transaction commit/rollback.
