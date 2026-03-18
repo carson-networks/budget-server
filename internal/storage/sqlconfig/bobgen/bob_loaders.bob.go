@@ -17,12 +17,14 @@ import (
 var Preload = getPreloaders()
 
 type preloaders struct {
+	Budget      budgetPreloader
 	Category    categoryPreloader
 	Transaction transactionPreloader
 }
 
 func getPreloaders() preloaders {
 	return preloaders{
+		Budget:      buildBudgetPreloader(),
 		Category:    buildCategoryPreloader(),
 		Transaction: buildTransactionPreloader(),
 	}
@@ -35,12 +37,14 @@ var (
 )
 
 type thenLoaders[Q orm.Loadable] struct {
+	Budget      budgetThenLoader[Q]
 	Category    categoryThenLoader[Q]
 	Transaction transactionThenLoader[Q]
 }
 
 func getThenLoaders[Q orm.Loadable]() thenLoaders[Q] {
 	return thenLoaders[Q]{
+		Budget:      buildBudgetThenLoader[Q](),
 		Category:    buildCategoryThenLoader[Q](),
 		Transaction: buildTransactionThenLoader[Q](),
 	}

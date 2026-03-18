@@ -51,6 +51,7 @@ type CategoriesQuery = *psql.ViewQuery[*Category, CategorySlice]
 
 // categoryR is where relationships are stored.
 type categoryR struct {
+	Budgets        BudgetSlice      // budgets.fk_budgets_category
 	Parent         *Category        // categories.fk_categories_parent
 	ReverseParents CategorySlice    // categories.fk_categories_parent__self_join_reverse
 	Transactions   TransactionSlice // transactions.fk_transactions_category_id
@@ -512,6 +513,30 @@ func (o CategorySlice) ReloadAll(ctx context.Context, exec bob.Executor) error {
 	return nil
 }
 
+// Budgets starts a query for related objects on budgets
+func (o *Category) Budgets(mods ...bob.Mod[*dialect.SelectQuery]) BudgetsQuery {
+	return Budgets.Query(append(mods,
+		sm.Where(Budgets.Columns.CategoryID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os CategorySlice) Budgets(mods ...bob.Mod[*dialect.SelectQuery]) BudgetsQuery {
+	pkID := make(pgtypes.Array[uuid.UUID], 0, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		pkID = append(pkID, o.ID)
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkID), "uuid[]")),
+	))
+
+	return Budgets.Query(append(mods,
+		sm.Where(psql.Group(Budgets.Columns.CategoryID).OP("IN", PKArgExpr)),
+	)...)
+}
+
 // Parent starts a query for related objects on categories
 func (o *Category) Parent(mods ...bob.Mod[*dialect.SelectQuery]) CategoriesQuery {
 	return Categories.Query(append(mods,
@@ -582,6 +607,74 @@ func (os CategorySlice) Transactions(mods ...bob.Mod[*dialect.SelectQuery]) Tran
 	return Transactions.Query(append(mods,
 		sm.Where(psql.Group(Transactions.Columns.CategoryID).OP("IN", PKArgExpr)),
 	)...)
+}
+
+func insertCategoryBudgets0(ctx context.Context, exec bob.Executor, budgets1 []*BudgetSetter, category0 *Category) (BudgetSlice, error) {
+	for i := range budgets1 {
+		budgets1[i].CategoryID = omit.From(category0.ID)
+	}
+
+	ret, err := Budgets.Insert(bob.ToMods(budgets1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertCategoryBudgets0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachCategoryBudgets0(ctx context.Context, exec bob.Executor, count int, budgets1 BudgetSlice, category0 *Category) (BudgetSlice, error) {
+	setter := &BudgetSetter{
+		CategoryID: omit.From(category0.ID),
+	}
+
+	err := budgets1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachCategoryBudgets0: %w", err)
+	}
+
+	return budgets1, nil
+}
+
+func (category0 *Category) InsertBudgets(ctx context.Context, exec bob.Executor, related ...*BudgetSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	budgets1, err := insertCategoryBudgets0(ctx, exec, related, category0)
+	if err != nil {
+		return err
+	}
+
+	category0.R.Budgets = append(category0.R.Budgets, budgets1...)
+
+	for _, rel := range budgets1 {
+		rel.R.Category = category0
+	}
+	return nil
+}
+
+func (category0 *Category) AttachBudgets(ctx context.Context, exec bob.Executor, related ...*Budget) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	budgets1 := BudgetSlice(related)
+
+	_, err = attachCategoryBudgets0(ctx, exec, len(related), budgets1, category0)
+	if err != nil {
+		return err
+	}
+
+	category0.R.Budgets = append(category0.R.Budgets, budgets1...)
+
+	for _, rel := range related {
+		rel.R.Category = category0
+	}
+
+	return nil
 }
 
 func attachCategoryParent0(ctx context.Context, exec bob.Executor, count int, category0 *Category, category1 *Category) (*Category, error) {
@@ -741,7 +834,7 @@ func (category0 *Category) InsertTransactions(ctx context.Context, exec bob.Exec
 	category0.R.Transactions = append(category0.R.Transactions, transactions1...)
 
 	for _, rel := range transactions1 {
-		_ = rel // Transaction in this package has no R.Category field
+		rel.R.Category = category0
 	}
 	return nil
 }
@@ -762,7 +855,7 @@ func (category0 *Category) AttachTransactions(ctx context.Context, exec bob.Exec
 	category0.R.Transactions = append(category0.R.Transactions, transactions1...)
 
 	for _, rel := range related {
-		_ = rel // Transaction in this package has no R.Category field
+		rel.R.Category = category0
 	}
 
 	return nil
@@ -802,6 +895,20 @@ func (o *Category) Preload(name string, retrieved any) error {
 	}
 
 	switch name {
+	case "Budgets":
+		rels, ok := retrieved.(BudgetSlice)
+		if !ok {
+			return fmt.Errorf("category cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.Budgets = rels
+
+		for _, rel := range rels {
+			if rel != nil {
+				rel.R.Category = o
+			}
+		}
+		return nil
 	case "Parent":
 		rel, ok := retrieved.(*Category)
 		if !ok {
@@ -838,7 +945,7 @@ func (o *Category) Preload(name string, retrieved any) error {
 
 		for _, rel := range rels {
 			if rel != nil {
-				_ = rel // Transaction in this package has no R.Category field
+				rel.R.Category = o
 			}
 		}
 		return nil
@@ -870,12 +977,16 @@ func buildCategoryPreloader() categoryPreloader {
 }
 
 type categoryThenLoader[Q orm.Loadable] struct {
+	Budgets        func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 	Parent         func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 	ReverseParents func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 	Transactions   func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 }
 
 func buildCategoryThenLoader[Q orm.Loadable]() categoryThenLoader[Q] {
+	type BudgetsLoadInterface interface {
+		LoadBudgets(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
 	type ParentLoadInterface interface {
 		LoadParent(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
 	}
@@ -887,6 +998,12 @@ func buildCategoryThenLoader[Q orm.Loadable]() categoryThenLoader[Q] {
 	}
 
 	return categoryThenLoader[Q]{
+		Budgets: thenLoadBuilder[Q](
+			"Budgets",
+			func(ctx context.Context, exec bob.Executor, retrieved BudgetsLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadBudgets(ctx, exec, mods...)
+			},
+		),
 		Parent: thenLoadBuilder[Q](
 			"Parent",
 			func(ctx context.Context, exec bob.Executor, retrieved ParentLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
@@ -906,6 +1023,67 @@ func buildCategoryThenLoader[Q orm.Loadable]() categoryThenLoader[Q] {
 			},
 		),
 	}
+}
+
+// LoadBudgets loads the category's Budgets into the .R struct
+func (o *Category) LoadBudgets(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.Budgets = nil
+
+	related, err := o.Budgets(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, rel := range related {
+		rel.R.Category = o
+	}
+
+	o.R.Budgets = related
+	return nil
+}
+
+// LoadBudgets loads the category's Budgets into the .R struct
+func (os CategorySlice) LoadBudgets(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	budgets, err := os.Budgets(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		o.R.Budgets = nil
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		for _, rel := range budgets {
+
+			if !(o.ID == rel.CategoryID) {
+				continue
+			}
+
+			rel.R.Category = o
+
+			o.R.Budgets = append(o.R.Budgets, rel)
+		}
+	}
+
+	return nil
 }
 
 // LoadParent loads the category's Parent into the .R struct
@@ -1042,7 +1220,7 @@ func (o *Category) LoadTransactions(ctx context.Context, exec bob.Executor, mods
 	}
 
 	for _, rel := range related {
-		_ = rel // Transaction in this package has no R.Category field
+		rel.R.Category = o
 	}
 
 	o.R.Transactions = related
@@ -1079,7 +1257,7 @@ func (os CategorySlice) LoadTransactions(ctx context.Context, exec bob.Executor,
 				continue
 			}
 
-			_ = rel // Transaction in this package has no R.Category field
+			rel.R.Category = o
 
 			o.R.Transactions = append(o.R.Transactions, rel)
 		}
@@ -1090,6 +1268,7 @@ func (os CategorySlice) LoadTransactions(ctx context.Context, exec bob.Executor,
 
 type categoryJoins[Q dialect.Joinable] struct {
 	typ            string
+	Budgets        modAs[Q, budgetColumns]
 	Parent         modAs[Q, categoryColumns]
 	ReverseParents modAs[Q, categoryColumns]
 	Transactions   modAs[Q, transactionColumns]
@@ -1102,6 +1281,20 @@ func (j categoryJoins[Q]) aliasedAs(alias string) categoryJoins[Q] {
 func buildCategoryJoins[Q dialect.Joinable](cols categoryColumns, typ string) categoryJoins[Q] {
 	return categoryJoins[Q]{
 		typ: typ,
+		Budgets: modAs[Q, budgetColumns]{
+			c: Budgets.Columns,
+			f: func(to budgetColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, Budgets.Name().As(to.Alias())).On(
+						to.CategoryID.EQ(cols.ID),
+					))
+				}
+
+				return mods
+			},
+		},
 		Parent: modAs[Q, categoryColumns]{
 			c: Categories.Columns,
 			f: func(to categoryColumns) bob.Mod[Q] {
