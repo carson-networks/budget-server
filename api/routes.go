@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/carson-networks/budget-server/internal/handlers/v1/account"
+	"github.com/carson-networks/budget-server/internal/handlers/v1/budget"
 	"github.com/carson-networks/budget-server/internal/handlers/v1/category"
 	"github.com/carson-networks/budget-server/internal/handlers/v1/status"
 	"github.com/carson-networks/budget-server/internal/handlers/v1/transaction"
@@ -104,6 +105,12 @@ func (r *Rest) Serve() {
 
 	updateCategoryHandler := category.NewUpdateCategoryHandler(r.Operator, r.Storage.Read().Categories)
 	updateCategoryHandler.Register(api)
+
+	listBudgetsHandler := budget.NewListBudgetsHandler(r.Storage.Read().Budgets)
+	listBudgetsHandler.Register(api)
+
+	setBudgetHandler := budget.NewSetBudgetHandler(r.Operator)
+	setBudgetHandler.Register(api)
 
 	handler := loggingMiddleware(r.Logger)(corsMiddleware(mux))
 

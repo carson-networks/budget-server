@@ -16,6 +16,7 @@ func TestNewWriterForTest_ReturnsWriterWithMocks(t *testing.T) {
 	require.NotNil(t, wt.Account)
 	require.NotNil(t, wt.Transaction)
 	require.NotNil(t, wt.Category)
+	require.NotNil(t, wt.Budget)
 }
 
 func TestMockICategoryWriter_Create_Update_StructParams(t *testing.T) {

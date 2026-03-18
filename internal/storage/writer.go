@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/carson-networks/budget-server/internal/storage/account"
+	"github.com/carson-networks/budget-server/internal/storage/budget"
 	"github.com/carson-networks/budget-server/internal/storage/category"
 	"github.com/carson-networks/budget-server/internal/storage/transaction"
 	"github.com/gofrs/uuid/v5"
@@ -30,6 +31,11 @@ type ICategoryWriter interface {
 	Update(ctx context.Context, id uuid.UUID, update *category.CategoryUpdate) error
 }
 
+// IBudgetWriter defines the budget write operations used by actions.
+type IBudgetWriter interface {
+	Set(ctx context.Context, set *budget.BudgetSet) error
+}
+
 // txRunner is the minimal interface for transaction commit/rollback.
 // bob.Tx satisfies this interface. Used to allow mocking in tests.
 type txRunner interface {
@@ -42,6 +48,7 @@ type Writer struct {
 	Account     IAccountWriter
 	Transaction ITransactionWriter
 	Category    ICategoryWriter
+	Budget      IBudgetWriter
 }
 
 func NewWriter(tx bob.Tx) Writer {
@@ -50,6 +57,7 @@ func NewWriter(tx bob.Tx) Writer {
 		Account:     account.NewWriter(tx),
 		Transaction: transaction.NewWriter(tx),
 		Category:    category.NewWriter(tx),
+		Budget:      budget.NewWriter(tx),
 	}
 }
 
@@ -57,10 +65,12 @@ func NewWriterForTest() *Writer {
 	mockAccount := &MockIAccountWriter{}
 	mockTxn := &MockITransactionWriter{}
 	mockCat := &MockICategoryWriter{}
+	mockBudget := &MockIBudgetWriter{}
 	return &Writer{
 		Account:     mockAccount,
 		Transaction: mockTxn,
 		Category:    mockCat,
+		Budget:      mockBudget,
 	}
 }
 

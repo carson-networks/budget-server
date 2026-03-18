@@ -18,15 +18,18 @@ var (
 
 func Where[Q psql.Filterable]() struct {
 	Accounts     accountWhere[Q]
+	Budgets      budgetWhere[Q]
 	Categories   categoryWhere[Q]
 	Transactions transactionWhere[Q]
 } {
 	return struct {
 		Accounts     accountWhere[Q]
+		Budgets      budgetWhere[Q]
 		Categories   categoryWhere[Q]
 		Transactions transactionWhere[Q]
 	}{
 		Accounts:     buildAccountWhere[Q](Accounts.Columns),
+		Budgets:      buildBudgetWhere[Q](Budgets.Columns),
 		Categories:   buildCategoryWhere[Q](Categories.Columns),
 		Transactions: buildTransactionWhere[Q](Transactions.Columns),
 	}
