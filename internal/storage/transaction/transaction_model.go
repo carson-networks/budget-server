@@ -64,6 +64,20 @@ type TransactionListResult struct {
 	NextCursor   *TransactionCursor
 }
 
+// CategoryTotal is the sum of transaction amounts for one category within a calendar month.
+type CategoryTotal struct {
+	CategoryID   uuid.UUID
+	CategoryName string
+	Total        decimal.Decimal
+}
+
+// MonthTotals is one month in a range, with per-category totals.
+type MonthTotals struct {
+	Year       int
+	Month      int
+	Categories []CategoryTotal
+}
+
 // ITransactionTable defines the interface for transaction storage operations.
 // This abstraction allows swapping the implementation (e.g. Bob) without changing callers.
 //

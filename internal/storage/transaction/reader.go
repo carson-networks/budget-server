@@ -2,10 +2,12 @@ package transaction
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	"github.com/carson-networks/budget-server/internal/storage/sqlconfig/bobgen"
 	"github.com/gofrs/uuid/v5"
+	"github.com/shopspring/decimal"
 	"github.com/stephenafamo/bob"
 	"github.com/stephenafamo/bob/dialect/psql"
 	"github.com/stephenafamo/bob/dialect/psql/dialect"
@@ -93,4 +95,77 @@ func (r *Reader) List(ctx context.Context, filter *TransactionFilter) (*Transact
 		result[i] = bobTransactionToTransaction(row)
 	}
 	return &TransactionListResult{Transactions: result, NextCursor: nextCursor}, nil
+}
+
+func firstOfMonth(year, month int) time.Time {
+	return time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+}
+
+func (r *Reader) TotalsByMonthAndCategory(ctx context.Context, startMonth, startYear, endMonth, endYear int) ([]MonthTotals, error) {
+	start := firstOfMonth(startYear, startMonth)
+	endExclusive := firstOfMonth(endYear, endMonth).AddDate(0, 1, 0)
+
+	cols := bobgen.Transactions.Columns
+	year := psql.Cast(psql.Raw("EXTRACT(YEAR FROM ? AT TIME ZONE 'UTC')", cols.TransactionDate), "int")
+	month := psql.Cast(psql.Raw("EXTRACT(MONTH FROM ? AT TIME ZONE 'UTC')", cols.TransactionDate), "int")
+	q := psql.Select(
+		sm.Columns(year, month, cols.CategoryID, psql.F("SUM", cols.Amount)),
+		sm.From(bobgen.Transactions),
+		psql.WhereAnd(
+			bobgen.SelectWhere.Transactions.TransactionDate.GTE(start),
+			bobgen.SelectWhere.Transactions.TransactionDate.LT(endExclusive),
+		),
+		sm.GroupBy(year),
+		sm.GroupBy(month),
+		sm.GroupBy(cols.CategoryID),
+		sm.OrderBy(year),
+		sm.OrderBy(month),
+		sm.OrderBy(cols.CategoryID),
+	)
+
+	sqlStr, args, err := q.Build(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := r.exec.QueryContext(ctx, sqlStr, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	byMonth := make(map[time.Time][]CategoryTotal)
+	for rows.Next() {
+		var scanYear, scanMonth int
+		var scanCatergoryID uuid.UUID
+		var total decimal.Decimal
+		if err := rows.Scan(&scanYear, &scanMonth, &scanCatergoryID, &total); err != nil {
+			return nil, err
+		}
+		t := firstOfMonth(scanYear, scanMonth)
+		byMonth[t] = append(byMonth[t], CategoryTotal{CategoryID: scanCatergoryID, Total: total})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	var months []time.Time
+	for t := start; t.Before(endExclusive); t = t.AddDate(0, 1, 0) {
+		months = append(months, t)
+	}
+	if len(months) == 0 {
+		return nil, nil
+	}
+	out := make([]MonthTotals, 0, len(months))
+	for _, t := range months {
+		cats := byMonth[t]
+		sort.Slice(cats, func(i, j int) bool {
+			return cats[i].CategoryID.String() < cats[j].CategoryID.String()
+		})
+		out = append(out, MonthTotals{
+			Year:       t.Year(),
+			Month:      int(t.Month()),
+			Categories: cats,
+		})
+	}
+	return out, nil
 }
