@@ -88,6 +88,9 @@ func (r *Rest) Serve() {
 	listTransactionsHandler := transaction.NewListTransactionsHandler(r.Storage.Read().Transactions)
 	listTransactionsHandler.Register(api)
 
+	transactionTotalsHandler := transaction.NewTransactionTotalsHandler(r.Storage.Read().Transactions)
+	transactionTotalsHandler.Register(api)
+
 	listAccountsHandler := account.NewListAccountsHandler(r.Storage.Read().Accounts)
 	listAccountsHandler.Register(api)
 
