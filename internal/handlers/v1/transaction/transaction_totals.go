@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -29,7 +28,6 @@ type TransactionTotalsCategory struct {
 type TransactionTotalsMonth struct {
 	Year       int                         `json:"year" doc:"Year"`
 	Month      int                         `json:"month" doc:"Month (1-12)"`
-	YearMonth  string                      `json:"yearMonth" doc:"Month as YYYY-MM (UTC calendar month)"`
 	ByCategory []TransactionTotalsCategory `json:"byCategory" doc:"Totals for each category in this month"`
 }
 
@@ -112,7 +110,6 @@ func (h *TransactionTotalsHandler) handle(ctx context.Context, input *Transactio
 		body.ByMonth[i] = TransactionTotalsMonth{
 			Year:       m.Year,
 			Month:      m.Month,
-			YearMonth:  fmt.Sprintf("%04d-%02d", m.Year, m.Month),
 			ByCategory: cats,
 		}
 	}
