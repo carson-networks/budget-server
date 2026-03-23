@@ -11,10 +11,12 @@ import (
 	"github.com/carson-networks/budget-server/internal/handlers/v1/account"
 	"github.com/carson-networks/budget-server/internal/handlers/v1/budget"
 	"github.com/carson-networks/budget-server/internal/handlers/v1/category"
+	plaidhandler "github.com/carson-networks/budget-server/internal/handlers/v1/plaid"
 	"github.com/carson-networks/budget-server/internal/handlers/v1/status"
 	"github.com/carson-networks/budget-server/internal/handlers/v1/transaction"
 	"github.com/carson-networks/budget-server/internal/logging"
 	"github.com/carson-networks/budget-server/internal/operator"
+	plaidclient "github.com/carson-networks/budget-server/internal/plaid"
 	"github.com/carson-networks/budget-server/internal/storage"
 )
 
@@ -70,10 +72,11 @@ func loggingMiddleware(logger *logrus.Logger) func(http.Handler) http.Handler {
 }
 
 type Rest struct {
-	Logger   *logrus.Logger
-	Port     string
-	Storage  *storage.Storage
-	Operator *operator.OperatorDelegator
+	Logger      *logrus.Logger
+	Port        string
+	Storage     *storage.Storage
+	Operator    *operator.OperatorDelegator
+	PlaidClient *plaidclient.Client
 }
 
 func (r *Rest) Serve() {
@@ -114,6 +117,15 @@ func (r *Rest) Serve() {
 
 	setBudgetHandler := budget.NewSetBudgetHandler(r.Operator)
 	setBudgetHandler.Register(api)
+
+	createLinkTokenHandler := plaidhandler.NewCreateLinkTokenHandler(r.PlaidClient)
+	createLinkTokenHandler.Register(api)
+
+	exchangeTokenHandler := plaidhandler.NewExchangeTokenHandler(r.Operator, r.PlaidClient)
+	exchangeTokenHandler.Register(api)
+
+	syncAccountsHandler := account.NewSyncAccountsHandler(r.Operator, r.PlaidClient, r.Storage)
+	syncAccountsHandler.Register(api)
 
 	handler := loggingMiddleware(r.Logger)(corsMiddleware(mux))
 

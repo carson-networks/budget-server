@@ -55,7 +55,7 @@ func TestCreateTransaction_Perform_Success(t *testing.T) {
 	mockTxn.EXPECT().
 		Insert(mock.Anything, &transaction.TransactionCreate{
 			AccountID:       accountID,
-			CategoryID:      categoryID,
+			CategoryID:      &categoryID,
 			Amount:          amount,
 			TransactionName: "Groceries",
 			TransactionDate: txnDate,
@@ -68,7 +68,7 @@ func TestCreateTransaction_Perform_Success(t *testing.T) {
 	wt.Transaction = mockTxn
 	action := &CreateTransaction{
 		AccountID:       accountID,
-		CategoryID:      categoryID,
+		CategoryID:      &categoryID,
 		Amount:          amount,
 		TransactionName: "Groceries",
 		TransactionDate: txnDate,
@@ -94,7 +94,7 @@ func TestCreateTransaction_Perform_CategoryNotFound(t *testing.T) {
 	wt.Category = mockCat
 	action := &CreateTransaction{
 		AccountID:       accountID,
-		CategoryID:      categoryID,
+		CategoryID:      &categoryID,
 		Amount:          decimal.NewFromInt(100),
 		TransactionName: "Test",
 		TransactionDate: time.Now(),
@@ -121,7 +121,7 @@ func TestCreateTransaction_Perform_CategoryDisabled(t *testing.T) {
 	wt.Category = mockCat
 	action := &CreateTransaction{
 		AccountID:       accountID,
-		CategoryID:      categoryID,
+		CategoryID:      &categoryID,
 		Amount:          decimal.NewFromInt(100),
 		TransactionName: "Test",
 		TransactionDate: time.Now(),
@@ -148,7 +148,7 @@ func TestCreateTransaction_Perform_CategoryIsParent(t *testing.T) {
 	wt.Category = mockCat
 	action := &CreateTransaction{
 		AccountID:       accountID,
-		CategoryID:      categoryID,
+		CategoryID:      &categoryID,
 		Amount:          decimal.NewFromInt(100),
 		TransactionName: "Test",
 		TransactionDate: time.Now(),
@@ -180,7 +180,7 @@ func TestCreateTransaction_Perform_AccountNotFound(t *testing.T) {
 
 	action := &CreateTransaction{
 		AccountID:       accountID,
-		CategoryID:      categoryID,
+		CategoryID:      &categoryID,
 		Amount:          decimal.NewFromInt(100),
 		TransactionName: "Test",
 		TransactionDate: time.Now(),
@@ -214,7 +214,7 @@ func TestCreateTransaction_Perform_FindByIDForUpdateError(t *testing.T) {
 
 	action := &CreateTransaction{
 		AccountID:       accountID,
-		CategoryID:      categoryID,
+		CategoryID:      &categoryID,
 		Amount:          decimal.NewFromInt(100),
 		TransactionName: "Test",
 		TransactionDate: time.Now(),
@@ -253,7 +253,7 @@ func TestCreateTransaction_Perform_InsertError(t *testing.T) {
 
 	action := &CreateTransaction{
 		AccountID:       accountID,
-		CategoryID:      categoryID,
+		CategoryID:      &categoryID,
 		Amount:          decimal.NewFromInt(100),
 		TransactionName: "Test",
 		TransactionDate: time.Now(),
@@ -300,7 +300,7 @@ func TestCreateTransaction_Perform_UpdateBalanceError(t *testing.T) {
 
 	action := &CreateTransaction{
 		AccountID:       accountID,
-		CategoryID:      categoryID,
+		CategoryID:      &categoryID,
 		Amount:          amount,
 		TransactionName: "Test",
 		TransactionDate: time.Now(),

@@ -9,7 +9,9 @@ import (
 	"io"
 	"time"
 
+	"github.com/aarondl/opt/null"
 	"github.com/aarondl/opt/omit"
+	"github.com/aarondl/opt/omitnull"
 	"github.com/gofrs/uuid/v5"
 	"github.com/shopspring/decimal"
 	"github.com/stephenafamo/bob"
@@ -26,13 +28,13 @@ import (
 
 // Transaction is an object representing the database table.
 type Transaction struct {
-	ID              uuid.UUID       `db:"id,pk" `
-	AccountID       uuid.UUID       `db:"account_id" `
-	CategoryID      uuid.UUID       `db:"category_id" `
-	Amount          decimal.Decimal `db:"amount" `
-	TransactionName string          `db:"transaction_name" `
-	TransactionDate time.Time       `db:"transaction_date" `
-	CreatedAt       time.Time       `db:"created_at" `
+	ID              uuid.UUID           `db:"id,pk" `
+	AccountID       uuid.UUID           `db:"account_id" `
+	CategoryID      null.Val[uuid.UUID] `db:"category_id" `
+	Amount          decimal.Decimal     `db:"amount" `
+	TransactionName string              `db:"transaction_name" `
+	TransactionDate time.Time           `db:"transaction_date" `
+	CreatedAt       time.Time           `db:"created_at" `
 
 	R transactionR `db:"-" `
 }
@@ -49,7 +51,8 @@ type TransactionsQuery = *psql.ViewQuery[*Transaction, TransactionSlice]
 
 // transactionR is where relationships are stored.
 type transactionR struct {
-	Category *Category // transactions.fk_transactions_category_id
+	PlaidTransactionLinks PlaidTransactionLinkSlice // plaid_transaction_links.plaid_transaction_links_transaction_id_fkey
+	Category              *Category                 // transactions.fk_transactions_category_id
 }
 
 func buildTransactionColumns(alias string) transactionColumns {
@@ -94,7 +97,7 @@ func (transactionColumns) AliasedAs(alias string) transactionColumns {
 type TransactionSetter struct {
 	ID              omit.Val[uuid.UUID]       `db:"id,pk" `
 	AccountID       omit.Val[uuid.UUID]       `db:"account_id" `
-	CategoryID      omit.Val[uuid.UUID]       `db:"category_id" `
+	CategoryID      omitnull.Val[uuid.UUID]   `db:"category_id" `
 	Amount          omit.Val[decimal.Decimal] `db:"amount" `
 	TransactionName omit.Val[string]          `db:"transaction_name" `
 	TransactionDate omit.Val[time.Time]       `db:"transaction_date" `
@@ -109,7 +112,7 @@ func (s TransactionSetter) SetColumns() []string {
 	if s.AccountID.IsValue() {
 		vals = append(vals, "account_id")
 	}
-	if s.CategoryID.IsValue() {
+	if !s.CategoryID.IsUnset() {
 		vals = append(vals, "category_id")
 	}
 	if s.Amount.IsValue() {
@@ -134,8 +137,8 @@ func (s TransactionSetter) Overwrite(t *Transaction) {
 	if s.AccountID.IsValue() {
 		t.AccountID = s.AccountID.MustGet()
 	}
-	if s.CategoryID.IsValue() {
-		t.CategoryID = s.CategoryID.MustGet()
+	if !s.CategoryID.IsUnset() {
+		t.CategoryID = s.CategoryID.MustGetNull()
 	}
 	if s.Amount.IsValue() {
 		t.Amount = s.Amount.MustGet()
@@ -170,8 +173,8 @@ func (s *TransactionSetter) Apply(q *dialect.InsertQuery) {
 			vals[1] = psql.Raw("DEFAULT")
 		}
 
-		if s.CategoryID.IsValue() {
-			vals[2] = psql.Arg(s.CategoryID.MustGet())
+		if !s.CategoryID.IsUnset() {
+			vals[2] = psql.Arg(s.CategoryID.MustGetNull())
 		} else {
 			vals[2] = psql.Raw("DEFAULT")
 		}
@@ -225,7 +228,7 @@ func (s TransactionSetter) Expressions(prefix ...string) []bob.Expression {
 		}})
 	}
 
-	if s.CategoryID.IsValue() {
+	if !s.CategoryID.IsUnset() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "category_id")...),
 			psql.Arg(s.CategoryID),
@@ -486,6 +489,30 @@ func (o TransactionSlice) ReloadAll(ctx context.Context, exec bob.Executor) erro
 	return nil
 }
 
+// PlaidTransactionLinks starts a query for related objects on plaid_transaction_links
+func (o *Transaction) PlaidTransactionLinks(mods ...bob.Mod[*dialect.SelectQuery]) PlaidTransactionLinksQuery {
+	return PlaidTransactionLinks.Query(append(mods,
+		sm.Where(PlaidTransactionLinks.Columns.TransactionID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os TransactionSlice) PlaidTransactionLinks(mods ...bob.Mod[*dialect.SelectQuery]) PlaidTransactionLinksQuery {
+	pkID := make(pgtypes.Array[uuid.UUID], 0, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		pkID = append(pkID, o.ID)
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkID), "uuid[]")),
+	))
+
+	return PlaidTransactionLinks.Query(append(mods,
+		sm.Where(psql.Group(PlaidTransactionLinks.Columns.TransactionID).OP("IN", PKArgExpr)),
+	)...)
+}
+
 // Category starts a query for related objects on categories
 func (o *Transaction) Category(mods ...bob.Mod[*dialect.SelectQuery]) CategoriesQuery {
 	return Categories.Query(append(mods,
@@ -494,7 +521,7 @@ func (o *Transaction) Category(mods ...bob.Mod[*dialect.SelectQuery]) Categories
 }
 
 func (os TransactionSlice) Category(mods ...bob.Mod[*dialect.SelectQuery]) CategoriesQuery {
-	pkCategoryID := make(pgtypes.Array[uuid.UUID], 0, len(os))
+	pkCategoryID := make(pgtypes.Array[null.Val[uuid.UUID]], 0, len(os))
 	for _, o := range os {
 		if o == nil {
 			continue
@@ -510,9 +537,77 @@ func (os TransactionSlice) Category(mods ...bob.Mod[*dialect.SelectQuery]) Categ
 	)...)
 }
 
+func insertTransactionPlaidTransactionLinks0(ctx context.Context, exec bob.Executor, plaidTransactionLinks1 []*PlaidTransactionLinkSetter, transaction0 *Transaction) (PlaidTransactionLinkSlice, error) {
+	for i := range plaidTransactionLinks1 {
+		plaidTransactionLinks1[i].TransactionID = omit.From(transaction0.ID)
+	}
+
+	ret, err := PlaidTransactionLinks.Insert(bob.ToMods(plaidTransactionLinks1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertTransactionPlaidTransactionLinks0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachTransactionPlaidTransactionLinks0(ctx context.Context, exec bob.Executor, count int, plaidTransactionLinks1 PlaidTransactionLinkSlice, transaction0 *Transaction) (PlaidTransactionLinkSlice, error) {
+	setter := &PlaidTransactionLinkSetter{
+		TransactionID: omit.From(transaction0.ID),
+	}
+
+	err := plaidTransactionLinks1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachTransactionPlaidTransactionLinks0: %w", err)
+	}
+
+	return plaidTransactionLinks1, nil
+}
+
+func (transaction0 *Transaction) InsertPlaidTransactionLinks(ctx context.Context, exec bob.Executor, related ...*PlaidTransactionLinkSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	plaidTransactionLinks1, err := insertTransactionPlaidTransactionLinks0(ctx, exec, related, transaction0)
+	if err != nil {
+		return err
+	}
+
+	transaction0.R.PlaidTransactionLinks = append(transaction0.R.PlaidTransactionLinks, plaidTransactionLinks1...)
+
+	for _, rel := range plaidTransactionLinks1 {
+		rel.R.Transaction = transaction0
+	}
+	return nil
+}
+
+func (transaction0 *Transaction) AttachPlaidTransactionLinks(ctx context.Context, exec bob.Executor, related ...*PlaidTransactionLink) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	plaidTransactionLinks1 := PlaidTransactionLinkSlice(related)
+
+	_, err = attachTransactionPlaidTransactionLinks0(ctx, exec, len(related), plaidTransactionLinks1, transaction0)
+	if err != nil {
+		return err
+	}
+
+	transaction0.R.PlaidTransactionLinks = append(transaction0.R.PlaidTransactionLinks, plaidTransactionLinks1...)
+
+	for _, rel := range related {
+		rel.R.Transaction = transaction0
+	}
+
+	return nil
+}
+
 func attachTransactionCategory0(ctx context.Context, exec bob.Executor, count int, transaction0 *Transaction, category1 *Category) (*Transaction, error) {
 	setter := &TransactionSetter{
-		CategoryID: omit.From(category1.ID),
+		CategoryID: omitnull.From(category1.ID),
 	}
 
 	err := transaction0.Update(ctx, exec, setter)
@@ -561,7 +656,7 @@ func (transaction0 *Transaction) AttachCategory(ctx context.Context, exec bob.Ex
 type transactionWhere[Q psql.Filterable] struct {
 	ID              psql.WhereMod[Q, uuid.UUID]
 	AccountID       psql.WhereMod[Q, uuid.UUID]
-	CategoryID      psql.WhereMod[Q, uuid.UUID]
+	CategoryID      psql.WhereNullMod[Q, uuid.UUID]
 	Amount          psql.WhereMod[Q, decimal.Decimal]
 	TransactionName psql.WhereMod[Q, string]
 	TransactionDate psql.WhereMod[Q, time.Time]
@@ -576,7 +671,7 @@ func buildTransactionWhere[Q psql.Filterable](cols transactionColumns) transacti
 	return transactionWhere[Q]{
 		ID:              psql.Where[Q, uuid.UUID](cols.ID),
 		AccountID:       psql.Where[Q, uuid.UUID](cols.AccountID),
-		CategoryID:      psql.Where[Q, uuid.UUID](cols.CategoryID),
+		CategoryID:      psql.WhereNull[Q, uuid.UUID](cols.CategoryID),
 		Amount:          psql.Where[Q, decimal.Decimal](cols.Amount),
 		TransactionName: psql.Where[Q, string](cols.TransactionName),
 		TransactionDate: psql.Where[Q, time.Time](cols.TransactionDate),
@@ -590,6 +685,20 @@ func (o *Transaction) Preload(name string, retrieved any) error {
 	}
 
 	switch name {
+	case "PlaidTransactionLinks":
+		rels, ok := retrieved.(PlaidTransactionLinkSlice)
+		if !ok {
+			return fmt.Errorf("transaction cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.PlaidTransactionLinks = rels
+
+		for _, rel := range rels {
+			if rel != nil {
+				rel.R.Transaction = o
+			}
+		}
+		return nil
 	case "Category":
 		rel, ok := retrieved.(*Category)
 		if !ok {
@@ -630,15 +739,25 @@ func buildTransactionPreloader() transactionPreloader {
 }
 
 type transactionThenLoader[Q orm.Loadable] struct {
-	Category func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	PlaidTransactionLinks func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	Category              func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 }
 
 func buildTransactionThenLoader[Q orm.Loadable]() transactionThenLoader[Q] {
+	type PlaidTransactionLinksLoadInterface interface {
+		LoadPlaidTransactionLinks(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
 	type CategoryLoadInterface interface {
 		LoadCategory(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
 	}
 
 	return transactionThenLoader[Q]{
+		PlaidTransactionLinks: thenLoadBuilder[Q](
+			"PlaidTransactionLinks",
+			func(ctx context.Context, exec bob.Executor, retrieved PlaidTransactionLinksLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadPlaidTransactionLinks(ctx, exec, mods...)
+			},
+		),
 		Category: thenLoadBuilder[Q](
 			"Category",
 			func(ctx context.Context, exec bob.Executor, retrieved CategoryLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
@@ -646,6 +765,67 @@ func buildTransactionThenLoader[Q orm.Loadable]() transactionThenLoader[Q] {
 			},
 		),
 	}
+}
+
+// LoadPlaidTransactionLinks loads the transaction's PlaidTransactionLinks into the .R struct
+func (o *Transaction) LoadPlaidTransactionLinks(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.PlaidTransactionLinks = nil
+
+	related, err := o.PlaidTransactionLinks(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, rel := range related {
+		rel.R.Transaction = o
+	}
+
+	o.R.PlaidTransactionLinks = related
+	return nil
+}
+
+// LoadPlaidTransactionLinks loads the transaction's PlaidTransactionLinks into the .R struct
+func (os TransactionSlice) LoadPlaidTransactionLinks(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	plaidTransactionLinks, err := os.PlaidTransactionLinks(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		o.R.PlaidTransactionLinks = nil
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		for _, rel := range plaidTransactionLinks {
+
+			if !(o.ID == rel.TransactionID) {
+				continue
+			}
+
+			rel.R.Transaction = o
+
+			o.R.PlaidTransactionLinks = append(o.R.PlaidTransactionLinks, rel)
+		}
+	}
+
+	return nil
 }
 
 // LoadCategory loads the transaction's Category into the .R struct
@@ -685,8 +865,11 @@ func (os TransactionSlice) LoadCategory(ctx context.Context, exec bob.Executor, 
 		}
 
 		for _, rel := range categories {
+			if !o.CategoryID.IsValue() {
+				continue
+			}
 
-			if !(o.CategoryID == rel.ID) {
+			if !(o.CategoryID.IsValue() && o.CategoryID.MustGet() == rel.ID) {
 				continue
 			}
 
@@ -701,8 +884,9 @@ func (os TransactionSlice) LoadCategory(ctx context.Context, exec bob.Executor, 
 }
 
 type transactionJoins[Q dialect.Joinable] struct {
-	typ      string
-	Category modAs[Q, categoryColumns]
+	typ                   string
+	PlaidTransactionLinks modAs[Q, plaidTransactionLinkColumns]
+	Category              modAs[Q, categoryColumns]
 }
 
 func (j transactionJoins[Q]) aliasedAs(alias string) transactionJoins[Q] {
@@ -712,6 +896,20 @@ func (j transactionJoins[Q]) aliasedAs(alias string) transactionJoins[Q] {
 func buildTransactionJoins[Q dialect.Joinable](cols transactionColumns, typ string) transactionJoins[Q] {
 	return transactionJoins[Q]{
 		typ: typ,
+		PlaidTransactionLinks: modAs[Q, plaidTransactionLinkColumns]{
+			c: PlaidTransactionLinks.Columns,
+			f: func(to plaidTransactionLinkColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, PlaidTransactionLinks.Name().As(to.Alias())).On(
+						to.TransactionID.EQ(cols.ID),
+					))
+				}
+
+				return mods
+			},
+		},
 		Category: modAs[Q, categoryColumns]{
 			c: Categories.Columns,
 			f: func(to categoryColumns) bob.Mod[Q] {

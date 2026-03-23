@@ -17,16 +17,24 @@ import (
 var Preload = getPreloaders()
 
 type preloaders struct {
-	Budget      budgetPreloader
-	Category    categoryPreloader
-	Transaction transactionPreloader
+	Account              accountPreloader
+	Budget               budgetPreloader
+	Category             categoryPreloader
+	PlaidAccountLink     plaidAccountLinkPreloader
+	PlaidItem            plaidItemPreloader
+	PlaidTransactionLink plaidTransactionLinkPreloader
+	Transaction          transactionPreloader
 }
 
 func getPreloaders() preloaders {
 	return preloaders{
-		Budget:      buildBudgetPreloader(),
-		Category:    buildCategoryPreloader(),
-		Transaction: buildTransactionPreloader(),
+		Account:              buildAccountPreloader(),
+		Budget:               buildBudgetPreloader(),
+		Category:             buildCategoryPreloader(),
+		PlaidAccountLink:     buildPlaidAccountLinkPreloader(),
+		PlaidItem:            buildPlaidItemPreloader(),
+		PlaidTransactionLink: buildPlaidTransactionLinkPreloader(),
+		Transaction:          buildTransactionPreloader(),
 	}
 }
 
@@ -37,16 +45,24 @@ var (
 )
 
 type thenLoaders[Q orm.Loadable] struct {
-	Budget      budgetThenLoader[Q]
-	Category    categoryThenLoader[Q]
-	Transaction transactionThenLoader[Q]
+	Account              accountThenLoader[Q]
+	Budget               budgetThenLoader[Q]
+	Category             categoryThenLoader[Q]
+	PlaidAccountLink     plaidAccountLinkThenLoader[Q]
+	PlaidItem            plaidItemThenLoader[Q]
+	PlaidTransactionLink plaidTransactionLinkThenLoader[Q]
+	Transaction          transactionThenLoader[Q]
 }
 
 func getThenLoaders[Q orm.Loadable]() thenLoaders[Q] {
 	return thenLoaders[Q]{
-		Budget:      buildBudgetThenLoader[Q](),
-		Category:    buildCategoryThenLoader[Q](),
-		Transaction: buildTransactionThenLoader[Q](),
+		Account:              buildAccountThenLoader[Q](),
+		Budget:               buildBudgetThenLoader[Q](),
+		Category:             buildCategoryThenLoader[Q](),
+		PlaidAccountLink:     buildPlaidAccountLinkThenLoader[Q](),
+		PlaidItem:            buildPlaidItemThenLoader[Q](),
+		PlaidTransactionLink: buildPlaidTransactionLinkThenLoader[Q](),
+		Transaction:          buildTransactionThenLoader[Q](),
 	}
 }
 

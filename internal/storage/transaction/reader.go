@@ -110,7 +110,7 @@ func (r *Reader) TotalsByMonthAndCategory(ctx context.Context, startMonth, start
 	month := psql.Cast(psql.Raw("EXTRACT(MONTH FROM ? AT TIME ZONE 'UTC')", cols.TransactionDate), "int")
 	q := psql.Select(
 		sm.Columns(year, month, cols.CategoryID, psql.F("SUM", cols.Amount)),
-		sm.From(bobgen.Transactions),
+		sm.From(bobgen.Transactions.NameAs()),
 		psql.WhereAnd(
 			bobgen.SelectWhere.Transactions.TransactionDate.GTE(start),
 			bobgen.SelectWhere.Transactions.TransactionDate.LT(endExclusive),
@@ -136,13 +136,17 @@ func (r *Reader) TotalsByMonthAndCategory(ctx context.Context, startMonth, start
 	byMonth := make(map[time.Time][]CategoryTotal)
 	for rows.Next() {
 		var scanYear, scanMonth int
-		var scanCatergoryID uuid.UUID
+		var nullCatID uuid.NullUUID
 		var total decimal.Decimal
-		if err := rows.Scan(&scanYear, &scanMonth, &scanCatergoryID, &total); err != nil {
+		if err := rows.Scan(&scanYear, &scanMonth, &nullCatID, &total); err != nil {
 			return nil, err
 		}
+		catID := uuid.Nil
+		if nullCatID.Valid {
+			catID = nullCatID.UUID
+		}
 		t := firstOfMonth(scanYear, scanMonth)
-		byMonth[t] = append(byMonth[t], CategoryTotal{CategoryID: scanCatergoryID, Total: total})
+		byMonth[t] = append(byMonth[t], CategoryTotal{CategoryID: catID, Total: total})
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

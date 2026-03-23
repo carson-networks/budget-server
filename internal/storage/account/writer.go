@@ -43,7 +43,7 @@ func (w *Writer) FindByIDForUpdate(ctx context.Context, id uuid.UUID) (*Account,
 	return bobAccountToAccount(row), nil
 }
 
-func (w *Writer) Create(ctx context.Context, name string, accountType AccountType, accountSubType string, startingBalance decimal.Decimal) error {
+func (w *Writer) Create(ctx context.Context, name string, accountType AccountType, accountSubType string, startingBalance decimal.Decimal) (uuid.UUID, error) {
 	setter := &bobgen.AccountSetter{
 		Name:            omit.From(name),
 		Type:            omit.From(int16(accountType)),
@@ -51,11 +51,11 @@ func (w *Writer) Create(ctx context.Context, name string, accountType AccountTyp
 		Balance:         omit.From(startingBalance),
 		StartingBalance: omit.From(startingBalance),
 	}
-	_, err := bobgen.Accounts.Insert(setter).One(ctx, w.tx)
+	row, err := bobgen.Accounts.Insert(setter).One(ctx, w.tx)
 	if err != nil {
-		return err
+		return uuid.Nil, err
 	}
-	return err
+	return row.ID, nil
 }
 
 func (w *Writer) UpdateBalance(ctx context.Context, id uuid.UUID, balance decimal.Decimal) error {

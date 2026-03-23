@@ -10,6 +10,9 @@ type Config struct {
 	PostgresDB       string
 	PostgresUsername string
 	PostgresPassword string
+	PlaidClientID    string
+	PlaidSecret      string
+	PlaidEnv         string // "sandbox", or "production"
 }
 
 func ProcessEnvironmentVariables() (*Config, error) {
@@ -27,6 +30,9 @@ func ProcessEnvironmentVariables() (*Config, error) {
 	envPostgresDB := os.Getenv("POSTGRES_DB")
 	envPostgresUsername := os.Getenv("POSTGRES_USERNAME")
 	envPostgresPassword := os.Getenv("POSTGRES_PASSWORD")
+	envPlaidClientID := os.Getenv("PLAID_CLIENT_ID")
+	envPlaidSecret := os.Getenv("PLAID_SECRET")
+	envPlaidEnv := os.Getenv("PLAID_ENVIRONMENT")
 
 	if len(envPostgresAddress) != 0 {
 		env.PostgresAddress = envPostgresAddress
@@ -46,6 +52,20 @@ func ProcessEnvironmentVariables() (*Config, error) {
 
 	if len(envPostgresPassword) != 0 {
 		env.PostgresPassword = envPostgresPassword
+	}
+
+	if len(envPlaidClientID) != 0 {
+		env.PlaidClientID = envPlaidClientID
+	}
+
+	if len(envPlaidSecret) != 0 {
+		env.PlaidSecret = envPlaidSecret
+	}
+
+	if len(envPlaidEnv) != 0 {
+		env.PlaidEnv = envPlaidEnv
+	} else {
+		env.PlaidEnv = "sandbox"
 	}
 
 	return &env, nil

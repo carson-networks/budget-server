@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/gofrs/uuid/v5"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -24,7 +25,7 @@ func TestCreateAccount_Perform_Success(t *testing.T) {
 			"test sub type",
 			decimal.Zero,
 		).
-		Return(nil)
+		Return(uuid.Nil, nil)
 
 	wt := storage.NewWriterForTest()
 	wt.Account = mockAccount
@@ -51,7 +52,7 @@ func TestCreateAccount_Perform_CreateFails(t *testing.T) {
 			"High Yield",
 			decimal.NewFromInt(1000),
 		).
-		Return(createErr)
+		Return(uuid.Nil, createErr)
 
 	wt := storage.NewWriterForTest()
 	wt.Account = mockAccount

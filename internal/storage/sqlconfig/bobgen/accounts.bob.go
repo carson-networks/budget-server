@@ -5,6 +5,7 @@ package bobgen
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
 
@@ -18,6 +19,9 @@ import (
 	"github.com/stephenafamo/bob/dialect/psql/sm"
 	"github.com/stephenafamo/bob/dialect/psql/um"
 	"github.com/stephenafamo/bob/expr"
+	"github.com/stephenafamo/bob/mods"
+	"github.com/stephenafamo/bob/orm"
+	"github.com/stephenafamo/bob/types/pgtypes"
 )
 
 // Account is an object representing the database table.
@@ -29,6 +33,8 @@ type Account struct {
 	Balance         decimal.Decimal `db:"balance" `
 	StartingBalance decimal.Decimal `db:"starting_balance" `
 	CreatedAt       time.Time       `db:"created_at" `
+
+	R accountR `db:"-" `
 }
 
 // AccountSlice is an alias for a slice of pointers to Account.
@@ -40,6 +46,11 @@ var Accounts = psql.NewTablex[*Account, AccountSlice, *AccountSetter]("", "accou
 
 // AccountsQuery is a query on the accounts table
 type AccountsQuery = *psql.ViewQuery[*Account, AccountSlice]
+
+// accountR is where relationships are stored.
+type accountR struct {
+	PlaidAccountLinks PlaidAccountLinkSlice // plaid_account_links.plaid_account_links_account_id_fkey
+}
 
 func buildAccountColumns(alias string) accountColumns {
 	return accountColumns{
@@ -310,6 +321,7 @@ func (o *Account) Update(ctx context.Context, exec bob.Executor, s *AccountSette
 		return err
 	}
 
+	o.R = v.R
 	*o = *v
 
 	return nil
@@ -329,7 +341,7 @@ func (o *Account) Reload(ctx context.Context, exec bob.Executor) error {
 	if err != nil {
 		return err
 	}
-
+	o2.R = o.R
 	*o = *o2
 
 	return nil
@@ -376,7 +388,7 @@ func (o AccountSlice) copyMatchingRows(from ...*Account) {
 			if new.ID != old.ID {
 				continue
 			}
-
+			new.R = old.R
 			o[i] = new
 			break
 		}
@@ -474,6 +486,98 @@ func (o AccountSlice) ReloadAll(ctx context.Context, exec bob.Executor) error {
 	return nil
 }
 
+// PlaidAccountLinks starts a query for related objects on plaid_account_links
+func (o *Account) PlaidAccountLinks(mods ...bob.Mod[*dialect.SelectQuery]) PlaidAccountLinksQuery {
+	return PlaidAccountLinks.Query(append(mods,
+		sm.Where(PlaidAccountLinks.Columns.AccountID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os AccountSlice) PlaidAccountLinks(mods ...bob.Mod[*dialect.SelectQuery]) PlaidAccountLinksQuery {
+	pkID := make(pgtypes.Array[uuid.UUID], 0, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		pkID = append(pkID, o.ID)
+	}
+	PKArgExpr := psql.Select(sm.Columns(
+		psql.F("unnest", psql.Cast(psql.Arg(pkID), "uuid[]")),
+	))
+
+	return PlaidAccountLinks.Query(append(mods,
+		sm.Where(psql.Group(PlaidAccountLinks.Columns.AccountID).OP("IN", PKArgExpr)),
+	)...)
+}
+
+func insertAccountPlaidAccountLinks0(ctx context.Context, exec bob.Executor, plaidAccountLinks1 []*PlaidAccountLinkSetter, account0 *Account) (PlaidAccountLinkSlice, error) {
+	for i := range plaidAccountLinks1 {
+		plaidAccountLinks1[i].AccountID = omit.From(account0.ID)
+	}
+
+	ret, err := PlaidAccountLinks.Insert(bob.ToMods(plaidAccountLinks1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertAccountPlaidAccountLinks0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachAccountPlaidAccountLinks0(ctx context.Context, exec bob.Executor, count int, plaidAccountLinks1 PlaidAccountLinkSlice, account0 *Account) (PlaidAccountLinkSlice, error) {
+	setter := &PlaidAccountLinkSetter{
+		AccountID: omit.From(account0.ID),
+	}
+
+	err := plaidAccountLinks1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachAccountPlaidAccountLinks0: %w", err)
+	}
+
+	return plaidAccountLinks1, nil
+}
+
+func (account0 *Account) InsertPlaidAccountLinks(ctx context.Context, exec bob.Executor, related ...*PlaidAccountLinkSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	plaidAccountLinks1, err := insertAccountPlaidAccountLinks0(ctx, exec, related, account0)
+	if err != nil {
+		return err
+	}
+
+	account0.R.PlaidAccountLinks = append(account0.R.PlaidAccountLinks, plaidAccountLinks1...)
+
+	for _, rel := range plaidAccountLinks1 {
+		rel.R.Account = account0
+	}
+	return nil
+}
+
+func (account0 *Account) AttachPlaidAccountLinks(ctx context.Context, exec bob.Executor, related ...*PlaidAccountLink) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	plaidAccountLinks1 := PlaidAccountLinkSlice(related)
+
+	_, err = attachAccountPlaidAccountLinks0(ctx, exec, len(related), plaidAccountLinks1, account0)
+	if err != nil {
+		return err
+	}
+
+	account0.R.PlaidAccountLinks = append(account0.R.PlaidAccountLinks, plaidAccountLinks1...)
+
+	for _, rel := range related {
+		rel.R.Account = account0
+	}
+
+	return nil
+}
+
 type accountWhere[Q psql.Filterable] struct {
 	ID              psql.WhereMod[Q, uuid.UUID]
 	Name            psql.WhereMod[Q, string]
@@ -497,5 +601,145 @@ func buildAccountWhere[Q psql.Filterable](cols accountColumns) accountWhere[Q] {
 		Balance:         psql.Where[Q, decimal.Decimal](cols.Balance),
 		StartingBalance: psql.Where[Q, decimal.Decimal](cols.StartingBalance),
 		CreatedAt:       psql.Where[Q, time.Time](cols.CreatedAt),
+	}
+}
+
+func (o *Account) Preload(name string, retrieved any) error {
+	if o == nil {
+		return nil
+	}
+
+	switch name {
+	case "PlaidAccountLinks":
+		rels, ok := retrieved.(PlaidAccountLinkSlice)
+		if !ok {
+			return fmt.Errorf("account cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.PlaidAccountLinks = rels
+
+		for _, rel := range rels {
+			if rel != nil {
+				rel.R.Account = o
+			}
+		}
+		return nil
+	default:
+		return fmt.Errorf("account has no relationship %q", name)
+	}
+}
+
+type accountPreloader struct{}
+
+func buildAccountPreloader() accountPreloader {
+	return accountPreloader{}
+}
+
+type accountThenLoader[Q orm.Loadable] struct {
+	PlaidAccountLinks func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+}
+
+func buildAccountThenLoader[Q orm.Loadable]() accountThenLoader[Q] {
+	type PlaidAccountLinksLoadInterface interface {
+		LoadPlaidAccountLinks(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
+
+	return accountThenLoader[Q]{
+		PlaidAccountLinks: thenLoadBuilder[Q](
+			"PlaidAccountLinks",
+			func(ctx context.Context, exec bob.Executor, retrieved PlaidAccountLinksLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadPlaidAccountLinks(ctx, exec, mods...)
+			},
+		),
+	}
+}
+
+// LoadPlaidAccountLinks loads the account's PlaidAccountLinks into the .R struct
+func (o *Account) LoadPlaidAccountLinks(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.PlaidAccountLinks = nil
+
+	related, err := o.PlaidAccountLinks(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, rel := range related {
+		rel.R.Account = o
+	}
+
+	o.R.PlaidAccountLinks = related
+	return nil
+}
+
+// LoadPlaidAccountLinks loads the account's PlaidAccountLinks into the .R struct
+func (os AccountSlice) LoadPlaidAccountLinks(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	plaidAccountLinks, err := os.PlaidAccountLinks(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		o.R.PlaidAccountLinks = nil
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		for _, rel := range plaidAccountLinks {
+
+			if !(o.ID == rel.AccountID) {
+				continue
+			}
+
+			rel.R.Account = o
+
+			o.R.PlaidAccountLinks = append(o.R.PlaidAccountLinks, rel)
+		}
+	}
+
+	return nil
+}
+
+type accountJoins[Q dialect.Joinable] struct {
+	typ               string
+	PlaidAccountLinks modAs[Q, plaidAccountLinkColumns]
+}
+
+func (j accountJoins[Q]) aliasedAs(alias string) accountJoins[Q] {
+	return buildAccountJoins[Q](buildAccountColumns(alias), j.typ)
+}
+
+func buildAccountJoins[Q dialect.Joinable](cols accountColumns, typ string) accountJoins[Q] {
+	return accountJoins[Q]{
+		typ: typ,
+		PlaidAccountLinks: modAs[Q, plaidAccountLinkColumns]{
+			c: PlaidAccountLinks.Columns,
+			f: func(to plaidAccountLinkColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, PlaidAccountLinks.Name().As(to.Alias())).On(
+						to.AccountID.EQ(cols.ID),
+					))
+				}
+
+				return mods
+			},
+		},
 	}
 }

@@ -10,6 +10,7 @@ packages:
       ITransactionWriter:
       ICategoryWriter:
       IBudgetWriter:
+      IPlaidWriter:
   github.com/carson-networks/budget-server/internal/operator:
     interfaces:
       IStorage:

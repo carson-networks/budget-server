@@ -13,6 +13,7 @@ require (
 	github.com/gofrs/uuid/v5 v5.4.0
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/lib/pq v1.10.9
+	github.com/plaid/plaid-go/v41 v41.4.0
 	github.com/shopspring/decimal v1.4.0
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stephenafamo/bob v0.42.0
@@ -48,6 +49,7 @@ require (
 	github.com/vektra/mockery/v2 v2.53.6 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/mod v0.33.0 // indirect
+	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260209163413-e7419c687ee4 // indirect

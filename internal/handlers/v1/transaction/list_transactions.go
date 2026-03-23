@@ -132,15 +132,19 @@ func (h *ListTransactionsHandler) handle(ctx context.Context, input *ListTransac
 	}
 
 	for i, tx := range transactions {
-		resp.Transactions[i] = Transaction{
+		t := Transaction{
 			ID:              tx.ID.String(),
 			AccountID:       tx.AccountID.String(),
-			CategoryID:      tx.CategoryID.String(),
 			Amount:          tx.Amount.String(),
 			TransactionName: tx.TransactionName,
 			TransactionDate: tx.TransactionDate.Format(time.RFC3339),
 			CreatedAt:       tx.CreatedAt.Format(time.RFC3339),
 		}
+		if tx.CategoryID != nil {
+			s := tx.CategoryID.String()
+			t.CategoryID = &s
+		}
+		resp.Transactions[i] = t
 	}
 
 	if result.NextCursor != nil {
