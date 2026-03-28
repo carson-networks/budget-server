@@ -5,6 +5,7 @@ import (
 	"github.com/carson-networks/budget-server/internal/storage/budget"
 	"github.com/carson-networks/budget-server/internal/storage/category"
 	plaidstore "github.com/carson-networks/budget-server/internal/storage/plaid"
+	syncstore "github.com/carson-networks/budget-server/internal/storage/sync"
 	"github.com/carson-networks/budget-server/internal/storage/transaction"
 	"github.com/stephenafamo/bob"
 )
@@ -15,6 +16,7 @@ type Reader struct {
 	Categories   *category.Reader
 	Budgets      *budget.Reader
 	Plaid        *plaidstore.Reader
+	Sync         *syncstore.Reader
 }
 
 func NewReader(exec bob.Executor) *Reader {
@@ -24,5 +26,6 @@ func NewReader(exec bob.Executor) *Reader {
 		Categories:   category.NewReader(exec),
 		Budgets:      budget.NewReader(exec),
 		Plaid:        plaidstore.NewReader(exec),
+		Sync:         syncstore.NewReader(exec),
 	}
 }

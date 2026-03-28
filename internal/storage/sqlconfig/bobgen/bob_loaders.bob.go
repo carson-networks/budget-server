@@ -23,6 +23,7 @@ type preloaders struct {
 	PlaidAccountLink     plaidAccountLinkPreloader
 	PlaidItem            plaidItemPreloader
 	PlaidTransactionLink plaidTransactionLinkPreloader
+	Sync                 syncPreloader
 	Transaction          transactionPreloader
 }
 
@@ -34,6 +35,7 @@ func getPreloaders() preloaders {
 		PlaidAccountLink:     buildPlaidAccountLinkPreloader(),
 		PlaidItem:            buildPlaidItemPreloader(),
 		PlaidTransactionLink: buildPlaidTransactionLinkPreloader(),
+		Sync:                 buildSyncPreloader(),
 		Transaction:          buildTransactionPreloader(),
 	}
 }
@@ -51,6 +53,7 @@ type thenLoaders[Q orm.Loadable] struct {
 	PlaidAccountLink     plaidAccountLinkThenLoader[Q]
 	PlaidItem            plaidItemThenLoader[Q]
 	PlaidTransactionLink plaidTransactionLinkThenLoader[Q]
+	Sync                 syncThenLoader[Q]
 	Transaction          transactionThenLoader[Q]
 }
 
@@ -62,6 +65,7 @@ func getThenLoaders[Q orm.Loadable]() thenLoaders[Q] {
 		PlaidAccountLink:     buildPlaidAccountLinkThenLoader[Q](),
 		PlaidItem:            buildPlaidItemThenLoader[Q](),
 		PlaidTransactionLink: buildPlaidTransactionLinkThenLoader[Q](),
+		Sync:                 buildSyncThenLoader[Q](),
 		Transaction:          buildTransactionThenLoader[Q](),
 	}
 }

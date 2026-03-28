@@ -18,6 +18,7 @@ import (
 	"github.com/carson-networks/budget-server/internal/operator"
 	plaidclient "github.com/carson-networks/budget-server/internal/plaid"
 	"github.com/carson-networks/budget-server/internal/storage"
+	budgetsync "github.com/carson-networks/budget-server/internal/sync"
 )
 
 func corsMiddleware(next http.Handler) http.Handler {
@@ -72,11 +73,12 @@ func loggingMiddleware(logger *logrus.Logger) func(http.Handler) http.Handler {
 }
 
 type Rest struct {
-	Logger      *logrus.Logger
-	Port        string
-	Storage     *storage.Storage
-	Operator    *operator.OperatorDelegator
-	PlaidClient *plaidclient.Client
+	Logger       *logrus.Logger
+	Port         string
+	Storage      *storage.Storage
+	Operator     *operator.OperatorDelegator
+	PlaidClient  *plaidclient.Client
+	Orchestrator *budgetsync.Orchestrator
 }
 
 func (r *Rest) Serve() {
@@ -121,10 +123,10 @@ func (r *Rest) Serve() {
 	createLinkTokenHandler := plaidhandler.NewCreateLinkTokenHandler(r.PlaidClient)
 	createLinkTokenHandler.Register(api)
 
-	exchangeTokenHandler := plaidhandler.NewExchangeTokenHandler(r.Operator, r.PlaidClient)
+	exchangeTokenHandler := plaidhandler.NewExchangeTokenHandler(r.Operator, r.PlaidClient, r.Orchestrator)
 	exchangeTokenHandler.Register(api)
 
-	syncAccountsHandler := account.NewSyncAccountsHandler(r.Operator, r.PlaidClient, r.Storage)
+	syncAccountsHandler := account.NewSyncAccountsHandler(r.Orchestrator)
 	syncAccountsHandler.Register(api)
 
 	handler := loggingMiddleware(r.Logger)(corsMiddleware(mux))

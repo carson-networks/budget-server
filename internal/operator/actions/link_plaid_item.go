@@ -3,9 +3,12 @@ package actions
 import (
 	"context"
 
+	"github.com/gofrs/uuid/v5"
+
 	"github.com/carson-networks/budget-server/internal/storage"
 	"github.com/carson-networks/budget-server/internal/storage/account"
 	plaidstore "github.com/carson-networks/budget-server/internal/storage/plaid"
+	syncstore "github.com/carson-networks/budget-server/internal/storage/sync"
 	"github.com/shopspring/decimal"
 )
 
@@ -28,11 +31,11 @@ type LinkPlaidItem struct {
 	InstitutionName string
 	Accounts        []PlaidAccountToLink
 
+	CreatedAccountIDs []uuid.UUID
 	IAction
 }
 
 func (a *LinkPlaidItem) Perform(ctx context.Context, writer *storage.Writer) error {
-	// 1. Create the Plaid item record
 	itemID, err := writer.Plaid.CreateItem(ctx, &plaidstore.PlaidItemCreate{
 		AccessToken:     a.AccessToken,
 		PlaidItemID:     a.PlaidItemID,
@@ -43,7 +46,7 @@ func (a *LinkPlaidItem) Perform(ctx context.Context, writer *storage.Writer) err
 		return err
 	}
 
-	// 2. Create a budget account and account link for each selected Plaid account
+	a.CreatedAccountIDs = make([]uuid.UUID, 0, len(a.Accounts))
 	for _, acc := range a.Accounts {
 		accountID, err := writer.Account.Create(ctx, acc.Name, acc.Type, acc.SubType, acc.Balance)
 		if err != nil {
@@ -56,6 +59,10 @@ func (a *LinkPlaidItem) Perform(ctx context.Context, writer *storage.Writer) err
 		}); err != nil {
 			return err
 		}
+		if err := writer.Sync.Create(ctx, accountID, syncstore.SyncType_Plaid); err != nil {
+			return err
+		}
+		a.CreatedAccountIDs = append(a.CreatedAccountIDs, accountID)
 	}
 
 	return nil

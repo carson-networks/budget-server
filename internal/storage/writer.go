@@ -7,6 +7,7 @@ import (
 	"github.com/carson-networks/budget-server/internal/storage/budget"
 	"github.com/carson-networks/budget-server/internal/storage/category"
 	plaidstore "github.com/carson-networks/budget-server/internal/storage/plaid"
+	syncstore "github.com/carson-networks/budget-server/internal/storage/sync"
 	"github.com/carson-networks/budget-server/internal/storage/transaction"
 	"github.com/gofrs/uuid/v5"
 	"github.com/shopspring/decimal"
@@ -40,6 +41,12 @@ type IBudgetWriter interface {
 	Set(ctx context.Context, set *budget.BudgetSet) error
 }
 
+// ISyncWriter defines the sync write operations used by actions.
+type ISyncWriter interface {
+	Create(ctx context.Context, accountID uuid.UUID, syncType syncstore.SyncType) error
+	Delete(ctx context.Context, accountID uuid.UUID) error
+}
+
 // IPlaidWriter defines the plaid write operations used by actions.
 type IPlaidWriter interface {
 	CreateItem(ctx context.Context, create *plaidstore.PlaidItemCreate) (uuid.UUID, error)
@@ -65,6 +72,7 @@ type Writer struct {
 	Category    ICategoryWriter
 	Budget      IBudgetWriter
 	Plaid       IPlaidWriter
+	Sync        ISyncWriter
 }
 
 func NewWriter(tx bob.Tx) Writer {
@@ -75,6 +83,7 @@ func NewWriter(tx bob.Tx) Writer {
 		Category:    category.NewWriter(tx),
 		Budget:      budget.NewWriter(tx),
 		Plaid:       plaidstore.NewWriter(tx),
+		Sync:        syncstore.NewWriter(tx),
 	}
 }
 
@@ -84,12 +93,14 @@ func NewWriterForTest() *Writer {
 	mockCat := &MockICategoryWriter{}
 	mockBudget := &MockIBudgetWriter{}
 	mockPlaid := &MockIPlaidWriter{}
+	mockSync := &MockISyncWriter{}
 	return &Writer{
 		Account:     mockAccount,
 		Transaction: mockTxn,
 		Category:    mockCat,
 		Budget:      mockBudget,
 		Plaid:       mockPlaid,
+		Sync:        mockSync,
 	}
 }
 

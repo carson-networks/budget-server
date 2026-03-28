@@ -38,6 +38,7 @@ type Transaction struct {
 
 // TransactionCreate is the input for creating a new transaction.
 type TransactionCreate struct {
+	ID              *uuid.UUID // if set, use this ID; otherwise let the DB generate one
 	AccountID       uuid.UUID
 	CategoryID      *uuid.UUID // nil inserts NULL
 	Amount          decimal.Decimal

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/gofrs/uuid/v5"
 	"github.com/shopspring/decimal"
 
 	"github.com/carson-networks/budget-server/internal/operator"
@@ -48,14 +49,20 @@ type tokenExchanger interface {
 	ExchangePublicToken(ctx context.Context, publicToken string) (accessToken, plaidItemID string, err error)
 }
 
-// ExchangeTokenHandler handles POST /v1/plaid/exchange-token.
-type ExchangeTokenHandler struct {
-	Operator    operator.IProcessor
-	PlaidClient tokenExchanger
+// accountSyncer is the subset of the sync orchestrator the exchange-token handler needs.
+type accountSyncer interface {
+	Sync(ctx context.Context, accountIDs []uuid.UUID) error
 }
 
-func NewExchangeTokenHandler(op operator.IProcessor, client *plaidclient.Client) *ExchangeTokenHandler {
-	return &ExchangeTokenHandler{Operator: op, PlaidClient: client}
+// ExchangeTokenHandler handles POST /v1/plaid/exchange-token.
+type ExchangeTokenHandler struct {
+	Operator     operator.IProcessor
+	PlaidClient  tokenExchanger
+	Orchestrator accountSyncer
+}
+
+func NewExchangeTokenHandler(op operator.IProcessor, client *plaidclient.Client, orchestrator accountSyncer) *ExchangeTokenHandler {
+	return &ExchangeTokenHandler{Operator: op, PlaidClient: client, Orchestrator: orchestrator}
 }
 
 func (h *ExchangeTokenHandler) Register(api huma.API) {
@@ -101,6 +108,10 @@ func (h *ExchangeTokenHandler) handle(ctx context.Context, input *ExchangeTokenI
 
 	if err := h.Operator.Process(ctx, action); err != nil {
 		return nil, huma.NewError(http.StatusInternalServerError, "failed to link Plaid item", err)
+	}
+
+	if err := h.Orchestrator.Sync(ctx, action.CreatedAccountIDs); err != nil {
+		return nil, huma.NewError(http.StatusInternalServerError, "accounts linked but initial sync failed", err)
 	}
 
 	out := &ExchangeTokenOutput{}

@@ -23,6 +23,7 @@ func Where[Q psql.Filterable]() struct {
 	PlaidAccountLinks     plaidAccountLinkWhere[Q]
 	PlaidItems            plaidItemWhere[Q]
 	PlaidTransactionLinks plaidTransactionLinkWhere[Q]
+	Syncs                 syncWhere[Q]
 	Transactions          transactionWhere[Q]
 } {
 	return struct {
@@ -32,6 +33,7 @@ func Where[Q psql.Filterable]() struct {
 		PlaidAccountLinks     plaidAccountLinkWhere[Q]
 		PlaidItems            plaidItemWhere[Q]
 		PlaidTransactionLinks plaidTransactionLinkWhere[Q]
+		Syncs                 syncWhere[Q]
 		Transactions          transactionWhere[Q]
 	}{
 		Accounts:              buildAccountWhere[Q](Accounts.Columns),
@@ -40,6 +42,7 @@ func Where[Q psql.Filterable]() struct {
 		PlaidAccountLinks:     buildPlaidAccountLinkWhere[Q](PlaidAccountLinks.Columns),
 		PlaidItems:            buildPlaidItemWhere[Q](PlaidItems.Columns),
 		PlaidTransactionLinks: buildPlaidTransactionLinkWhere[Q](PlaidTransactionLinks.Columns),
+		Syncs:                 buildSyncWhere[Q](Syncs.Columns),
 		Transactions:          buildTransactionWhere[Q](Transactions.Columns),
 	}
 }

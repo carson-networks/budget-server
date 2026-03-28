@@ -38,6 +38,7 @@ type joins[Q dialect.Joinable] struct {
 	PlaidAccountLinks     joinSet[plaidAccountLinkJoins[Q]]
 	PlaidItems            joinSet[plaidItemJoins[Q]]
 	PlaidTransactionLinks joinSet[plaidTransactionLinkJoins[Q]]
+	Syncs                 joinSet[syncJoins[Q]]
 	Transactions          joinSet[transactionJoins[Q]]
 }
 
@@ -57,6 +58,7 @@ func getJoins[Q dialect.Joinable]() joins[Q] {
 		PlaidAccountLinks:     buildJoinSet[plaidAccountLinkJoins[Q]](PlaidAccountLinks.Columns, buildPlaidAccountLinkJoins),
 		PlaidItems:            buildJoinSet[plaidItemJoins[Q]](PlaidItems.Columns, buildPlaidItemJoins),
 		PlaidTransactionLinks: buildJoinSet[plaidTransactionLinkJoins[Q]](PlaidTransactionLinks.Columns, buildPlaidTransactionLinkJoins),
+		Syncs:                 buildJoinSet[syncJoins[Q]](Syncs.Columns, buildSyncJoins),
 		Transactions:          buildJoinSet[transactionJoins[Q]](Transactions.Columns, buildTransactionJoins),
 	}
 }

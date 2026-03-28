@@ -129,6 +129,37 @@ func (c *Client) SyncTransactions(ctx context.Context, accessToken, cursor strin
 	return result, nil
 }
 
+// AccountBalance is the current balance for a single Plaid account.
+type AccountBalance struct {
+	PlaidAccountID   string
+	CurrentBalance   float64
+	AvailableBalance float64
+}
+
+// GetAccountBalances fetches current balances for all accounts under the given access token.
+func (c *Client) GetAccountBalances(ctx context.Context, accessToken string) ([]AccountBalance, error) {
+	request := plaidlib.NewAccountsGetRequest(accessToken)
+	resp, httpResp, err := c.api.AccountsGet(ctx).AccountsGetRequest(*request).Execute()
+	if err != nil {
+		return nil, fmt.Errorf("plaid accounts get: %w", plaidError(err, httpResp))
+	}
+
+	balances := make([]AccountBalance, 0, len(resp.Accounts))
+	for _, a := range resp.Accounts {
+		b := AccountBalance{
+			PlaidAccountID: a.AccountId,
+		}
+		if current := a.Balances.GetCurrent(); current != 0 {
+			b.CurrentBalance = current
+		}
+		if available, ok := a.Balances.GetAvailableOk(); ok && available != nil {
+			b.AvailableBalance = *available
+		}
+		balances = append(balances, b)
+	}
+	return balances, nil
+}
+
 // plaidError extracts a meaningful error from a Plaid SDK error response.
 func plaidError(err error, httpResp *http.Response) error {
 	var plaidErr plaidlib.GenericOpenAPIError

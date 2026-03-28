@@ -66,6 +66,9 @@ func (w *Writer) Insert(ctx context.Context, create *TransactionCreate) (uuid.UU
 		Amount:          omit.From(create.Amount),
 		TransactionName: omit.From(create.TransactionName),
 	}
+	if create.ID != nil {
+		setter.ID = omit.From(*create.ID)
+	}
 	if !create.TransactionDate.IsZero() {
 		setter.TransactionDate = omit.From(create.TransactionDate)
 	}

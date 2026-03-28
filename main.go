@@ -11,6 +11,8 @@ import (
 	"github.com/carson-networks/budget-server/internal/operator"
 	plaidclient "github.com/carson-networks/budget-server/internal/plaid"
 	"github.com/carson-networks/budget-server/internal/storage"
+	budgetsync "github.com/carson-networks/budget-server/internal/sync"
+	"github.com/carson-networks/budget-server/internal/sync/providers"
 )
 
 func main() {
@@ -31,16 +33,21 @@ func main() {
 
 	plaid := plaidclient.NewClient(envConfig.PlaidClientID, envConfig.PlaidSecret, envConfig.PlaidEnv)
 
+	syncRegistry := budgetsync.NewRegistry()
+	syncRegistry.Register(providers.NewPlaidProvider(plaid))
+	orchestrator := budgetsync.NewOrchestrator(syncRegistry, dbStorage)
+
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
 	go func() {
 		httpRest := api.Rest{
-			Logger:      logger,
-			Port:        "9446",
-			Storage:     dbStorage,
-			Operator:    op,
-			PlaidClient: plaid,
+			Logger:       logger,
+			Port:         "9446",
+			Storage:      dbStorage,
+			Operator:     op,
+			PlaidClient:  plaid,
+			Orchestrator: orchestrator,
 		}
 		httpRest.Serve()
 	}()

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/danielgtaylor/huma/v2/humatest"
+	"github.com/gofrs/uuid/v5"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -27,12 +28,22 @@ func (m *mockTokenExchanger) ExchangePublicToken(ctx context.Context, publicToke
 	return args.String(0), args.String(1), args.Error(2)
 }
 
+// ---- mock: accountSyncer ----
+
+type mockAccountSyncer struct {
+	mock.Mock
+}
+
+func (m *mockAccountSyncer) Sync(ctx context.Context, accountIDs []uuid.UUID) error {
+	return m.Called(ctx, accountIDs).Error(0)
+}
+
 // ---- test helpers ----
 
-func newExchangeTokenTestAPI(t *testing.T, op operator.IProcessor, client tokenExchanger) humatest.TestAPI {
+func newExchangeTokenTestAPI(t *testing.T, op operator.IProcessor, client tokenExchanger, syncer accountSyncer) humatest.TestAPI {
 	t.Helper()
 	_, api := humatest.New(t)
-	h := &ExchangeTokenHandler{Operator: op, PlaidClient: client}
+	h := &ExchangeTokenHandler{Operator: op, PlaidClient: client, Orchestrator: syncer}
 	h.Register(api)
 	return api
 }
@@ -61,7 +72,10 @@ func TestHTTP_ExchangeToken_Success(t *testing.T) {
 		})).
 		Return(nil)
 
-	resp := newExchangeTokenTestAPI(t, mockOp, client).Post("/v1/plaid/exchange-token", ExchangeTokenBody{
+	mockSyncer := &mockAccountSyncer{}
+	mockSyncer.On("Sync", mock.Anything, mock.Anything).Return(nil)
+
+	resp := newExchangeTokenTestAPI(t, mockOp, client, mockSyncer).Post("/v1/plaid/exchange-token", ExchangeTokenBody{
 		PublicToken:     "public-token-123",
 		InstitutionID:   "ins_1",
 		InstitutionName: "First Bank",
@@ -73,10 +87,11 @@ func TestHTTP_ExchangeToken_Success(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, resp.Code)
 	mockOp.AssertExpectations(t)
 	client.AssertExpectations(t)
+	mockSyncer.AssertExpectations(t)
 }
 
 func TestHTTP_ExchangeToken_NoAccounts_Returns400(t *testing.T) {
-	resp := newExchangeTokenTestAPI(t, nil, nil).Post("/v1/plaid/exchange-token", ExchangeTokenBody{
+	resp := newExchangeTokenTestAPI(t, nil, nil, nil).Post("/v1/plaid/exchange-token", ExchangeTokenBody{
 		PublicToken:     "public-token-123",
 		InstitutionID:   "ins_1",
 		InstitutionName: "First Bank",
@@ -91,7 +106,7 @@ func TestHTTP_ExchangeToken_PlaidError_Returns500(t *testing.T) {
 	client.On("ExchangePublicToken", mock.Anything, "public-token-bad").
 		Return("", "", errors.New("plaid exchange failed"))
 
-	resp := newExchangeTokenTestAPI(t, nil, client).Post("/v1/plaid/exchange-token", ExchangeTokenBody{
+	resp := newExchangeTokenTestAPI(t, nil, client, nil).Post("/v1/plaid/exchange-token", ExchangeTokenBody{
 		PublicToken:     "public-token-bad",
 		InstitutionID:   "ins_1",
 		InstitutionName: "First Bank",
@@ -112,7 +127,7 @@ func TestHTTP_ExchangeToken_OperatorError_Returns500(t *testing.T) {
 	mockOp := &operator.MockIProcessor{}
 	mockOp.EXPECT().Process(mock.Anything, mock.Anything).Return(errors.New("storage unavailable"))
 
-	resp := newExchangeTokenTestAPI(t, mockOp, client).Post("/v1/plaid/exchange-token", ExchangeTokenBody{
+	resp := newExchangeTokenTestAPI(t, mockOp, client, nil).Post("/v1/plaid/exchange-token", ExchangeTokenBody{
 		PublicToken:     "public-token-123",
 		InstitutionID:   "ins_1",
 		InstitutionName: "First Bank",
@@ -124,6 +139,31 @@ func TestHTTP_ExchangeToken_OperatorError_Returns500(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, resp.Code)
 	mockOp.AssertExpectations(t)
 	client.AssertExpectations(t)
+}
+
+func TestHTTP_ExchangeToken_SyncError_Returns500(t *testing.T) {
+	client := &mockTokenExchanger{}
+	client.On("ExchangePublicToken", mock.Anything, "public-token-123").
+		Return("access-token-abc", "plaid-item-xyz", nil)
+
+	mockOp := &operator.MockIProcessor{}
+	mockOp.EXPECT().Process(mock.Anything, mock.Anything).Return(nil)
+
+	mockSyncer := &mockAccountSyncer{}
+	mockSyncer.On("Sync", mock.Anything, mock.Anything).Return(errors.New("sync failed"))
+
+	resp := newExchangeTokenTestAPI(t, mockOp, client, mockSyncer).Post("/v1/plaid/exchange-token", ExchangeTokenBody{
+		PublicToken:     "public-token-123",
+		InstitutionID:   "ins_1",
+		InstitutionName: "First Bank",
+		Accounts: []SelectedAccount{
+			{PlaidAccountID: "plaid-acc-1", Name: "Checking", Type: 0, SubType: "personal"},
+		},
+	})
+
+	assert.Equal(t, http.StatusInternalServerError, resp.Code)
+	mockOp.AssertExpectations(t)
+	mockSyncer.AssertExpectations(t)
 }
 
 func TestHTTP_ExchangeToken_MultipleAccounts_AllLinked(t *testing.T) {
@@ -139,7 +179,10 @@ func TestHTTP_ExchangeToken_MultipleAccounts_AllLinked(t *testing.T) {
 		})).
 		Return(nil)
 
-	resp := newExchangeTokenTestAPI(t, mockOp, client).Post("/v1/plaid/exchange-token", ExchangeTokenBody{
+	mockSyncer := &mockAccountSyncer{}
+	mockSyncer.On("Sync", mock.Anything, mock.Anything).Return(nil)
+
+	resp := newExchangeTokenTestAPI(t, mockOp, client, mockSyncer).Post("/v1/plaid/exchange-token", ExchangeTokenBody{
 		PublicToken:     "pub-tok",
 		InstitutionID:   "ins_2",
 		InstitutionName: "Second Bank",
@@ -152,4 +195,5 @@ func TestHTTP_ExchangeToken_MultipleAccounts_AllLinked(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, resp.Code)
 	mockOp.AssertExpectations(t)
 	client.AssertExpectations(t)
+	mockSyncer.AssertExpectations(t)
 }

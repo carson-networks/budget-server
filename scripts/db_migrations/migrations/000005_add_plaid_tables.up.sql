@@ -1,3 +1,12 @@
+CREATE TABLE syncs (
+    account_id UUID PRIMARY KEY REFERENCES accounts(id) ON DELETE CASCADE,
+    sync_type  SMALLINT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_syncs_sync_type ON syncs (sync_type);
+
 CREATE TABLE plaid_items (
     id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     access_token     TEXT NOT NULL,

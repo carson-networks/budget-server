@@ -5,13 +5,16 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/gofrs/uuid/v5"
 	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
+	"github.com/carson-networks/budget-server/internal/storage"
 	"github.com/carson-networks/budget-server/internal/storage/account"
 	plaidstore "github.com/carson-networks/budget-server/internal/storage/plaid"
+	syncstore "github.com/carson-networks/budget-server/internal/storage/sync"
 )
 
 func validLinkAction() *LinkPlaidItem {
@@ -32,12 +35,18 @@ func validLinkAction() *LinkPlaidItem {
 	}
 }
 
+func newLinkTestWriter(t *testing.T) (*storage.Writer, *storage.MockIAccountWriter, *storage.MockIPlaidWriter, *storage.MockISyncWriter) {
+	t.Helper()
+	w := storage.NewWriterForTest()
+	return w, w.Account.(*storage.MockIAccountWriter), w.Plaid.(*storage.MockIPlaidWriter), w.Sync.(*storage.MockISyncWriter)
+}
+
 func TestLinkPlaidItem_Perform_Success_SingleAccount(t *testing.T) {
-	itemID := mustID(t)
-	accID := mustID(t)
+	itemID := uuid.Must(uuid.NewV4())
+	accID := uuid.Must(uuid.NewV4())
 	a := validLinkAction()
 
-	w, mockAccount, _, mockPlaid := newSyncWriter(t)
+	w, mockAccount, mockPlaid, mockSync := newLinkTestWriter(t)
 
 	mockPlaid.On("CreateItem", mock.Anything, &plaidstore.PlaidItemCreate{
 		AccessToken:     a.AccessToken,
@@ -52,17 +61,19 @@ func TestLinkPlaidItem_Perform_Success_SingleAccount(t *testing.T) {
 		AccountID:      accID,
 		PlaidItemID:    itemID,
 	}).Return(nil)
+	mockSync.On("Create", mock.Anything, accID, syncstore.SyncType_Plaid).Return(nil)
 
-	err := a.Perform(context.Background(), w)
-	require.NoError(t, err)
+	require.NoError(t, a.Perform(context.Background(), w))
+	assert.Equal(t, []uuid.UUID{accID}, a.CreatedAccountIDs)
 	mockPlaid.AssertExpectations(t)
 	mockAccount.AssertExpectations(t)
+	mockSync.AssertExpectations(t)
 }
 
 func TestLinkPlaidItem_Perform_Success_MultipleAccounts(t *testing.T) {
-	itemID := mustID(t)
-	acc1ID := mustID(t)
-	acc2ID := mustID(t)
+	itemID := uuid.Must(uuid.NewV4())
+	acc1ID := uuid.Must(uuid.NewV4())
+	acc2ID := uuid.Must(uuid.NewV4())
 
 	a := &LinkPlaidItem{
 		AccessToken:     "access-sandbox-abc",
@@ -75,7 +86,7 @@ func TestLinkPlaidItem_Perform_Success_MultipleAccounts(t *testing.T) {
 		},
 	}
 
-	w, mockAccount, _, mockPlaid := newSyncWriter(t)
+	w, mockAccount, mockPlaid, mockSync := newLinkTestWriter(t)
 
 	mockPlaid.On("CreateItem", mock.Anything, &plaidstore.PlaidItemCreate{
 		AccessToken: a.AccessToken, PlaidItemID: a.PlaidItemID,
@@ -88,55 +99,55 @@ func TestLinkPlaidItem_Perform_Success_MultipleAccounts(t *testing.T) {
 	mockPlaid.On("CreateAccountLink", mock.Anything, &plaidstore.AccountLink{PlaidAccountID: "p-acc-1", AccountID: acc1ID, PlaidItemID: itemID}).Return(nil)
 	mockPlaid.On("CreateAccountLink", mock.Anything, &plaidstore.AccountLink{PlaidAccountID: "p-acc-2", AccountID: acc2ID, PlaidItemID: itemID}).Return(nil)
 
-	err := a.Perform(context.Background(), w)
-	require.NoError(t, err)
+	mockSync.On("Create", mock.Anything, mock.Anything, syncstore.SyncType_Plaid).Return(nil)
+
+	require.NoError(t, a.Perform(context.Background(), w))
+	assert.Equal(t, []uuid.UUID{acc1ID, acc2ID}, a.CreatedAccountIDs)
 	mockPlaid.AssertExpectations(t)
 	mockAccount.AssertExpectations(t)
+	mockSync.AssertNumberOfCalls(t, "Create", 2)
 }
 
 func TestLinkPlaidItem_Perform_CreateItemError(t *testing.T) {
 	a := validLinkAction()
-	w, mockAccount, _, mockPlaid := newSyncWriter(t)
+	w, mockAccount, mockPlaid, _ := newLinkTestWriter(t)
 
-	mockPlaid.On("CreateItem", mock.Anything, mock.Anything).Return(mustID(t), errors.New("db error"))
+	mockPlaid.On("CreateItem", mock.Anything, mock.Anything).Return(uuid.Must(uuid.NewV4()), errors.New("db error"))
 
-	err := a.Perform(context.Background(), w)
-	assert.Error(t, err)
+	assert.Error(t, a.Perform(context.Background(), w))
 	mockAccount.AssertNotCalled(t, "Create")
 	mockPlaid.AssertNotCalled(t, "CreateAccountLink")
 }
 
 func TestLinkPlaidItem_Perform_CreateAccountError(t *testing.T) {
-	itemID := mustID(t)
+	itemID := uuid.Must(uuid.NewV4())
 	a := validLinkAction()
-	w, mockAccount, _, mockPlaid := newSyncWriter(t)
+	w, mockAccount, mockPlaid, _ := newLinkTestWriter(t)
 
 	mockPlaid.On("CreateItem", mock.Anything, mock.Anything).Return(itemID, nil)
 	mockAccount.On("Create", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(mustID(t), errors.New("insert failed"))
+		Return(uuid.Must(uuid.NewV4()), errors.New("insert failed"))
 
-	err := a.Perform(context.Background(), w)
-	assert.Error(t, err)
+	assert.Error(t, a.Perform(context.Background(), w))
 	mockPlaid.AssertNotCalled(t, "CreateAccountLink")
 }
 
 func TestLinkPlaidItem_Perform_CreateAccountLinkError(t *testing.T) {
-	itemID := mustID(t)
-	accID := mustID(t)
+	itemID := uuid.Must(uuid.NewV4())
+	accID := uuid.Must(uuid.NewV4())
 	a := validLinkAction()
-	w, mockAccount, _, mockPlaid := newSyncWriter(t)
+	w, mockAccount, mockPlaid, _ := newLinkTestWriter(t)
 
 	mockPlaid.On("CreateItem", mock.Anything, mock.Anything).Return(itemID, nil)
 	mockAccount.On("Create", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(accID, nil)
 	mockPlaid.On("CreateAccountLink", mock.Anything, mock.Anything).Return(errors.New("link failed"))
 
-	err := a.Perform(context.Background(), w)
-	assert.Error(t, err)
+	assert.Error(t, a.Perform(context.Background(), w))
 }
 
 func TestLinkPlaidItem_Perform_MultipleAccounts_StopsOnFirstAccountError(t *testing.T) {
-	itemID := mustID(t)
-	acc1ID := mustID(t)
+	itemID := uuid.Must(uuid.NewV4())
+	acc1ID := uuid.Must(uuid.NewV4())
 
 	a := &LinkPlaidItem{
 		AccessToken: "at", PlaidItemID: "pid", InstitutionID: "ins", InstitutionName: "Bank",
@@ -146,16 +157,15 @@ func TestLinkPlaidItem_Perform_MultipleAccounts_StopsOnFirstAccountError(t *test
 		},
 	}
 
-	w, mockAccount, _, mockPlaid := newSyncWriter(t)
+	w, mockAccount, mockPlaid, mockSync := newLinkTestWriter(t)
 
 	mockPlaid.On("CreateItem", mock.Anything, mock.Anything).Return(itemID, nil)
 	mockPlaid.On("CreateAccountLink", mock.Anything, mock.Anything).Return(nil)
-	// First account succeeds, second fails.
+	mockSync.On("Create", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	mockAccount.On("Create", mock.Anything, "Checking", mock.Anything, mock.Anything, mock.Anything).Return(acc1ID, nil)
-	mockAccount.On("Create", mock.Anything, "Savings", mock.Anything, mock.Anything, mock.Anything).Return(mustID(t), errors.New("create failed"))
+	mockAccount.On("Create", mock.Anything, "Savings", mock.Anything, mock.Anything, mock.Anything).Return(uuid.Must(uuid.NewV4()), errors.New("create failed"))
 
-	err := a.Perform(context.Background(), w)
-	assert.Error(t, err)
-	// Only one account link should have been created (for the first account).
+	assert.Error(t, a.Perform(context.Background(), w))
 	mockPlaid.AssertNumberOfCalls(t, "CreateAccountLink", 1)
+	mockSync.AssertNumberOfCalls(t, "Create", 1)
 }
