@@ -28,21 +28,33 @@ func (_m *MockIAccountWriter) EXPECT() *MockIAccountWriter_Expecter {
 }
 
 // Create provides a mock function with given fields: ctx, name, accountType, accountSubType, startingBalance
-func (_m *MockIAccountWriter) Create(ctx context.Context, name string, accountType account.AccountType, accountSubType string, startingBalance decimal.Decimal) error {
+func (_m *MockIAccountWriter) Create(ctx context.Context, name string, accountType account.AccountType, accountSubType string, startingBalance decimal.Decimal) (uuid.UUID, error) {
 	ret := _m.Called(ctx, name, accountType, accountSubType, startingBalance)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
 	}
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, account.AccountType, string, decimal.Decimal) error); ok {
+	var r0 uuid.UUID
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, account.AccountType, string, decimal.Decimal) (uuid.UUID, error)); ok {
+		return rf(ctx, name, accountType, accountSubType, startingBalance)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, account.AccountType, string, decimal.Decimal) uuid.UUID); ok {
 		r0 = rf(ctx, name, accountType, accountSubType, startingBalance)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(uuid.UUID)
+		}
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(context.Context, string, account.AccountType, string, decimal.Decimal) error); ok {
+		r1 = rf(ctx, name, accountType, accountSubType, startingBalance)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // MockIAccountWriter_Create_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Create'
@@ -67,12 +79,12 @@ func (_c *MockIAccountWriter_Create_Call) Run(run func(ctx context.Context, name
 	return _c
 }
 
-func (_c *MockIAccountWriter_Create_Call) Return(_a0 error) *MockIAccountWriter_Create_Call {
-	_c.Call.Return(_a0)
+func (_c *MockIAccountWriter_Create_Call) Return(_a0 uuid.UUID, _a1 error) *MockIAccountWriter_Create_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockIAccountWriter_Create_Call) RunAndReturn(run func(context.Context, string, account.AccountType, string, decimal.Decimal) error) *MockIAccountWriter_Create_Call {
+func (_c *MockIAccountWriter_Create_Call) RunAndReturn(run func(context.Context, string, account.AccountType, string, decimal.Decimal) (uuid.UUID, error)) *MockIAccountWriter_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }

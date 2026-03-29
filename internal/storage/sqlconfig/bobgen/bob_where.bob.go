@@ -17,20 +17,32 @@ var (
 )
 
 func Where[Q psql.Filterable]() struct {
-	Accounts     accountWhere[Q]
-	Budgets      budgetWhere[Q]
-	Categories   categoryWhere[Q]
-	Transactions transactionWhere[Q]
+	Accounts              accountWhere[Q]
+	Budgets               budgetWhere[Q]
+	Categories            categoryWhere[Q]
+	PlaidAccountLinks     plaidAccountLinkWhere[Q]
+	PlaidItems            plaidItemWhere[Q]
+	PlaidTransactionLinks plaidTransactionLinkWhere[Q]
+	Syncs                 syncWhere[Q]
+	Transactions          transactionWhere[Q]
 } {
 	return struct {
-		Accounts     accountWhere[Q]
-		Budgets      budgetWhere[Q]
-		Categories   categoryWhere[Q]
-		Transactions transactionWhere[Q]
+		Accounts              accountWhere[Q]
+		Budgets               budgetWhere[Q]
+		Categories            categoryWhere[Q]
+		PlaidAccountLinks     plaidAccountLinkWhere[Q]
+		PlaidItems            plaidItemWhere[Q]
+		PlaidTransactionLinks plaidTransactionLinkWhere[Q]
+		Syncs                 syncWhere[Q]
+		Transactions          transactionWhere[Q]
 	}{
-		Accounts:     buildAccountWhere[Q](Accounts.Columns),
-		Budgets:      buildBudgetWhere[Q](Budgets.Columns),
-		Categories:   buildCategoryWhere[Q](Categories.Columns),
-		Transactions: buildTransactionWhere[Q](Transactions.Columns),
+		Accounts:              buildAccountWhere[Q](Accounts.Columns),
+		Budgets:               buildBudgetWhere[Q](Budgets.Columns),
+		Categories:            buildCategoryWhere[Q](Categories.Columns),
+		PlaidAccountLinks:     buildPlaidAccountLinkWhere[Q](PlaidAccountLinks.Columns),
+		PlaidItems:            buildPlaidItemWhere[Q](PlaidItems.Columns),
+		PlaidTransactionLinks: buildPlaidTransactionLinkWhere[Q](PlaidTransactionLinks.Columns),
+		Syncs:                 buildSyncWhere[Q](Syncs.Columns),
+		Transactions:          buildTransactionWhere[Q](Transactions.Columns),
 	}
 }

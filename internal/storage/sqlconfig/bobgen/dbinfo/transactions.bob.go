@@ -36,9 +36,9 @@ var Transactions = Table[
 		CategoryID: column{
 			Name:      "category_id",
 			DBType:    "uuid",
-			Default:   "",
+			Default:   "NULL",
 			Comment:   "",
-			Nullable:  false,
+			Nullable:  true,
 			Generated: false,
 			AutoIncr:  false,
 		},

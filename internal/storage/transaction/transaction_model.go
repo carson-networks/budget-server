@@ -10,10 +10,14 @@ import (
 )
 
 func bobTransactionToTransaction(row *bobgen.Transaction) *Transaction {
+	var catID *uuid.UUID
+	if v, ok := row.CategoryID.Get(); ok {
+		catID = &v
+	}
 	return &Transaction{
 		ID:              row.ID,
 		AccountID:       row.AccountID,
-		CategoryID:      row.CategoryID,
+		CategoryID:      catID,
 		Amount:          row.Amount,
 		TransactionName: row.TransactionName,
 		TransactionDate: row.TransactionDate,
@@ -25,7 +29,7 @@ func bobTransactionToTransaction(row *bobgen.Transaction) *Transaction {
 type Transaction struct {
 	ID              uuid.UUID
 	AccountID       uuid.UUID
-	CategoryID      uuid.UUID
+	CategoryID      *uuid.UUID // nil when uncategorized
 	Amount          decimal.Decimal
 	TransactionName string
 	TransactionDate time.Time
@@ -34,11 +38,20 @@ type Transaction struct {
 
 // TransactionCreate is the input for creating a new transaction.
 type TransactionCreate struct {
+	ID              *uuid.UUID // if set, use this ID; otherwise let the DB generate one
 	AccountID       uuid.UUID
-	CategoryID      uuid.UUID
+	CategoryID      *uuid.UUID // nil inserts NULL
 	Amount          decimal.Decimal
 	TransactionName string
 	TransactionDate time.Time // defaults to now if zero
+}
+
+// TransactionUpdate is the input for updating an existing transaction's mutable fields.
+// AccountID and CategoryID are intentionally excluded — account never changes, category is user-managed.
+type TransactionUpdate struct {
+	Amount          decimal.Decimal
+	TransactionName string
+	TransactionDate time.Time
 }
 
 // TransactionFilter specifies filters for listing transactions.

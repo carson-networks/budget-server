@@ -110,6 +110,8 @@ func TestParseListTransactionsInput_CursorPositionZero(t *testing.T) {
 func TestHTTP_ListTransactions_SinglePage(t *testing.T) {
 	now := time.Date(2025, 6, 1, 12, 0, 0, 0, time.UTC)
 	txID := uuid.Must(uuid.NewV4())
+	accountID := uuid.Must(uuid.NewV4())
+	categoryID := uuid.Must(uuid.NewV4())
 
 	mockReader := new(mockTransactionReader)
 	mockReader.On("List", mock.Anything, mock.Anything).
@@ -117,8 +119,8 @@ func TestHTTP_ListTransactions_SinglePage(t *testing.T) {
 			Transactions: []*transaction.Transaction{
 				{
 					ID:              txID,
-					AccountID:       uuid.Must(uuid.NewV4()),
-					CategoryID:      uuid.Must(uuid.NewV4()),
+					AccountID:       accountID,
+					CategoryID:      &categoryID,
 					Amount:          decimal.RequireFromString("10.00"),
 					TransactionName: "Coffee",
 					TransactionDate: now,
@@ -142,12 +144,14 @@ func TestHTTP_ListTransactions_SinglePage(t *testing.T) {
 func TestHTTP_ListTransactions_MultiplePages(t *testing.T) {
 	now := time.Date(2025, 6, 1, 12, 0, 0, 0, time.UTC)
 	svcDefaultLimit := 20
+	cat1 := uuid.Must(uuid.NewV4())
+	cat2 := uuid.Must(uuid.NewV4())
 
 	txs := []*transaction.Transaction{
 		{
 			ID:              uuid.Must(uuid.NewV4()),
 			AccountID:       uuid.Must(uuid.NewV4()),
-			CategoryID:      uuid.Must(uuid.NewV4()),
+			CategoryID:      &cat1,
 			Amount:          decimal.RequireFromString("5.00"),
 			TransactionName: "Item",
 			TransactionDate: now,
@@ -156,7 +160,7 @@ func TestHTTP_ListTransactions_MultiplePages(t *testing.T) {
 		{
 			ID:              uuid.Must(uuid.NewV4()),
 			AccountID:       uuid.Must(uuid.NewV4()),
-			CategoryID:      uuid.Must(uuid.NewV4()),
+			CategoryID:      &cat2,
 			Amount:          decimal.RequireFromString("5.00"),
 			TransactionName: "Item",
 			TransactionDate: now,

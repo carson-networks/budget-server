@@ -18,10 +18,6 @@ type CreateAccount struct {
 }
 
 func (c *CreateAccount) Perform(ctx context.Context, writer *storage.Writer) error {
-	err := writer.Account.Create(ctx, c.Name, c.Type, c.SubType, c.StartingBalance)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_, err := writer.Account.Create(ctx, c.Name, c.Type, c.SubType, c.StartingBalance)
+	return err
 }

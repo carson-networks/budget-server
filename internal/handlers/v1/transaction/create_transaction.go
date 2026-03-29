@@ -81,7 +81,7 @@ func (h *CreateTransactionHandler) handle(ctx context.Context, input *CreateTran
 
 	action := &actions.CreateTransaction{
 		AccountID:       accountID,
-		CategoryID:      categoryID,
+		CategoryID:      &categoryID,
 		Amount:          amount,
 		TransactionName: input.Body.TransactionName,
 		TransactionDate: transactionDate,

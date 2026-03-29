@@ -24,6 +24,124 @@ func (_m *MockITransactionWriter) EXPECT() *MockITransactionWriter_Expecter {
 	return &MockITransactionWriter_Expecter{mock: &_m.Mock}
 }
 
+// Delete provides a mock function with given fields: ctx, id
+func (_m *MockITransactionWriter) Delete(ctx context.Context, id uuid.UUID) (*transaction.Transaction, error) {
+	ret := _m.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Delete")
+	}
+
+	var r0 *transaction.Transaction
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*transaction.Transaction, error)); ok {
+		return rf(ctx, id)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *transaction.Transaction); ok {
+		r0 = rf(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*transaction.Transaction)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockITransactionWriter_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockITransactionWriter_Delete_Call struct {
+	*mock.Call
+}
+
+// Delete is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id uuid.UUID
+func (_e *MockITransactionWriter_Expecter) Delete(ctx interface{}, id interface{}) *MockITransactionWriter_Delete_Call {
+	return &MockITransactionWriter_Delete_Call{Call: _e.mock.On("Delete", ctx, id)}
+}
+
+func (_c *MockITransactionWriter_Delete_Call) Run(run func(ctx context.Context, id uuid.UUID)) *MockITransactionWriter_Delete_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *MockITransactionWriter_Delete_Call) Return(_a0 *transaction.Transaction, _a1 error) *MockITransactionWriter_Delete_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockITransactionWriter_Delete_Call) RunAndReturn(run func(context.Context, uuid.UUID) (*transaction.Transaction, error)) *MockITransactionWriter_Delete_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// FindByID provides a mock function with given fields: ctx, id
+func (_m *MockITransactionWriter) FindByID(ctx context.Context, id uuid.UUID) (*transaction.Transaction, error) {
+	ret := _m.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for FindByID")
+	}
+
+	var r0 *transaction.Transaction
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) (*transaction.Transaction, error)); ok {
+		return rf(ctx, id)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID) *transaction.Transaction); ok {
+		r0 = rf(ctx, id)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*transaction.Transaction)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, uuid.UUID) error); ok {
+		r1 = rf(ctx, id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockITransactionWriter_FindByID_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'FindByID'
+type MockITransactionWriter_FindByID_Call struct {
+	*mock.Call
+}
+
+// FindByID is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id uuid.UUID
+func (_e *MockITransactionWriter_Expecter) FindByID(ctx interface{}, id interface{}) *MockITransactionWriter_FindByID_Call {
+	return &MockITransactionWriter_FindByID_Call{Call: _e.mock.On("FindByID", ctx, id)}
+}
+
+func (_c *MockITransactionWriter_FindByID_Call) Run(run func(ctx context.Context, id uuid.UUID)) *MockITransactionWriter_FindByID_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID))
+	})
+	return _c
+}
+
+func (_c *MockITransactionWriter_FindByID_Call) Return(_a0 *transaction.Transaction, _a1 error) *MockITransactionWriter_FindByID_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockITransactionWriter_FindByID_Call) RunAndReturn(run func(context.Context, uuid.UUID) (*transaction.Transaction, error)) *MockITransactionWriter_FindByID_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Insert provides a mock function with given fields: ctx, create
 func (_m *MockITransactionWriter) Insert(ctx context.Context, create *transaction.TransactionCreate) (uuid.UUID, error) {
 	ret := _m.Called(ctx, create)
@@ -79,6 +197,54 @@ func (_c *MockITransactionWriter_Insert_Call) Return(_a0 uuid.UUID, _a1 error) *
 }
 
 func (_c *MockITransactionWriter_Insert_Call) RunAndReturn(run func(context.Context, *transaction.TransactionCreate) (uuid.UUID, error)) *MockITransactionWriter_Insert_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// Update provides a mock function with given fields: ctx, id, update
+func (_m *MockITransactionWriter) Update(ctx context.Context, id uuid.UUID, update *transaction.TransactionUpdate) error {
+	ret := _m.Called(ctx, id, update)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, uuid.UUID, *transaction.TransactionUpdate) error); ok {
+		r0 = rf(ctx, id, update)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockITransactionWriter_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
+type MockITransactionWriter_Update_Call struct {
+	*mock.Call
+}
+
+// Update is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id uuid.UUID
+//   - update *transaction.TransactionUpdate
+func (_e *MockITransactionWriter_Expecter) Update(ctx interface{}, id interface{}, update interface{}) *MockITransactionWriter_Update_Call {
+	return &MockITransactionWriter_Update_Call{Call: _e.mock.On("Update", ctx, id, update)}
+}
+
+func (_c *MockITransactionWriter_Update_Call) Run(run func(ctx context.Context, id uuid.UUID, update *transaction.TransactionUpdate)) *MockITransactionWriter_Update_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(uuid.UUID), args[2].(*transaction.TransactionUpdate))
+	})
+	return _c
+}
+
+func (_c *MockITransactionWriter_Update_Call) Return(_a0 error) *MockITransactionWriter_Update_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockITransactionWriter_Update_Call) RunAndReturn(run func(context.Context, uuid.UUID, *transaction.TransactionUpdate) error) *MockITransactionWriter_Update_Call {
 	_c.Call.Return(run)
 	return _c
 }

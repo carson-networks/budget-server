@@ -9,7 +9,10 @@ import (
 	"github.com/carson-networks/budget-server/internal/config"
 	"github.com/carson-networks/budget-server/internal/logging"
 	"github.com/carson-networks/budget-server/internal/operator"
+	plaidclient "github.com/carson-networks/budget-server/internal/plaid"
 	"github.com/carson-networks/budget-server/internal/storage"
+	budgetsync "github.com/carson-networks/budget-server/internal/sync"
+	"github.com/carson-networks/budget-server/internal/sync/providers"
 )
 
 func main() {
@@ -19,7 +22,6 @@ func main() {
 	envConfig, err := config.ProcessEnvironmentVariables()
 	if err != nil {
 		logrus.WithError(err).Fatal("config.ProcessEnvironmentVariables")
-		return
 	}
 
 	dbStorage := storage.NewStorage(envConfig)
@@ -28,15 +30,23 @@ func main() {
 	op.Start()
 	defer op.Stop()
 
+	plaid := plaidclient.NewClient(envConfig.PlaidClientID, envConfig.PlaidSecret, envConfig.PlaidEnv)
+
+	syncRegistry := budgetsync.NewRegistry()
+	syncRegistry.Register(providers.NewPlaidProvider(plaid))
+	orchestrator := budgetsync.NewOrchestrator(syncRegistry, dbStorage)
+
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
 	go func() {
 		httpRest := api.Rest{
-			Logger:   logger,
-			Port:     "9446",
-			Storage:  dbStorage,
-			Operator: op,
+			Logger:       logger,
+			Port:         "9446",
+			Storage:      dbStorage,
+			Operator:     op,
+			PlaidClient:  plaid,
+			Orchestrator: orchestrator,
 		}
 		httpRest.Serve()
 	}()

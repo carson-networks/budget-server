@@ -32,9 +32,14 @@ func (j joinSet[Q]) AliasedAs(alias string) joinSet[Q] {
 }
 
 type joins[Q dialect.Joinable] struct {
-	Budgets      joinSet[budgetJoins[Q]]
-	Categories   joinSet[categoryJoins[Q]]
-	Transactions joinSet[transactionJoins[Q]]
+	Accounts              joinSet[accountJoins[Q]]
+	Budgets               joinSet[budgetJoins[Q]]
+	Categories            joinSet[categoryJoins[Q]]
+	PlaidAccountLinks     joinSet[plaidAccountLinkJoins[Q]]
+	PlaidItems            joinSet[plaidItemJoins[Q]]
+	PlaidTransactionLinks joinSet[plaidTransactionLinkJoins[Q]]
+	Syncs                 joinSet[syncJoins[Q]]
+	Transactions          joinSet[transactionJoins[Q]]
 }
 
 func buildJoinSet[Q interface{ aliasedAs(string) Q }, C any, F func(C, string) Q](c C, f F) joinSet[Q] {
@@ -47,9 +52,14 @@ func buildJoinSet[Q interface{ aliasedAs(string) Q }, C any, F func(C, string) Q
 
 func getJoins[Q dialect.Joinable]() joins[Q] {
 	return joins[Q]{
-		Budgets:      buildJoinSet[budgetJoins[Q]](Budgets.Columns, buildBudgetJoins),
-		Categories:   buildJoinSet[categoryJoins[Q]](Categories.Columns, buildCategoryJoins),
-		Transactions: buildJoinSet[transactionJoins[Q]](Transactions.Columns, buildTransactionJoins),
+		Accounts:              buildJoinSet[accountJoins[Q]](Accounts.Columns, buildAccountJoins),
+		Budgets:               buildJoinSet[budgetJoins[Q]](Budgets.Columns, buildBudgetJoins),
+		Categories:            buildJoinSet[categoryJoins[Q]](Categories.Columns, buildCategoryJoins),
+		PlaidAccountLinks:     buildJoinSet[plaidAccountLinkJoins[Q]](PlaidAccountLinks.Columns, buildPlaidAccountLinkJoins),
+		PlaidItems:            buildJoinSet[plaidItemJoins[Q]](PlaidItems.Columns, buildPlaidItemJoins),
+		PlaidTransactionLinks: buildJoinSet[plaidTransactionLinkJoins[Q]](PlaidTransactionLinks.Columns, buildPlaidTransactionLinkJoins),
+		Syncs:                 buildJoinSet[syncJoins[Q]](Syncs.Columns, buildSyncJoins),
+		Transactions:          buildJoinSet[transactionJoins[Q]](Transactions.Columns, buildTransactionJoins),
 	}
 }
 

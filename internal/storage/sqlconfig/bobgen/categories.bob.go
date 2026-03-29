@@ -795,7 +795,7 @@ func (category0 *Category) AttachReverseParents(ctx context.Context, exec bob.Ex
 
 func insertCategoryTransactions0(ctx context.Context, exec bob.Executor, transactions1 []*TransactionSetter, category0 *Category) (TransactionSlice, error) {
 	for i := range transactions1 {
-		transactions1[i].CategoryID = omit.From(category0.ID)
+		transactions1[i].CategoryID = omitnull.From(category0.ID)
 	}
 
 	ret, err := Transactions.Insert(bob.ToMods(transactions1...)).All(ctx, exec)
@@ -808,7 +808,7 @@ func insertCategoryTransactions0(ctx context.Context, exec bob.Executor, transac
 
 func attachCategoryTransactions0(ctx context.Context, exec bob.Executor, count int, transactions1 TransactionSlice, category0 *Category) (TransactionSlice, error) {
 	setter := &TransactionSetter{
-		CategoryID: omit.From(category0.ID),
+		CategoryID: omitnull.From(category0.ID),
 	}
 
 	err := transactions1.UpdateAll(ctx, exec, *setter)
@@ -1253,7 +1253,10 @@ func (os CategorySlice) LoadTransactions(ctx context.Context, exec bob.Executor,
 
 		for _, rel := range transactions {
 
-			if !(o.ID == rel.CategoryID) {
+			if !rel.CategoryID.IsValue() {
+				continue
+			}
+			if !(rel.CategoryID.IsValue() && o.ID == rel.CategoryID.MustGet()) {
 				continue
 			}
 
