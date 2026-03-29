@@ -3,6 +3,7 @@ package providers
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/gofrs/uuid/v5"
@@ -13,6 +14,7 @@ import (
 	"github.com/carson-networks/budget-server/internal/storage"
 	plaidstore "github.com/carson-networks/budget-server/internal/storage/plaid"
 	syncstore "github.com/carson-networks/budget-server/internal/storage/sync"
+	budgetsync "github.com/carson-networks/budget-server/internal/sync"
 )
 
 type plaidClient interface {
@@ -32,27 +34,28 @@ func (p *PlaidProvider) Type() syncstore.SyncType {
 	return syncstore.SyncType_Plaid
 }
 
-func (p *PlaidProvider) Sync(ctx context.Context, reader *storage.Reader, accountIDs []uuid.UUID) (map[uuid.UUID][]actions.IAction, error) {
+func (p *PlaidProvider) Sync(ctx context.Context, reader *storage.Reader, accountIDs []uuid.UUID) (*budgetsync.SyncResult, error) {
 	items, err := reader.Plaid.ListItemsForSync(ctx, accountIDs)
 	if err != nil {
 		return nil, fmt.Errorf("listing plaid items: %w", err)
 	}
 	if len(items) == 0 {
-		return nil, nil
+		return &budgetsync.SyncResult{}, nil
 	}
 
-	result := make(map[uuid.UUID][]actions.IAction)
+	byAccount := make(map[uuid.UUID][]actions.IAction)
+	var onSuccess []actions.IAction
 
 	for _, item := range items {
-		if err := p.syncItem(ctx, reader, item, result); err != nil {
+		if err := p.syncItem(ctx, reader, item, byAccount, &onSuccess); err != nil {
 			return nil, err
 		}
 	}
 
-	return result, nil
+	return &budgetsync.SyncResult{ByAccount: byAccount, OnSuccess: onSuccess}, nil
 }
 
-func (p *PlaidProvider) syncItem(ctx context.Context, reader *storage.Reader, item *plaidstore.PlaidItem, result map[uuid.UUID][]actions.IAction) error {
+func (p *PlaidProvider) syncItem(ctx context.Context, reader *storage.Reader, item *plaidstore.PlaidItem, byAccount map[uuid.UUID][]actions.IAction, onSuccess *[]actions.IAction) error {
 	links, err := reader.Plaid.ListAccountLinksByItemID(ctx, item.ID)
 	if err != nil {
 		return fmt.Errorf("listing account links for item %s: %w", item.ID, err)
@@ -76,7 +79,7 @@ func (p *PlaidProvider) syncItem(ctx context.Context, reader *storage.Reader, it
 		if err != nil {
 			return err
 		}
-		result[internalAccID] = append(result[internalAccID], action)
+		byAccount[internalAccID] = append(byAccount[internalAccID], action)
 	}
 
 	for _, t := range modified {
@@ -88,7 +91,7 @@ func (p *PlaidProvider) syncItem(ctx context.Context, reader *storage.Reader, it
 		if err != nil {
 			return err
 		}
-		result[internalAccID] = append(result[internalAccID], action)
+		byAccount[internalAccID] = append(byAccount[internalAccID], action)
 	}
 
 	for _, plaidTxnID := range removed {
@@ -97,7 +100,7 @@ func (p *PlaidProvider) syncItem(ctx context.Context, reader *storage.Reader, it
 			return err
 		}
 		if action != nil {
-			result[accID] = append(result[accID], action)
+			byAccount[accID] = append(byAccount[accID], action)
 		}
 	}
 
@@ -107,25 +110,45 @@ func (p *PlaidProvider) syncItem(ctx context.Context, reader *storage.Reader, it
 	}
 	for _, b := range balances {
 		internalAccID, ok := plaidToInternal[b.PlaidAccountID]
-		if !ok {
+		if !ok || !b.HasCurrentBalance {
 			continue
 		}
-		result[internalAccID] = append(result[internalAccID], &actions.PlaidSetAccountBalance{
+		bal, err := amountFromPlaidFloat(b.CurrentBalance)
+		if err != nil {
+			return fmt.Errorf("plaid balance for account %s: %w", b.PlaidAccountID, err)
+		}
+		byAccount[internalAccID] = append(byAccount[internalAccID], &actions.PlaidSetAccountBalance{
 			AccountID: internalAccID,
-			Balance:   decimal.NewFromFloat(b.CurrentBalance),
+			Balance:   bal,
 		})
 	}
 
-	for _, link := range links {
-		if _, hasActions := result[link.AccountID]; hasActions {
-			result[link.AccountID] = append(result[link.AccountID], &actions.PlaidUpdateCursor{
-				ItemID:     item.ID,
-				NextCursor: nextCursor,
-			})
-		}
-	}
+	*onSuccess = append(*onSuccess, &actions.PlaidUpdateCursor{
+		ItemID:     item.ID,
+		NextCursor: nextCursor,
+	})
 
 	return nil
+}
+
+const plaidDateLayout = "2006-01-02"
+
+func parsePlaidDate(dateStr string) (time.Time, error) {
+	t, err := time.Parse(plaidDateLayout, dateStr)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("parse plaid date %q: %w", dateStr, err)
+	}
+	return t, nil
+}
+
+// amountFromPlaidFloat turns Plaid's JSON float amount into a decimal without an extra float64 round-trip.
+func amountFromPlaidFloat(f float64) (decimal.Decimal, error) {
+	s := strconv.FormatFloat(f, 'f', -1, 64)
+	d, err := decimal.NewFromString(s)
+	if err != nil {
+		return decimal.Decimal{}, fmt.Errorf("decimal from plaid amount %g: %w", f, err)
+	}
+	return d, nil
 }
 
 func (p *PlaidProvider) buildAddAction(t plaidclient.SyncTransaction, accountID uuid.UUID) (actions.IAction, error) {
@@ -133,8 +156,15 @@ func (p *PlaidProvider) buildAddAction(t plaidclient.SyncTransaction, accountID 
 	if err != nil {
 		return nil, fmt.Errorf("generating UUID: %w", err)
 	}
-	date, _ := time.Parse("2006-01-02", t.Date)
-	amount := decimal.NewFromFloat(t.Amount).Neg()
+	date, err := parsePlaidDate(t.Date)
+	if err != nil {
+		return nil, err
+	}
+	amount, err := amountFromPlaidFloat(t.Amount)
+	if err != nil {
+		return nil, err
+	}
+	amount = amount.Neg()
 
 	return &actions.PlaidAddTransaction{
 		TransactionID:      txnID,
@@ -157,8 +187,15 @@ func (p *PlaidProvider) buildModifyAction(ctx context.Context, reader *storage.R
 		return p.buildAddAction(t, accountID)
 	}
 
-	date, _ := time.Parse("2006-01-02", t.Date)
-	amount := decimal.NewFromFloat(t.Amount).Neg()
+	date, err := parsePlaidDate(t.Date)
+	if err != nil {
+		return nil, err
+	}
+	amount, err := amountFromPlaidFloat(t.Amount)
+	if err != nil {
+		return nil, err
+	}
+	amount = amount.Neg()
 	return &actions.PlaidModifyTransaction{
 		TransactionID: link.TransactionID,
 		AccountID:     accountID,

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 )
 
@@ -66,6 +67,10 @@ func ProcessEnvironmentVariables() (*Config, error) {
 		env.PlaidEnv = envPlaidEnv
 	} else {
 		env.PlaidEnv = "sandbox"
+	}
+
+	if env.PlaidClientID == "" || env.PlaidSecret == "" {
+		return nil, fmt.Errorf("PLAID_CLIENT_ID and PLAID_SECRET must both be set")
 	}
 
 	return &env, nil

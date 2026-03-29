@@ -121,9 +121,11 @@ func (c *Client) SyncTransactions(ctx context.Context, accessToken, cursor strin
 }
 
 type AccountBalance struct {
-	PlaidAccountID   string
-	CurrentBalance   float64
-	AvailableBalance float64
+	PlaidAccountID      string
+	CurrentBalance      float64
+	HasCurrentBalance   bool // true when Plaid returned a non-null current balance
+	AvailableBalance    float64
+	HasAvailableBalance bool
 }
 
 func (c *Client) GetAccountBalances(ctx context.Context, accessToken string) ([]AccountBalance, error) {
@@ -138,11 +140,13 @@ func (c *Client) GetAccountBalances(ctx context.Context, accessToken string) ([]
 		b := AccountBalance{
 			PlaidAccountID: a.AccountId,
 		}
-		if current := a.Balances.GetCurrent(); current != 0 {
-			b.CurrentBalance = current
+		if current, ok := a.Balances.GetCurrentOk(); ok && current != nil {
+			b.CurrentBalance = *current
+			b.HasCurrentBalance = true
 		}
 		if available, ok := a.Balances.GetAvailableOk(); ok && available != nil {
 			b.AvailableBalance = *available
+			b.HasAvailableBalance = true
 		}
 		balances = append(balances, b)
 	}
@@ -156,7 +160,11 @@ func plaidError(err error, httpResp *http.Response) error {
 		return err
 	}
 	if body := plaidErr.Body(); len(body) > 0 {
-		return fmt.Errorf("%s (status %d): %s", plaidErr.Error(), httpResp.StatusCode, string(body))
+		status := 0
+		if httpResp != nil {
+			status = httpResp.StatusCode
+		}
+		return fmt.Errorf("%s (status %d): %s", plaidErr.Error(), status, string(body))
 	}
 	return err
 }

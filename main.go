@@ -22,7 +22,6 @@ func main() {
 	envConfig, err := config.ProcessEnvironmentVariables()
 	if err != nil {
 		logrus.WithError(err).Fatal("config.ProcessEnvironmentVariables")
-		return
 	}
 
 	dbStorage := storage.NewStorage(envConfig)

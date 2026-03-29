@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/carson-networks/budget-server/internal/operator/actions"
 	"github.com/carson-networks/budget-server/internal/storage"
@@ -55,14 +56,24 @@ func (o *Orchestrator) Sync(ctx context.Context, accountIDs []uuid.UUID) error {
 			return fmt.Errorf("no provider registered for sync type %d", syncType)
 		}
 
-		actionsByAccount, err := provider.Sync(ctx, reader, ids)
+		syncResult, err := provider.Sync(ctx, reader, ids)
 		if err != nil {
 			return fmt.Errorf("provider sync (type %d): %w", syncType, err)
 		}
+		if syncResult == nil || (len(syncResult.ByAccount) == 0 && len(syncResult.OnSuccess) == 0) {
+			continue
+		}
 
-		for accountID, actionsToRun := range actionsByAccount {
-			if err := o.executeActions(ctx, actionsToRun); err != nil {
+		accountIDs := sortedAccountIDs(syncResult.ByAccount)
+		for _, accountID := range accountIDs {
+			if err := o.executeActions(ctx, syncResult.ByAccount[accountID]); err != nil {
 				return fmt.Errorf("applying sync for account %s: %w", accountID, err)
+			}
+		}
+
+		if len(syncResult.OnSuccess) > 0 {
+			if err := o.executeActions(ctx, syncResult.OnSuccess); err != nil {
+				return fmt.Errorf("post-sync actions (type %d): %w", syncType, err)
 			}
 		}
 	}
@@ -84,4 +95,15 @@ func (o *Orchestrator) executeActions(ctx context.Context, actions []actions.IAc
 	}
 
 	return writer.Commit()
+}
+
+func sortedAccountIDs(byAccount map[uuid.UUID][]actions.IAction) []uuid.UUID {
+	ids := make([]uuid.UUID, 0, len(byAccount))
+	for id := range byAccount {
+		ids = append(ids, id)
+	}
+	sort.Slice(ids, func(i, j int) bool {
+		return ids[i].String() < ids[j].String()
+	})
+	return ids
 }
