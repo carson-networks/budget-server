@@ -9,12 +9,10 @@ import (
 	"github.com/danielgtaylor/huma/v2"
 )
 
-// linkTokenCreator is the subset of plaid.Client the create-link-token handler needs.
 type linkTokenCreator interface {
 	CreateLinkToken(ctx context.Context) (string, time.Time, error)
 }
 
-// CreateLinkTokenOutput is the Huma output for creating a Plaid link token.
 type CreateLinkTokenOutput struct {
 	Body struct {
 		LinkToken  string    `json:"linkToken" doc:"Plaid link token to initialise the Plaid Link widget"`
@@ -22,7 +20,6 @@ type CreateLinkTokenOutput struct {
 	}
 }
 
-// CreateLinkTokenHandler handles POST /v1/plaid/link-token.
 type CreateLinkTokenHandler struct {
 	PlaidClient linkTokenCreator
 }

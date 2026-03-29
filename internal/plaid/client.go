@@ -10,13 +10,10 @@ import (
 	plaidlib "github.com/plaid/plaid-go/v41/plaid"
 )
 
-// Client wraps the Plaid SDK and exposes only the operations this server needs.
 type Client struct {
 	api *plaidlib.PlaidApiService
 }
 
-// NewClient creates a new Plaid API client for the given environment.
-// env should be "sandbox", "development", or "production".
 func NewClient(clientID, secret, env string) *Client {
 	cfg := plaidlib.NewConfiguration()
 	cfg.AddDefaultHeader("PLAID-CLIENT-ID", clientID)
@@ -33,7 +30,6 @@ func NewClient(clientID, secret, env string) *Client {
 	return &Client{api: apiClient.PlaidApi}
 }
 
-// CreateLinkToken creates a Plaid Link token for the frontend Plaid Link widget.
 func (c *Client) CreateLinkToken(ctx context.Context) (string, time.Time, error) {
 	request := plaidlib.NewLinkTokenCreateRequest(
 		"Budget",
@@ -51,8 +47,6 @@ func (c *Client) CreateLinkToken(ctx context.Context) (string, time.Time, error)
 	return resp.LinkToken, resp.Expiration, nil
 }
 
-// ExchangePublicToken exchanges the one-time public_token from the frontend for a durable
-// access_token and plaid_item_id.
 func (c *Client) ExchangePublicToken(ctx context.Context, publicToken string) (accessToken, plaidItemID string, err error) {
 	request := plaidlib.NewItemPublicTokenExchangeRequest(publicToken)
 	resp, httpResp, exchErr := c.api.ItemPublicTokenExchange(ctx).ItemPublicTokenExchangeRequest(*request).Execute()
@@ -62,7 +56,6 @@ func (c *Client) ExchangePublicToken(ctx context.Context, publicToken string) (a
 	return resp.AccessToken, resp.ItemId, nil
 }
 
-// SyncTransaction is a single transaction returned by Plaid's /transactions/sync.
 type SyncTransaction struct {
 	PlaidTransactionID string
 	PlaidAccountID     string
@@ -72,7 +65,6 @@ type SyncTransaction struct {
 	Pending            bool
 }
 
-// SyncResult is the result of one page of /transactions/sync.
 type SyncResult struct {
 	Added      []SyncTransaction
 	Modified   []SyncTransaction
@@ -81,7 +73,6 @@ type SyncResult struct {
 	HasMore    bool
 }
 
-// SyncTransactions calls /transactions/sync with the given cursor.
 // Pass an empty string for cursor on the first call to fetch all history.
 func (c *Client) SyncTransactions(ctx context.Context, accessToken, cursor string) (*SyncResult, error) {
 	request := plaidlib.NewTransactionsSyncRequest(accessToken)
@@ -129,14 +120,12 @@ func (c *Client) SyncTransactions(ctx context.Context, accessToken, cursor strin
 	return result, nil
 }
 
-// AccountBalance is the current balance for a single Plaid account.
 type AccountBalance struct {
 	PlaidAccountID   string
 	CurrentBalance   float64
 	AvailableBalance float64
 }
 
-// GetAccountBalances fetches current balances for all accounts under the given access token.
 func (c *Client) GetAccountBalances(ctx context.Context, accessToken string) ([]AccountBalance, error) {
 	request := plaidlib.NewAccountsGetRequest(accessToken)
 	resp, httpResp, err := c.api.AccountsGet(ctx).AccountsGetRequest(*request).Execute()
@@ -160,7 +149,6 @@ func (c *Client) GetAccountBalances(ctx context.Context, accessToken string) ([]
 	return balances, nil
 }
 
-// plaidError extracts a meaningful error from a Plaid SDK error response.
 func plaidError(err error, httpResp *http.Response) error {
 	var plaidErr plaidlib.GenericOpenAPIError
 	ok := errors.As(err, &plaidErr)

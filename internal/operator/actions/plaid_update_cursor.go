@@ -8,7 +8,6 @@ import (
 	"github.com/carson-networks/budget-server/internal/storage"
 )
 
-// PlaidUpdateCursor advances the sync cursor for a Plaid item.
 type PlaidUpdateCursor struct {
 	ItemID     uuid.UUID
 	NextCursor string

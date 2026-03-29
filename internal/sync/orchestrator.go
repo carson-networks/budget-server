@@ -10,15 +10,11 @@ import (
 	"github.com/gofrs/uuid/v5"
 )
 
-// IStorage defines the storage operations used by the orchestrator.
 type IStorage interface {
 	Read() *storage.Reader
 	Write(ctx context.Context) (*storage.Writer, error)
 }
 
-// Orchestrator reads the syncs table, groups accounts by SyncType,
-// delegates to providers, and executes actions per account in isolated
-// DB transactions.
 type Orchestrator struct {
 	registry *Registry
 	storage  IStorage
@@ -31,8 +27,6 @@ func NewOrchestrator(registry *Registry, storage IStorage) *Orchestrator {
 	}
 }
 
-// Sync runs the sync lifecycle for the given accounts. If accountIDs is empty,
-// all accounts with a sync record are synced.
 func (o *Orchestrator) Sync(ctx context.Context, accountIDs []uuid.UUID) error {
 	reader := o.storage.Read()
 
@@ -76,7 +70,6 @@ func (o *Orchestrator) Sync(ctx context.Context, accountIDs []uuid.UUID) error {
 	return nil
 }
 
-// executeActions runs all actions for one account in a single DB transaction.
 func (o *Orchestrator) executeActions(ctx context.Context, actions []actions.IAction) error {
 	writer, err := o.storage.Write(ctx)
 	if err != nil {

@@ -12,18 +12,15 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// PlaidAccountToLink describes a Plaid account the user has selected to import.
 type PlaidAccountToLink struct {
 	PlaidAccountID string
 	Name           string
 	Type           account.AccountType
 	SubType        string
-	Balance        decimal.Decimal // used as starting balance
+	Balance        decimal.Decimal
 }
 
-// LinkPlaidItem stores the Plaid Item in the DB and creates a budget account for each
-// selected Plaid account. This action runs inside the operator transaction; all Plaid
-// API calls must be made by the handler before enqueueing.
+// Plaid API calls must happen before this action is enqueued; it only does DB writes.
 type LinkPlaidItem struct {
 	AccessToken     string
 	PlaidItemID     string

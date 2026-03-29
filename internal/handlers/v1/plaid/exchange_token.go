@@ -14,8 +14,6 @@ import (
 	"github.com/carson-networks/budget-server/internal/storage/account"
 )
 
-// SelectedAccount is one Plaid account the user has chosen to import.
-// The frontend gets this data from the Plaid Link onSuccess metadata.
 type SelectedAccount struct {
 	PlaidAccountID string          `json:"plaidAccountID" doc:"Plaid's stable account ID string"`
 	Name           string          `json:"name" doc:"Display name for the account"`
@@ -24,7 +22,6 @@ type SelectedAccount struct {
 	Balance        decimal.Decimal `json:"balance" doc:"Current balance, used as starting balance"`
 }
 
-// ExchangeTokenBody is the request body for POST /v1/plaid/exchange-token.
 type ExchangeTokenBody struct {
 	PublicToken     string            `json:"publicToken" required:"true" doc:"One-time public token from Plaid Link"`
 	InstitutionID   string            `json:"institutionID" required:"true" doc:"Plaid institution ID from Link metadata"`
@@ -32,29 +29,24 @@ type ExchangeTokenBody struct {
 	Accounts        []SelectedAccount `json:"accounts" required:"true" doc:"Accounts the user selected to import"`
 }
 
-// ExchangeTokenInput is the Huma input for exchanging a public token.
 type ExchangeTokenInput struct {
 	Body ExchangeTokenBody
 }
 
-// ExchangeTokenOutput is the Huma output for the token exchange.
 type ExchangeTokenOutput struct {
 	Body struct {
 		Status int `json:"status"`
 	}
 }
 
-// tokenExchanger is the subset of plaid.Client the exchange-token handler needs.
 type tokenExchanger interface {
 	ExchangePublicToken(ctx context.Context, publicToken string) (accessToken, plaidItemID string, err error)
 }
 
-// accountSyncer is the subset of the sync orchestrator the exchange-token handler needs.
 type accountSyncer interface {
 	Sync(ctx context.Context, accountIDs []uuid.UUID) error
 }
 
-// ExchangeTokenHandler handles POST /v1/plaid/exchange-token.
 type ExchangeTokenHandler struct {
 	Operator     operator.IProcessor
 	PlaidClient  tokenExchanger

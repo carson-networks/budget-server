@@ -15,13 +15,11 @@ import (
 	syncstore "github.com/carson-networks/budget-server/internal/storage/sync"
 )
 
-// plaidClient is the subset of plaid.Client the provider needs.
 type plaidClient interface {
 	SyncTransactions(ctx context.Context, accessToken, cursor string) (*plaidclient.SyncResult, error)
 	GetAccountBalances(ctx context.Context, accessToken string) ([]plaidclient.AccountBalance, error)
 }
 
-// PlaidProvider implements sync.Provider for Plaid-linked accounts.
 type PlaidProvider struct {
 	client plaidClient
 }
@@ -69,7 +67,6 @@ func (p *PlaidProvider) syncItem(ctx context.Context, reader *storage.Reader, it
 		return fmt.Errorf("fetching plaid sync pages for item %s: %w", item.ID, err)
 	}
 
-	// Build add actions
 	for _, t := range added {
 		internalAccID, ok := plaidToInternal[t.PlaidAccountID]
 		if !ok {
@@ -82,7 +79,6 @@ func (p *PlaidProvider) syncItem(ctx context.Context, reader *storage.Reader, it
 		result[internalAccID] = append(result[internalAccID], action)
 	}
 
-	// Build modify actions
 	for _, t := range modified {
 		internalAccID, ok := plaidToInternal[t.PlaidAccountID]
 		if !ok {
@@ -95,7 +91,6 @@ func (p *PlaidProvider) syncItem(ctx context.Context, reader *storage.Reader, it
 		result[internalAccID] = append(result[internalAccID], action)
 	}
 
-	// Build remove actions
 	for _, plaidTxnID := range removed {
 		action, accID, err := p.buildRemoveAction(ctx, reader, plaidTxnID, plaidToInternal)
 		if err != nil {
@@ -106,7 +101,6 @@ func (p *PlaidProvider) syncItem(ctx context.Context, reader *storage.Reader, it
 		}
 	}
 
-	// Fetch current balances from Plaid and emit a balance-set action per linked account.
 	balances, err := p.client.GetAccountBalances(ctx, item.AccessToken)
 	if err != nil {
 		return fmt.Errorf("fetching account balances for item %s: %w", item.ID, err)
@@ -122,7 +116,6 @@ func (p *PlaidProvider) syncItem(ctx context.Context, reader *storage.Reader, it
 		})
 	}
 
-	// Append cursor update for each account that has actions for this item.
 	for _, link := range links {
 		if _, hasActions := result[link.AccountID]; hasActions {
 			result[link.AccountID] = append(result[link.AccountID], &actions.PlaidUpdateCursor{
@@ -194,7 +187,6 @@ func (p *PlaidProvider) buildRemoveAction(ctx context.Context, reader *storage.R
 	}, internalAccID, nil
 }
 
-// fetchAllPages paginates through Plaid's /transactions/sync until HasMore=false.
 func (p *PlaidProvider) fetchAllPages(ctx context.Context, item *plaidstore.PlaidItem) (
 	added []plaidclient.SyncTransaction,
 	modified []plaidclient.SyncTransaction,

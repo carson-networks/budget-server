@@ -49,7 +49,6 @@ func (r *Reader) ListItems(ctx context.Context) ([]*PlaidItem, error) {
 	return convertItems(rows), nil
 }
 
-// ListItemsWithLinks returns all PlaidItems that have at least one account linked.
 func (r *Reader) ListItemsWithLinks(ctx context.Context) ([]*PlaidItem, error) {
 	return r.ListItemsForSync(ctx, nil)
 }
@@ -97,7 +96,6 @@ func (r *Reader) ListItemsForSync(ctx context.Context, accountIDs []uuid.UUID) (
 	return convertItems(rows), nil
 }
 
-// ListAccountLinksByAccountIDs returns AccountLinks for the given internal account UUIDs.
 func (r *Reader) ListAccountLinksByAccountIDs(ctx context.Context, accountIDs []uuid.UUID) ([]*AccountLink, error) {
 	if len(accountIDs) == 0 {
 		return nil, nil
@@ -113,7 +111,6 @@ func (r *Reader) ListAccountLinksByAccountIDs(ctx context.Context, accountIDs []
 	return convertAccountLinks(rows), nil
 }
 
-// ListAccountLinksByItemID returns all AccountLinks for a given PlaidItem.
 func (r *Reader) ListAccountLinksByItemID(ctx context.Context, itemID uuid.UUID) ([]*AccountLink, error) {
 	rows, err := bobgen.PlaidAccountLinks.Query(
 		bobgen.SelectWhere.PlaidAccountLinks.PlaidItemID.EQ(itemID),
@@ -135,8 +132,6 @@ func (r *Reader) FindTransactionLink(ctx context.Context, plaidTxnID string) (*T
 	}
 	return bobTransactionLinkToLink(row), nil
 }
-
-// -- conversion helpers --
 
 func bobPlaidItemToItem(row *bobgen.PlaidItem) *PlaidItem {
 	return &PlaidItem{

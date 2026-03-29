@@ -11,22 +11,18 @@ import (
 	"github.com/carson-networks/budget-server/internal/sync"
 )
 
-// SyncAccountsBody is the request body for POST /v1/accounts/sync.
 type SyncAccountsBody struct {
 	AccountIDs []string `json:"accountIDs,omitempty" doc:"Optional list of internal account UUIDs to sync. Empty syncs all connected accounts."`
 }
 
-// SyncAccountsInput is the Huma input for the sync endpoint.
 type SyncAccountsInput struct {
 	Body SyncAccountsBody
 }
 
-// SyncAccountsOutput is the Huma output for the sync endpoint.
 type SyncAccountsOutput struct {
 	Body struct{}
 }
 
-// SyncAccountsHandler handles POST /v1/accounts/sync.
 type SyncAccountsHandler struct {
 	Orchestrator *sync.Orchestrator
 }

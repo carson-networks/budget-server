@@ -23,7 +23,6 @@ func NewWriter(tx bob.Tx) *Writer {
 	}
 }
 
-// CreateItem inserts a new PlaidItem and returns its generated UUID.
 func (w *Writer) CreateItem(ctx context.Context, create *PlaidItemCreate) (uuid.UUID, error) {
 	id, err := uuid.NewV4()
 	if err != nil {
@@ -43,7 +42,6 @@ func (w *Writer) CreateItem(ctx context.Context, create *PlaidItemCreate) (uuid.
 	return row.ID, nil
 }
 
-// UpdateCursor advances the sync cursor for a PlaidItem.
 func (w *Writer) UpdateCursor(ctx context.Context, itemID uuid.UUID, cursor string) error {
 	setter := bobgen.PlaidItemSetter{
 		Cursor: omit.From(cursor),
@@ -55,7 +53,6 @@ func (w *Writer) UpdateCursor(ctx context.Context, itemID uuid.UUID, cursor stri
 	return err
 }
 
-// CreateAccountLink creates a row linking a Plaid account ID to an internal account UUID.
 func (w *Writer) CreateAccountLink(ctx context.Context, link *AccountLink) error {
 	setter := &bobgen.PlaidAccountLinkSetter{
 		PlaidAccountID: omit.From(link.PlaidAccountID),
@@ -66,7 +63,6 @@ func (w *Writer) CreateAccountLink(ctx context.Context, link *AccountLink) error
 	return err
 }
 
-// CreateTransactionLink creates a row linking a Plaid transaction ID to an internal transaction UUID.
 func (w *Writer) CreateTransactionLink(ctx context.Context, link *TransactionLink) error {
 	setter := &bobgen.PlaidTransactionLinkSetter{
 		PlaidTransactionID: omit.From(link.PlaidTransactionID),
@@ -77,7 +73,6 @@ func (w *Writer) CreateTransactionLink(ctx context.Context, link *TransactionLin
 	return err
 }
 
-// DeleteTransactionLink removes a plaid_transaction_links row by Plaid transaction ID.
 func (w *Writer) DeleteTransactionLink(ctx context.Context, plaidTxnID string) error {
 	_, err := bobgen.PlaidTransactionLinks.Delete(
 		bobgen.DeleteWhere.PlaidTransactionLinks.PlaidTransactionID.EQ(plaidTxnID),
