@@ -34,7 +34,7 @@ func TestHTTP_CreateTransaction_SuccessWithExplicitDate(t *testing.T) {
 			ct, ok := a.(*actions.CreateTransaction)
 			return ok &&
 				ct.AccountID == accountID &&
-				ct.CategoryID == categoryID &&
+				ct.CategoryID != nil && *ct.CategoryID == categoryID &&
 				ct.Amount.Equal(decimal.NewFromInt(-50)) &&
 				ct.TransactionName == "Groceries" &&
 				ct.TransactionDate.Equal(txnDate)

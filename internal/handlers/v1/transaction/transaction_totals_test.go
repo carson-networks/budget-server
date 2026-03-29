@@ -65,13 +65,11 @@ func TestHTTP_TransactionTotals_HappyPath(t *testing.T) {
 	assert.Len(t, body.ByMonth, 2)
 	assert.Equal(t, 2025, body.ByMonth[0].Year)
 	assert.Equal(t, 1, body.ByMonth[0].Month)
-	assert.Equal(t, "2025-01", body.ByMonth[0].YearMonth)
 	assert.Len(t, body.ByMonth[0].ByCategory, 1)
 	assert.Equal(t, catID.String(), body.ByMonth[0].ByCategory[0].CategoryID)
 	assert.Equal(t, "42.5", body.ByMonth[0].ByCategory[0].Total)
 	assert.Equal(t, 2025, body.ByMonth[1].Year)
 	assert.Equal(t, 2, body.ByMonth[1].Month)
-	assert.Equal(t, "2025-02", body.ByMonth[1].YearMonth)
 	assert.Empty(t, body.ByMonth[1].ByCategory)
 	mockReader.AssertExpectations(t)
 }
