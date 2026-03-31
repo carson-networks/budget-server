@@ -1,0 +1,16 @@
+version: v2
+name: buf.build/carson-networks/budget
+deps:
+  - buf.build/protocolbuffers/wellknowntypes
+
+lint:
+  use:
+    - STANDARD
+  # Enum zero values intentionally keep domain-specific names (e.g. CASH = 0);
+  # renaming to *_UNSPECIFIED would renumber tags and break stored data / clients.
+  except:
+    - ENUM_ZERO_VALUE_SUFFIX
+
+breaking:
+  use:
+    - FILE

@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package budget.v1;
+
+import "budget/v1/account.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/carson-networks/budget-server/gen/budget/v1;budgetv1";
+
+message SelectedAccount {
+  string plaid_account_id = 1;
+  string name = 2;
+  AccountType type = 3;
+  string sub_type = 4;
+  string balance = 5;
+}
+
+message CreateLinkTokenRequest {}
+
+message CreateLinkTokenResponse {
+  string link_token = 1;
+  google.protobuf.Timestamp expiration = 2;
+}
+
+message ExchangeTokenRequest {
+  string public_token = 1;
+  string institution_id = 2;
+  string institution_name = 3;
+  repeated SelectedAccount accounts = 4;
+}
+
+message ExchangeTokenResponse {
+  int32 status = 1;
+}
+
+service PlaidService {
+  rpc CreateLinkToken(CreateLinkTokenRequest) returns (CreateLinkTokenResponse);
+  rpc ExchangeToken(ExchangeTokenRequest) returns (ExchangeTokenResponse);
+}

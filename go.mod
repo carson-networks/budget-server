@@ -8,6 +8,7 @@ tool (
 )
 
 require (
+	connectrpc.com/connect v1.18.1
 	github.com/aarondl/opt v0.0.0-20250607033636-982744e1bd65
 	github.com/danielgtaylor/huma/v2 v2.37.2
 	github.com/gofrs/uuid/v5 v5.4.0
@@ -18,6 +19,7 @@ require (
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stephenafamo/bob v0.42.0
 	github.com/stretchr/testify v1.11.1
+	google.golang.org/protobuf v1.36.11
 )
 
 require (
