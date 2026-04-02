@@ -44,10 +44,5 @@ func (s *Service) SetBudget(ctx context.Context, req *connect.Request[budgetv1.S
 		}
 	}
 
-	return connect.NewResponse(&budgetv1.SetBudgetResponse{
-		CategoryId: categoryID.String(),
-		Month:      req.Msg.GetMonth(),
-		Year:       req.Msg.GetYear(),
-		Amount:     amount.String(),
-	}), nil
+	return connect.NewResponse(&budgetv1.SetBudgetResponse{}), nil
 }

@@ -21,14 +21,13 @@ message Account {
   google.protobuf.Timestamp created_at = 7;
 }
 
-message ListAccountsRequest {
+message ListAccountsCursor {
   int32 position = 1;
   int32 limit = 2;
 }
 
-message ListAccountsCursor {
-  int32 position = 1;
-  int32 limit = 2;
+message ListAccountsRequest {
+  optional ListAccountsCursor cursor = 1;
 }
 
 message ListAccountsResponse {

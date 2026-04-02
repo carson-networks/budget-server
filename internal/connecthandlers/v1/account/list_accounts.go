@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"errors"
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -14,13 +15,20 @@ import (
 // ListAccounts implements budget.v1.AccountService.ListAccounts.
 func (s *Service) ListAccounts(ctx context.Context, req *connect.Request[budgetv1.ListAccountsRequest]) (*connect.Response[budgetv1.ListAccountsResponse], error) {
 	logData := logging.GetLogData(ctx)
-	limit := int(req.Msg.GetLimit())
-	if limit == 0 {
-		limit = 20
+	limit := 20
+	offset := 0
+	if c := req.Msg.GetCursor(); c != nil {
+		if c.GetPosition() < 0 {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cursor position must be non-negative"))
+		}
+		offset = int(c.GetPosition())
+		if c.GetLimit() > 0 {
+			limit = int(c.GetLimit())
+		}
 	}
 	filter := &storageaccount.AccountFilter{
 		Limit:  limit,
-		Offset: int(req.Msg.GetPosition()),
+		Offset: offset,
 	}
 
 	var stopTimer func()

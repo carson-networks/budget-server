@@ -39,10 +39,10 @@ func (s *Service) ListBudgets(ctx context.Context, req *connect.Request[budgetv1
 	}
 
 	out := &budgetv1.ListBudgetsResponse{
-		Budgets: make([]*budgetv1.BudgetRow, len(budgets)),
+		Budgets: make([]*budgetv1.Budget, len(budgets)),
 	}
 	for i, b := range budgets {
-		out.Budgets[i] = &budgetv1.BudgetRow{
+		out.Budgets[i] = &budgetv1.Budget{
 			CategoryId: b.CategoryID.String(),
 			Month:      int32(b.Month),
 			Year:       int32(b.Year),

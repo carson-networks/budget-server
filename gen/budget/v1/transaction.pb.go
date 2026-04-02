@@ -500,7 +500,6 @@ type CreateTransactionRequest struct {
 	CategoryId      string                 `protobuf:"bytes,2,opt,name=category_id,json=categoryId,proto3" json:"category_id,omitempty"`
 	Amount          string                 `protobuf:"bytes,3,opt,name=amount,proto3" json:"amount,omitempty"`
 	TransactionName string                 `protobuf:"bytes,4,opt,name=transaction_name,json=transactionName,proto3" json:"transaction_name,omitempty"`
-	// If unset, server uses current time.
 	TransactionDate *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=transaction_date,json=transactionDate,proto3,oneof" json:"transaction_date,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache

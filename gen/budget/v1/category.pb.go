@@ -160,58 +160,6 @@ func (x *Category) GetCreatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
-type ListCategoriesRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Position      int32                  `protobuf:"varint,1,opt,name=position,proto3" json:"position,omitempty"`
-	Limit         int32                  `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListCategoriesRequest) Reset() {
-	*x = ListCategoriesRequest{}
-	mi := &file_budget_v1_category_proto_msgTypes[1]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListCategoriesRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListCategoriesRequest) ProtoMessage() {}
-
-func (x *ListCategoriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_budget_v1_category_proto_msgTypes[1]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListCategoriesRequest.ProtoReflect.Descriptor instead.
-func (*ListCategoriesRequest) Descriptor() ([]byte, []int) {
-	return file_budget_v1_category_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *ListCategoriesRequest) GetPosition() int32 {
-	if x != nil {
-		return x.Position
-	}
-	return 0
-}
-
-func (x *ListCategoriesRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
-	}
-	return 0
-}
-
 type ListCategoriesCursor struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Position      int32                  `protobuf:"varint,1,opt,name=position,proto3" json:"position,omitempty"`
@@ -222,7 +170,7 @@ type ListCategoriesCursor struct {
 
 func (x *ListCategoriesCursor) Reset() {
 	*x = ListCategoriesCursor{}
-	mi := &file_budget_v1_category_proto_msgTypes[2]
+	mi := &file_budget_v1_category_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -234,7 +182,7 @@ func (x *ListCategoriesCursor) String() string {
 func (*ListCategoriesCursor) ProtoMessage() {}
 
 func (x *ListCategoriesCursor) ProtoReflect() protoreflect.Message {
-	mi := &file_budget_v1_category_proto_msgTypes[2]
+	mi := &file_budget_v1_category_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -247,7 +195,7 @@ func (x *ListCategoriesCursor) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCategoriesCursor.ProtoReflect.Descriptor instead.
 func (*ListCategoriesCursor) Descriptor() ([]byte, []int) {
-	return file_budget_v1_category_proto_rawDescGZIP(), []int{2}
+	return file_budget_v1_category_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ListCategoriesCursor) GetPosition() int32 {
@@ -262,6 +210,50 @@ func (x *ListCategoriesCursor) GetLimit() int32 {
 		return x.Limit
 	}
 	return 0
+}
+
+type ListCategoriesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Cursor        *ListCategoriesCursor  `protobuf:"bytes,1,opt,name=cursor,proto3,oneof" json:"cursor,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListCategoriesRequest) Reset() {
+	*x = ListCategoriesRequest{}
+	mi := &file_budget_v1_category_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCategoriesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCategoriesRequest) ProtoMessage() {}
+
+func (x *ListCategoriesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_budget_v1_category_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCategoriesRequest.ProtoReflect.Descriptor instead.
+func (*ListCategoriesRequest) Descriptor() ([]byte, []int) {
+	return file_budget_v1_category_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ListCategoriesRequest) GetCursor() *ListCategoriesCursor {
+	if x != nil {
+		return x.Cursor
+	}
+	return nil
 }
 
 type ListCategoriesResponse struct {
@@ -555,13 +547,13 @@ const file_budget_v1_category_proto_rawDesc = "" +
 	"\rcategory_type\x18\x06 \x01(\x0e2\x17.budget.v1.CategoryTypeR\fcategoryType\x129\n" +
 	"\n" +
 	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAtB\x15\n" +
-	"\x13_parent_category_id\"I\n" +
-	"\x15ListCategoriesRequest\x12\x1a\n" +
-	"\bposition\x18\x01 \x01(\x05R\bposition\x12\x14\n" +
-	"\x05limit\x18\x02 \x01(\x05R\x05limit\"H\n" +
+	"\x13_parent_category_id\"H\n" +
 	"\x14ListCategoriesCursor\x12\x1a\n" +
 	"\bposition\x18\x01 \x01(\x05R\bposition\x12\x14\n" +
-	"\x05limit\x18\x02 \x01(\x05R\x05limit\"\xa4\x01\n" +
+	"\x05limit\x18\x02 \x01(\x05R\x05limit\"`\n" +
+	"\x15ListCategoriesRequest\x12<\n" +
+	"\x06cursor\x18\x01 \x01(\v2\x1f.budget.v1.ListCategoriesCursorH\x00R\x06cursor\x88\x01\x01B\t\n" +
+	"\a_cursor\"\xa4\x01\n" +
 	"\x16ListCategoriesResponse\x123\n" +
 	"\n" +
 	"categories\x18\x01 \x03(\v2\x13.budget.v1.CategoryR\n" +
@@ -616,8 +608,8 @@ var file_budget_v1_category_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_budget_v1_category_proto_goTypes = []any{
 	(CategoryType)(0),              // 0: budget.v1.CategoryType
 	(*Category)(nil),               // 1: budget.v1.Category
-	(*ListCategoriesRequest)(nil),  // 2: budget.v1.ListCategoriesRequest
-	(*ListCategoriesCursor)(nil),   // 3: budget.v1.ListCategoriesCursor
+	(*ListCategoriesCursor)(nil),   // 2: budget.v1.ListCategoriesCursor
+	(*ListCategoriesRequest)(nil),  // 3: budget.v1.ListCategoriesRequest
 	(*ListCategoriesResponse)(nil), // 4: budget.v1.ListCategoriesResponse
 	(*CreateCategoryRequest)(nil),  // 5: budget.v1.CreateCategoryRequest
 	(*CreateCategoryResponse)(nil), // 6: budget.v1.CreateCategoryResponse
@@ -628,20 +620,21 @@ var file_budget_v1_category_proto_goTypes = []any{
 var file_budget_v1_category_proto_depIdxs = []int32{
 	0, // 0: budget.v1.Category.category_type:type_name -> budget.v1.CategoryType
 	9, // 1: budget.v1.Category.created_at:type_name -> google.protobuf.Timestamp
-	1, // 2: budget.v1.ListCategoriesResponse.categories:type_name -> budget.v1.Category
-	3, // 3: budget.v1.ListCategoriesResponse.next_cursor:type_name -> budget.v1.ListCategoriesCursor
-	0, // 4: budget.v1.CreateCategoryRequest.category_type:type_name -> budget.v1.CategoryType
-	2, // 5: budget.v1.CategoryService.ListCategories:input_type -> budget.v1.ListCategoriesRequest
-	5, // 6: budget.v1.CategoryService.CreateCategory:input_type -> budget.v1.CreateCategoryRequest
-	7, // 7: budget.v1.CategoryService.UpdateCategory:input_type -> budget.v1.UpdateCategoryRequest
-	4, // 8: budget.v1.CategoryService.ListCategories:output_type -> budget.v1.ListCategoriesResponse
-	6, // 9: budget.v1.CategoryService.CreateCategory:output_type -> budget.v1.CreateCategoryResponse
-	8, // 10: budget.v1.CategoryService.UpdateCategory:output_type -> budget.v1.UpdateCategoryResponse
-	8, // [8:11] is the sub-list for method output_type
-	5, // [5:8] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	2, // 2: budget.v1.ListCategoriesRequest.cursor:type_name -> budget.v1.ListCategoriesCursor
+	1, // 3: budget.v1.ListCategoriesResponse.categories:type_name -> budget.v1.Category
+	2, // 4: budget.v1.ListCategoriesResponse.next_cursor:type_name -> budget.v1.ListCategoriesCursor
+	0, // 5: budget.v1.CreateCategoryRequest.category_type:type_name -> budget.v1.CategoryType
+	3, // 6: budget.v1.CategoryService.ListCategories:input_type -> budget.v1.ListCategoriesRequest
+	5, // 7: budget.v1.CategoryService.CreateCategory:input_type -> budget.v1.CreateCategoryRequest
+	7, // 8: budget.v1.CategoryService.UpdateCategory:input_type -> budget.v1.UpdateCategoryRequest
+	4, // 9: budget.v1.CategoryService.ListCategories:output_type -> budget.v1.ListCategoriesResponse
+	6, // 10: budget.v1.CategoryService.CreateCategory:output_type -> budget.v1.CreateCategoryResponse
+	8, // 11: budget.v1.CategoryService.UpdateCategory:output_type -> budget.v1.UpdateCategoryResponse
+	9, // [9:12] is the sub-list for method output_type
+	6, // [6:9] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_budget_v1_category_proto_init() }
@@ -650,6 +643,7 @@ func file_budget_v1_category_proto_init() {
 		return
 	}
 	file_budget_v1_category_proto_msgTypes[0].OneofWrappers = []any{}
+	file_budget_v1_category_proto_msgTypes[2].OneofWrappers = []any{}
 	file_budget_v1_category_proto_msgTypes[3].OneofWrappers = []any{}
 	file_budget_v1_category_proto_msgTypes[4].OneofWrappers = []any{}
 	file_budget_v1_category_proto_msgTypes[6].OneofWrappers = []any{}

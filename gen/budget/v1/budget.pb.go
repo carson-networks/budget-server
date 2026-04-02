@@ -21,7 +21,7 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type BudgetRow struct {
+type Budget struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	CategoryId    string                 `protobuf:"bytes,1,opt,name=category_id,json=categoryId,proto3" json:"category_id,omitempty"`
 	Month         int32                  `protobuf:"varint,2,opt,name=month,proto3" json:"month,omitempty"`
@@ -31,20 +31,20 @@ type BudgetRow struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *BudgetRow) Reset() {
-	*x = BudgetRow{}
+func (x *Budget) Reset() {
+	*x = Budget{}
 	mi := &file_budget_v1_budget_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *BudgetRow) String() string {
+func (x *Budget) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*BudgetRow) ProtoMessage() {}
+func (*Budget) ProtoMessage() {}
 
-func (x *BudgetRow) ProtoReflect() protoreflect.Message {
+func (x *Budget) ProtoReflect() protoreflect.Message {
 	mi := &file_budget_v1_budget_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -56,33 +56,33 @@ func (x *BudgetRow) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use BudgetRow.ProtoReflect.Descriptor instead.
-func (*BudgetRow) Descriptor() ([]byte, []int) {
+// Deprecated: Use Budget.ProtoReflect.Descriptor instead.
+func (*Budget) Descriptor() ([]byte, []int) {
 	return file_budget_v1_budget_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *BudgetRow) GetCategoryId() string {
+func (x *Budget) GetCategoryId() string {
 	if x != nil {
 		return x.CategoryId
 	}
 	return ""
 }
 
-func (x *BudgetRow) GetMonth() int32 {
+func (x *Budget) GetMonth() int32 {
 	if x != nil {
 		return x.Month
 	}
 	return 0
 }
 
-func (x *BudgetRow) GetYear() int32 {
+func (x *Budget) GetYear() int32 {
 	if x != nil {
 		return x.Year
 	}
 	return 0
 }
 
-func (x *BudgetRow) GetAmount() string {
+func (x *Budget) GetAmount() string {
 	if x != nil {
 		return x.Amount
 	}
@@ -159,7 +159,7 @@ func (x *ListBudgetsRequest) GetEndYear() int32 {
 
 type ListBudgetsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Budgets       []*BudgetRow           `protobuf:"bytes,1,rep,name=budgets,proto3" json:"budgets,omitempty"`
+	Budgets       []*Budget              `protobuf:"bytes,1,rep,name=budgets,proto3" json:"budgets,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -194,7 +194,7 @@ func (*ListBudgetsResponse) Descriptor() ([]byte, []int) {
 	return file_budget_v1_budget_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *ListBudgetsResponse) GetBudgets() []*BudgetRow {
+func (x *ListBudgetsResponse) GetBudgets() []*Budget {
 	if x != nil {
 		return x.Budgets
 	}
@@ -279,10 +279,6 @@ func (x *SetBudgetRequest) GetOverwriteFutureMonths() bool {
 
 type SetBudgetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	CategoryId    string                 `protobuf:"bytes,1,opt,name=category_id,json=categoryId,proto3" json:"category_id,omitempty"`
-	Month         int32                  `protobuf:"varint,2,opt,name=month,proto3" json:"month,omitempty"`
-	Year          int32                  `protobuf:"varint,3,opt,name=year,proto3" json:"year,omitempty"`
-	Amount        string                 `protobuf:"bytes,4,opt,name=amount,proto3" json:"amount,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -317,40 +313,12 @@ func (*SetBudgetResponse) Descriptor() ([]byte, []int) {
 	return file_budget_v1_budget_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *SetBudgetResponse) GetCategoryId() string {
-	if x != nil {
-		return x.CategoryId
-	}
-	return ""
-}
-
-func (x *SetBudgetResponse) GetMonth() int32 {
-	if x != nil {
-		return x.Month
-	}
-	return 0
-}
-
-func (x *SetBudgetResponse) GetYear() int32 {
-	if x != nil {
-		return x.Year
-	}
-	return 0
-}
-
-func (x *SetBudgetResponse) GetAmount() string {
-	if x != nil {
-		return x.Amount
-	}
-	return ""
-}
-
 var File_budget_v1_budget_proto protoreflect.FileDescriptor
 
 const file_budget_v1_budget_proto_rawDesc = "" +
 	"\n" +
-	"\x16budget/v1/budget.proto\x12\tbudget.v1\"n\n" +
-	"\tBudgetRow\x12\x1f\n" +
+	"\x16budget/v1/budget.proto\x12\tbudget.v1\"k\n" +
+	"\x06Budget\x12\x1f\n" +
 	"\vcategory_id\x18\x01 \x01(\tR\n" +
 	"categoryId\x12\x14\n" +
 	"\x05month\x18\x02 \x01(\x05R\x05month\x12\x12\n" +
@@ -362,22 +330,17 @@ const file_budget_v1_budget_proto_rawDesc = "" +
 	"\n" +
 	"start_year\x18\x02 \x01(\x05R\tstartYear\x12\x1b\n" +
 	"\tend_month\x18\x03 \x01(\x05R\bendMonth\x12\x19\n" +
-	"\bend_year\x18\x04 \x01(\x05R\aendYear\"E\n" +
-	"\x13ListBudgetsResponse\x12.\n" +
-	"\abudgets\x18\x01 \x03(\v2\x14.budget.v1.BudgetRowR\abudgets\"\xad\x01\n" +
+	"\bend_year\x18\x04 \x01(\x05R\aendYear\"B\n" +
+	"\x13ListBudgetsResponse\x12+\n" +
+	"\abudgets\x18\x01 \x03(\v2\x11.budget.v1.BudgetR\abudgets\"\xad\x01\n" +
 	"\x10SetBudgetRequest\x12\x1f\n" +
 	"\vcategory_id\x18\x01 \x01(\tR\n" +
 	"categoryId\x12\x14\n" +
 	"\x05month\x18\x02 \x01(\x05R\x05month\x12\x12\n" +
 	"\x04year\x18\x03 \x01(\x05R\x04year\x12\x16\n" +
 	"\x06amount\x18\x04 \x01(\tR\x06amount\x126\n" +
-	"\x17overwrite_future_months\x18\x05 \x01(\bR\x15overwriteFutureMonths\"v\n" +
-	"\x11SetBudgetResponse\x12\x1f\n" +
-	"\vcategory_id\x18\x01 \x01(\tR\n" +
-	"categoryId\x12\x14\n" +
-	"\x05month\x18\x02 \x01(\x05R\x05month\x12\x12\n" +
-	"\x04year\x18\x03 \x01(\x05R\x04year\x12\x16\n" +
-	"\x06amount\x18\x04 \x01(\tR\x06amount2\xa5\x01\n" +
+	"\x17overwrite_future_months\x18\x05 \x01(\bR\x15overwriteFutureMonths\"\x13\n" +
+	"\x11SetBudgetResponse2\xa5\x01\n" +
 	"\rBudgetService\x12L\n" +
 	"\vListBudgets\x12\x1d.budget.v1.ListBudgetsRequest\x1a\x1e.budget.v1.ListBudgetsResponse\x12F\n" +
 	"\tSetBudget\x12\x1b.budget.v1.SetBudgetRequest\x1a\x1c.budget.v1.SetBudgetResponseB\xa2\x01\n" +
@@ -398,14 +361,14 @@ func file_budget_v1_budget_proto_rawDescGZIP() []byte {
 
 var file_budget_v1_budget_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_budget_v1_budget_proto_goTypes = []any{
-	(*BudgetRow)(nil),           // 0: budget.v1.BudgetRow
+	(*Budget)(nil),              // 0: budget.v1.Budget
 	(*ListBudgetsRequest)(nil),  // 1: budget.v1.ListBudgetsRequest
 	(*ListBudgetsResponse)(nil), // 2: budget.v1.ListBudgetsResponse
 	(*SetBudgetRequest)(nil),    // 3: budget.v1.SetBudgetRequest
 	(*SetBudgetResponse)(nil),   // 4: budget.v1.SetBudgetResponse
 }
 var file_budget_v1_budget_proto_depIdxs = []int32{
-	0, // 0: budget.v1.ListBudgetsResponse.budgets:type_name -> budget.v1.BudgetRow
+	0, // 0: budget.v1.ListBudgetsResponse.budgets:type_name -> budget.v1.Budget
 	1, // 1: budget.v1.BudgetService.ListBudgets:input_type -> budget.v1.ListBudgetsRequest
 	3, // 2: budget.v1.BudgetService.SetBudget:input_type -> budget.v1.SetBudgetRequest
 	2, // 3: budget.v1.BudgetService.ListBudgets:output_type -> budget.v1.ListBudgetsResponse

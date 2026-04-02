@@ -7,7 +7,7 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/carson-networks/budget-server/gen/budget/v1;budgetv1";
 
-message SelectedAccount {
+message SyncAccount {
   string plaid_account_id = 1;
   string name = 2;
   AccountType type = 3;
@@ -26,7 +26,7 @@ message ExchangeTokenRequest {
   string public_token = 1;
   string institution_id = 2;
   string institution_name = 3;
-  repeated SelectedAccount accounts = 4;
+  repeated SyncAccount accounts = 4;
 }
 
 message ExchangeTokenResponse {
