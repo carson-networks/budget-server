@@ -1,9 +1,10 @@
 syntax = "proto3";
 
-package catergory.v1;
-option go_package = "github.com/carson-networks/budget-server/internal/connecthandlers/gen/category";
+package category.v1;
 
 import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/carson-networks/budget-server/internal/connecthandlers/gen/category/v1";
 
 enum CategoryType {
   CATEGORY_TYPE_UNSPECIFIED = 0;

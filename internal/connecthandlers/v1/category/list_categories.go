@@ -7,12 +7,12 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/category"
+	category "github.com/carson-networks/budget-server/internal/connecthandlers/gen/category/v1"
 	"github.com/carson-networks/budget-server/internal/logging"
 	storagecategory "github.com/carson-networks/budget-server/internal/storage/category"
 )
 
-// ListCategories implements budget.v1.CategoryService.ListCategories.
+// ListCategories implements category.v1.CategoryService.ListCategories.
 func (s *Service) ListCategories(ctx context.Context, req *connect.Request[category.ListCategoriesRequest]) (*connect.Response[category.ListCategoriesResponse], error) {
 	logData := logging.GetLogData(ctx)
 	limit := 20
@@ -60,7 +60,7 @@ func (s *Service) ListCategories(ctx context.Context, req *connect.Request[categ
 			Name:         cat.Name,
 			IsParent:     cat.IsParent,
 			IsDisabled:   cat.IsDisabled,
-			CategoryType: ProtoCategoryTypeFromStorage(cat.CategoryType),
+			CategoryType: toConnectCategoryType(cat.CategoryType),
 			CreatedAt:    timestamppb.New(cat.CreatedAt),
 		}
 		if cat.ParentCategoryID != nil {

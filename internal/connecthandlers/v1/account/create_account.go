@@ -6,12 +6,12 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/account"
+	account "github.com/carson-networks/budget-server/internal/connecthandlers/gen/account/v1"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
 	"github.com/shopspring/decimal"
 )
 
-// CreateAccount implements budget.v1.AccountService.CreateAccount.
+// CreateAccount implements account.v1.AccountService.CreateAccount.
 func (s *Service) CreateAccount(ctx context.Context, req *connect.Request[account.CreateAccountRequest]) (*connect.Response[account.CreateAccountResponse], error) {
 	accType, err := FromConnectAccountType(req.Msg.GetType())
 	if err != nil {

@@ -2,7 +2,7 @@ package v1Transaction
 
 import "github.com/carson-networks/budget-server/internal/connecthandlers/v1"
 
-// Service implements budget.v1.TransactionService.
+// Service implements transaction.v1.TransactionService.
 type Service struct {
 	connecthandlers.Deps
 }

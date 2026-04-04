@@ -7,12 +7,12 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/category"
+	category "github.com/carson-networks/budget-server/internal/connecthandlers/gen/category/v1"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
 	"github.com/gofrs/uuid/v5"
 )
 
-// CreateCategory implements budget.v1.CategoryService.CreateCategory.
+// CreateCategory implements category.v1.CategoryService.CreateCategory.
 func (s *Service) CreateCategory(ctx context.Context, req *connect.Request[category.CreateCategoryRequest]) (*connect.Response[category.CreateCategoryResponse], error) {
 	var parentCategoryID *uuid.UUID
 	if req.Msg.ParentCategoryId != nil && *req.Msg.ParentCategoryId != "" {
@@ -23,7 +23,7 @@ func (s *Service) CreateCategory(ctx context.Context, req *connect.Request[categ
 		parentCategoryID = &id
 	}
 
-	catType, err := StorageCategoryTypeFromProto(req.Msg.GetCategoryType())
+	catType, err := FromConnectCategoryType(req.Msg.GetCategoryType())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}

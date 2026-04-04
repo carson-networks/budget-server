@@ -5,7 +5,7 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/account"
+	account "github.com/carson-networks/budget-server/internal/connecthandlers/gen/account/v1"
 	"github.com/gofrs/uuid/v5"
 )
 

@@ -6,11 +6,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/account"
-	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/budget"
-	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/category"
-	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/plaid"
-	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction"
+	account "github.com/carson-networks/budget-server/internal/connecthandlers/gen/account/v1"
+	budget "github.com/carson-networks/budget-server/internal/connecthandlers/gen/budget/v1"
+	category "github.com/carson-networks/budget-server/internal/connecthandlers/gen/category/v1"
+	plaid "github.com/carson-networks/budget-server/internal/connecthandlers/gen/plaid/v1"
+	transaction "github.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction/v1"
 	"github.com/carson-networks/budget-server/internal/connecthandlers/v1"
 	"github.com/carson-networks/budget-server/internal/connecthandlers/v1/account"
 	"github.com/carson-networks/budget-server/internal/connecthandlers/v1/budget"

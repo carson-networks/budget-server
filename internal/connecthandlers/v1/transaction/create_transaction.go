@@ -8,13 +8,13 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction"
+	transaction "github.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction/v1"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
 	"github.com/gofrs/uuid/v5"
 	"github.com/shopspring/decimal"
 )
 
-// CreateTransaction implements budget.v1.TransactionService.CreateTransaction.
+// CreateTransaction implements transaction.v1.TransactionService.CreateTransaction.
 func (s *Service) CreateTransaction(ctx context.Context, req *connect.Request[transaction.CreateTransactionRequest]) (*connect.Response[transaction.CreateTransactionResponse], error) {
 	accountID, err := uuid.FromString(req.Msg.GetAccountId())
 	if err != nil {

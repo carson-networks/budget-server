@@ -6,10 +6,10 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/plaid"
+	plaid "github.com/carson-networks/budget-server/internal/connecthandlers/gen/plaid/v1"
 )
 
-// CreateLinkToken implements budget.v1.PlaidService.CreateLinkToken.
+// CreateLinkToken implements plaid.v1.PlaidService.CreateLinkToken.
 func (s *Service) CreateLinkToken(ctx context.Context, req *connect.Request[plaid.CreateLinkTokenRequest]) (*connect.Response[plaid.CreateLinkTokenResponse], error) {
 	_ = req
 	token, expiration, err := s.PlaidClient.CreateLinkToken(ctx)

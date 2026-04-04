@@ -7,12 +7,12 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/account"
+	account "github.com/carson-networks/budget-server/internal/connecthandlers/gen/account/v1"
 	"github.com/carson-networks/budget-server/internal/logging"
 	storageaccount "github.com/carson-networks/budget-server/internal/storage/account"
 )
 
-// ListAccounts implements budget.v1.AccountService.ListAccounts.
+// ListAccounts implements account.v1.AccountService.ListAccounts.
 func (s *Service) ListAccounts(ctx context.Context, req *connect.Request[account.ListAccountsRequest]) (*connect.Response[account.ListAccountsResponse], error) {
 	logData := logging.GetLogData(ctx)
 	limit := 20

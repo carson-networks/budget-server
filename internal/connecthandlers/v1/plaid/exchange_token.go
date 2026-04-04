@@ -7,13 +7,13 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/plaid"
+	plaid "github.com/carson-networks/budget-server/internal/connecthandlers/gen/plaid/v1"
 	"github.com/carson-networks/budget-server/internal/connecthandlers/v1/account"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
 	"github.com/shopspring/decimal"
 )
 
-// ExchangeToken implements budget.v1.PlaidService.ExchangeToken.
+// ExchangeToken implements plaid.v1.PlaidService.ExchangeToken.
 func (s *Service) ExchangeToken(ctx context.Context, req *connect.Request[plaid.ExchangeTokenRequest]) (*connect.Response[plaid.ExchangeTokenResponse], error) {
 	if len(req.Msg.GetAccounts()) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("at least one account must be selected"))

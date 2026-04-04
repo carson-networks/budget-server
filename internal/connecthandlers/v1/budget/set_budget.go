@@ -6,7 +6,7 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/budget"
+	budget "github.com/carson-networks/budget-server/internal/connecthandlers/gen/budget/v1"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
 	"github.com/gofrs/uuid/v5"
 	"github.com/shopspring/decimal"

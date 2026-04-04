@@ -6,7 +6,7 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/budget"
+	budget "github.com/carson-networks/budget-server/internal/connecthandlers/gen/budget/v1"
 	"github.com/carson-networks/budget-server/internal/logging"
 	storagebudget "github.com/carson-networks/budget-server/internal/storage/budget"
 )

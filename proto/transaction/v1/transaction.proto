@@ -1,9 +1,10 @@
 syntax = "proto3";
 
 package transaction.v1;
-option go_package = "github.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction";
 
 import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction/v1";
 
 message Transaction {
   string id = 1;

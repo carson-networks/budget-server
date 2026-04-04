@@ -2,7 +2,7 @@ package v1Plaid
 
 import "github.com/carson-networks/budget-server/internal/connecthandlers/v1"
 
-// Service implements budget.v1.PlaidService.
+// Service implements plaid.v1.PlaidService.
 type Service struct {
 	connecthandlers.Deps
 }

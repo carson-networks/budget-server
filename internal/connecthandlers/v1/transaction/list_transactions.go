@@ -8,12 +8,12 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction"
+	transaction "github.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction/v1"
 	"github.com/carson-networks/budget-server/internal/logging"
 	storagetransaction "github.com/carson-networks/budget-server/internal/storage/transaction"
 )
 
-// ListTransactions implements budget.v1.TransactionService.ListTransactions.
+// ListTransactions implements transaction.v1.TransactionService.ListTransactions.
 func (s *Service) ListTransactions(ctx context.Context, req *connect.Request[transaction.ListTransactionsRequest]) (*connect.Response[transaction.ListTransactionsResponse], error) {
 	logData := logging.GetLogData(ctx)
 	limit := 20

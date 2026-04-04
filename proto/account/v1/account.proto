@@ -1,9 +1,10 @@
 syntax = "proto3";
 
 package account.v1;
-option go_package = "github.com/carson-networks/budget-server/internal/connecthandlers/gen/account";
 
 import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/carson-networks/budget-server/internal/connecthandlers/gen/account/v1";
 
 enum AccountType {
   ACCOUNT_TYPE_UNSPECIFIED = 0;

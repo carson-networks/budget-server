@@ -6,12 +6,12 @@ import (
 
 	"connectrpc.com/connect"
 
-	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction"
+	transaction "github.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction/v1"
 	"github.com/carson-networks/budget-server/internal/logging"
 	storagetransaction "github.com/carson-networks/budget-server/internal/storage/transaction"
 )
 
-// GetTransactionTotals implements budget.v1.TransactionService.GetTransactionTotals.
+// GetTransactionTotals implements transaction.v1.TransactionService.GetTransactionTotals.
 func (s *Service) GetTransactionTotals(ctx context.Context, req *connect.Request[transaction.GetTransactionTotalsRequest]) (*connect.Response[transaction.GetTransactionTotalsResponse], error) {
 	logData := logging.GetLogData(ctx)
 	sm, sy := int(req.Msg.GetStartMonth()), int(req.Msg.GetStartYear())
