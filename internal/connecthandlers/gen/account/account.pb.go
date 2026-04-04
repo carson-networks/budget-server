@@ -2,9 +2,9 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        (unknown)
-// source: budget/v1/account.proto
+// source: account/account.proto
 
-package budgetv1
+package account
 
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
@@ -52,11 +52,11 @@ func (x AccountType) String() string {
 }
 
 func (AccountType) Descriptor() protoreflect.EnumDescriptor {
-	return file_budget_v1_account_proto_enumTypes[0].Descriptor()
+	return file_account_account_proto_enumTypes[0].Descriptor()
 }
 
 func (AccountType) Type() protoreflect.EnumType {
-	return &file_budget_v1_account_proto_enumTypes[0]
+	return &file_account_account_proto_enumTypes[0]
 }
 
 func (x AccountType) Number() protoreflect.EnumNumber {
@@ -65,14 +65,14 @@ func (x AccountType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AccountType.Descriptor instead.
 func (AccountType) EnumDescriptor() ([]byte, []int) {
-	return file_budget_v1_account_proto_rawDescGZIP(), []int{0}
+	return file_account_account_proto_rawDescGZIP(), []int{0}
 }
 
 type Account struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name            string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Type            AccountType            `protobuf:"varint,3,opt,name=type,proto3,enum=budget.v1.AccountType" json:"type,omitempty"`
+	Type            AccountType            `protobuf:"varint,3,opt,name=type,proto3,enum=account.v1.AccountType" json:"type,omitempty"`
 	SubType         string                 `protobuf:"bytes,4,opt,name=sub_type,json=subType,proto3" json:"sub_type,omitempty"`
 	Balance         string                 `protobuf:"bytes,5,opt,name=balance,proto3" json:"balance,omitempty"`
 	StartingBalance string                 `protobuf:"bytes,6,opt,name=starting_balance,json=startingBalance,proto3" json:"starting_balance,omitempty"`
@@ -83,7 +83,7 @@ type Account struct {
 
 func (x *Account) Reset() {
 	*x = Account{}
-	mi := &file_budget_v1_account_proto_msgTypes[0]
+	mi := &file_account_account_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -95,7 +95,7 @@ func (x *Account) String() string {
 func (*Account) ProtoMessage() {}
 
 func (x *Account) ProtoReflect() protoreflect.Message {
-	mi := &file_budget_v1_account_proto_msgTypes[0]
+	mi := &file_account_account_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -108,7 +108,7 @@ func (x *Account) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Account.ProtoReflect.Descriptor instead.
 func (*Account) Descriptor() ([]byte, []int) {
-	return file_budget_v1_account_proto_rawDescGZIP(), []int{0}
+	return file_account_account_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Account) GetId() string {
@@ -170,7 +170,7 @@ type ListAccountsCursor struct {
 
 func (x *ListAccountsCursor) Reset() {
 	*x = ListAccountsCursor{}
-	mi := &file_budget_v1_account_proto_msgTypes[1]
+	mi := &file_account_account_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -182,7 +182,7 @@ func (x *ListAccountsCursor) String() string {
 func (*ListAccountsCursor) ProtoMessage() {}
 
 func (x *ListAccountsCursor) ProtoReflect() protoreflect.Message {
-	mi := &file_budget_v1_account_proto_msgTypes[1]
+	mi := &file_account_account_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -195,7 +195,7 @@ func (x *ListAccountsCursor) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAccountsCursor.ProtoReflect.Descriptor instead.
 func (*ListAccountsCursor) Descriptor() ([]byte, []int) {
-	return file_budget_v1_account_proto_rawDescGZIP(), []int{1}
+	return file_account_account_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ListAccountsCursor) GetPosition() int32 {
@@ -221,7 +221,7 @@ type ListAccountsRequest struct {
 
 func (x *ListAccountsRequest) Reset() {
 	*x = ListAccountsRequest{}
-	mi := &file_budget_v1_account_proto_msgTypes[2]
+	mi := &file_account_account_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -233,7 +233,7 @@ func (x *ListAccountsRequest) String() string {
 func (*ListAccountsRequest) ProtoMessage() {}
 
 func (x *ListAccountsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_budget_v1_account_proto_msgTypes[2]
+	mi := &file_account_account_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -246,7 +246,7 @@ func (x *ListAccountsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAccountsRequest.ProtoReflect.Descriptor instead.
 func (*ListAccountsRequest) Descriptor() ([]byte, []int) {
-	return file_budget_v1_account_proto_rawDescGZIP(), []int{2}
+	return file_account_account_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ListAccountsRequest) GetCursor() *ListAccountsCursor {
@@ -266,7 +266,7 @@ type ListAccountsResponse struct {
 
 func (x *ListAccountsResponse) Reset() {
 	*x = ListAccountsResponse{}
-	mi := &file_budget_v1_account_proto_msgTypes[3]
+	mi := &file_account_account_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -278,7 +278,7 @@ func (x *ListAccountsResponse) String() string {
 func (*ListAccountsResponse) ProtoMessage() {}
 
 func (x *ListAccountsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_budget_v1_account_proto_msgTypes[3]
+	mi := &file_account_account_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -291,7 +291,7 @@ func (x *ListAccountsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAccountsResponse.ProtoReflect.Descriptor instead.
 func (*ListAccountsResponse) Descriptor() ([]byte, []int) {
-	return file_budget_v1_account_proto_rawDescGZIP(), []int{3}
+	return file_account_account_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ListAccountsResponse) GetAccounts() []*Account {
@@ -311,7 +311,7 @@ func (x *ListAccountsResponse) GetNextCursor() *ListAccountsCursor {
 type CreateAccountRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Name            string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Type            AccountType            `protobuf:"varint,2,opt,name=type,proto3,enum=budget.v1.AccountType" json:"type,omitempty"`
+	Type            AccountType            `protobuf:"varint,2,opt,name=type,proto3,enum=account.v1.AccountType" json:"type,omitempty"`
 	SubType         string                 `protobuf:"bytes,3,opt,name=sub_type,json=subType,proto3" json:"sub_type,omitempty"`
 	StartingBalance string                 `protobuf:"bytes,4,opt,name=starting_balance,json=startingBalance,proto3" json:"starting_balance,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -320,7 +320,7 @@ type CreateAccountRequest struct {
 
 func (x *CreateAccountRequest) Reset() {
 	*x = CreateAccountRequest{}
-	mi := &file_budget_v1_account_proto_msgTypes[4]
+	mi := &file_account_account_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -332,7 +332,7 @@ func (x *CreateAccountRequest) String() string {
 func (*CreateAccountRequest) ProtoMessage() {}
 
 func (x *CreateAccountRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_budget_v1_account_proto_msgTypes[4]
+	mi := &file_account_account_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -345,7 +345,7 @@ func (x *CreateAccountRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateAccountRequest.ProtoReflect.Descriptor instead.
 func (*CreateAccountRequest) Descriptor() ([]byte, []int) {
-	return file_budget_v1_account_proto_rawDescGZIP(), []int{4}
+	return file_account_account_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CreateAccountRequest) GetName() string {
@@ -385,7 +385,7 @@ type CreateAccountResponse struct {
 
 func (x *CreateAccountResponse) Reset() {
 	*x = CreateAccountResponse{}
-	mi := &file_budget_v1_account_proto_msgTypes[5]
+	mi := &file_account_account_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -397,7 +397,7 @@ func (x *CreateAccountResponse) String() string {
 func (*CreateAccountResponse) ProtoMessage() {}
 
 func (x *CreateAccountResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_budget_v1_account_proto_msgTypes[5]
+	mi := &file_account_account_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -410,7 +410,7 @@ func (x *CreateAccountResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateAccountResponse.ProtoReflect.Descriptor instead.
 func (*CreateAccountResponse) Descriptor() ([]byte, []int) {
-	return file_budget_v1_account_proto_rawDescGZIP(), []int{5}
+	return file_account_account_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *CreateAccountResponse) GetStatus() int32 {
@@ -429,7 +429,7 @@ type SyncAccountsRequest struct {
 
 func (x *SyncAccountsRequest) Reset() {
 	*x = SyncAccountsRequest{}
-	mi := &file_budget_v1_account_proto_msgTypes[6]
+	mi := &file_account_account_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -441,7 +441,7 @@ func (x *SyncAccountsRequest) String() string {
 func (*SyncAccountsRequest) ProtoMessage() {}
 
 func (x *SyncAccountsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_budget_v1_account_proto_msgTypes[6]
+	mi := &file_account_account_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -454,7 +454,7 @@ func (x *SyncAccountsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncAccountsRequest.ProtoReflect.Descriptor instead.
 func (*SyncAccountsRequest) Descriptor() ([]byte, []int) {
-	return file_budget_v1_account_proto_rawDescGZIP(), []int{6}
+	return file_account_account_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *SyncAccountsRequest) GetAccountIds() []string {
@@ -472,7 +472,7 @@ type SyncAccountsResponse struct {
 
 func (x *SyncAccountsResponse) Reset() {
 	*x = SyncAccountsResponse{}
-	mi := &file_budget_v1_account_proto_msgTypes[7]
+	mi := &file_account_account_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -484,7 +484,7 @@ func (x *SyncAccountsResponse) String() string {
 func (*SyncAccountsResponse) ProtoMessage() {}
 
 func (x *SyncAccountsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_budget_v1_account_proto_msgTypes[7]
+	mi := &file_account_account_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -497,18 +497,19 @@ func (x *SyncAccountsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SyncAccountsResponse.ProtoReflect.Descriptor instead.
 func (*SyncAccountsResponse) Descriptor() ([]byte, []int) {
-	return file_budget_v1_account_proto_rawDescGZIP(), []int{7}
+	return file_account_account_proto_rawDescGZIP(), []int{7}
 }
 
-var File_budget_v1_account_proto protoreflect.FileDescriptor
+var File_account_account_proto protoreflect.FileDescriptor
 
-const file_budget_v1_account_proto_rawDesc = "" +
+const file_account_account_proto_rawDesc = "" +
 	"\n" +
-	"\x17budget/v1/account.proto\x12\tbudget.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf4\x01\n" +
+	"\x15account/account.proto\x12\n" +
+	"account.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf5\x01\n" +
 	"\aAccount\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12*\n" +
-	"\x04type\x18\x03 \x01(\x0e2\x16.budget.v1.AccountTypeR\x04type\x12\x19\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12+\n" +
+	"\x04type\x18\x03 \x01(\x0e2\x17.account.v1.AccountTypeR\x04type\x12\x19\n" +
 	"\bsub_type\x18\x04 \x01(\tR\asubType\x12\x18\n" +
 	"\abalance\x18\x05 \x01(\tR\abalance\x12)\n" +
 	"\x10starting_balance\x18\x06 \x01(\tR\x0fstartingBalance\x129\n" +
@@ -516,18 +517,18 @@ const file_budget_v1_account_proto_rawDesc = "" +
 	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"F\n" +
 	"\x12ListAccountsCursor\x12\x1a\n" +
 	"\bposition\x18\x01 \x01(\x05R\bposition\x12\x14\n" +
-	"\x05limit\x18\x02 \x01(\x05R\x05limit\"\\\n" +
-	"\x13ListAccountsRequest\x12:\n" +
-	"\x06cursor\x18\x01 \x01(\v2\x1d.budget.v1.ListAccountsCursorH\x00R\x06cursor\x88\x01\x01B\t\n" +
-	"\a_cursor\"\x9b\x01\n" +
-	"\x14ListAccountsResponse\x12.\n" +
-	"\baccounts\x18\x01 \x03(\v2\x12.budget.v1.AccountR\baccounts\x12C\n" +
-	"\vnext_cursor\x18\x02 \x01(\v2\x1d.budget.v1.ListAccountsCursorH\x00R\n" +
+	"\x05limit\x18\x02 \x01(\x05R\x05limit\"]\n" +
+	"\x13ListAccountsRequest\x12;\n" +
+	"\x06cursor\x18\x01 \x01(\v2\x1e.account.v1.ListAccountsCursorH\x00R\x06cursor\x88\x01\x01B\t\n" +
+	"\a_cursor\"\x9d\x01\n" +
+	"\x14ListAccountsResponse\x12/\n" +
+	"\baccounts\x18\x01 \x03(\v2\x13.account.v1.AccountR\baccounts\x12D\n" +
+	"\vnext_cursor\x18\x02 \x01(\v2\x1e.account.v1.ListAccountsCursorH\x00R\n" +
 	"nextCursor\x88\x01\x01B\x0e\n" +
-	"\f_next_cursor\"\x9c\x01\n" +
+	"\f_next_cursor\"\x9d\x01\n" +
 	"\x14CreateAccountRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12*\n" +
-	"\x04type\x18\x02 \x01(\x0e2\x16.budget.v1.AccountTypeR\x04type\x12\x19\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12+\n" +
+	"\x04type\x18\x02 \x01(\x0e2\x17.account.v1.AccountTypeR\x04type\x12\x19\n" +
 	"\bsub_type\x18\x03 \x01(\tR\asubType\x12)\n" +
 	"\x10starting_balance\x18\x04 \x01(\tR\x0fstartingBalance\"/\n" +
 	"\x15CreateAccountResponse\x12\x16\n" +
@@ -538,53 +539,54 @@ const file_budget_v1_account_proto_rawDesc = "" +
 	"\x14SyncAccountsResponse*C\n" +
 	"\vAccountType\x12\x15\n" +
 	"\x11ACCOUNT_TYPE_CASH\x10\x00\x12\x1d\n" +
-	"\x19ACCOUNT_TYPE_CREDIT_CARDS\x10\x012\x86\x02\n" +
-	"\x0eAccountService\x12O\n" +
-	"\fListAccounts\x12\x1e.budget.v1.ListAccountsRequest\x1a\x1f.budget.v1.ListAccountsResponse\x12R\n" +
-	"\rCreateAccount\x12\x1f.budget.v1.CreateAccountRequest\x1a .budget.v1.CreateAccountResponse\x12O\n" +
-	"\fSyncAccounts\x12\x1e.budget.v1.SyncAccountsRequest\x1a\x1f.budget.v1.SyncAccountsResponseB\xa3\x01\n" +
-	"\rcom.budget.v1B\fAccountProtoP\x01Z?github.com/carson-networks/budget-server/gen/budget/v1;budgetv1\xa2\x02\x03BXX\xaa\x02\tBudget.V1\xca\x02\tBudget\\V1\xe2\x02\x15Budget\\V1\\GPBMetadata\xea\x02\n" +
-	"Budget::V1b\x06proto3"
+	"\x19ACCOUNT_TYPE_CREDIT_CARDS\x10\x012\x8c\x02\n" +
+	"\x0eAccountService\x12Q\n" +
+	"\fListAccounts\x12\x1f.account.v1.ListAccountsRequest\x1a .account.v1.ListAccountsResponse\x12T\n" +
+	"\rCreateAccount\x12 .account.v1.CreateAccountRequest\x1a!.account.v1.CreateAccountResponse\x12Q\n" +
+	"\fSyncAccounts\x12\x1f.account.v1.SyncAccountsRequest\x1a .account.v1.SyncAccountsResponseBt\n" +
+	"\x0ecom.account.v1B\fAccountProtoP\x01Z\vgen/account\xa2\x02\x03AXX\xaa\x02\n" +
+	"Account.V1\xca\x02\n" +
+	"Account\\V1\xe2\x02\x16Account\\V1\\GPBMetadata\xea\x02\vAccount::V1b\x06proto3"
 
 var (
-	file_budget_v1_account_proto_rawDescOnce sync.Once
-	file_budget_v1_account_proto_rawDescData []byte
+	file_account_account_proto_rawDescOnce sync.Once
+	file_account_account_proto_rawDescData []byte
 )
 
-func file_budget_v1_account_proto_rawDescGZIP() []byte {
-	file_budget_v1_account_proto_rawDescOnce.Do(func() {
-		file_budget_v1_account_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_budget_v1_account_proto_rawDesc), len(file_budget_v1_account_proto_rawDesc)))
+func file_account_account_proto_rawDescGZIP() []byte {
+	file_account_account_proto_rawDescOnce.Do(func() {
+		file_account_account_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_account_account_proto_rawDesc), len(file_account_account_proto_rawDesc)))
 	})
-	return file_budget_v1_account_proto_rawDescData
+	return file_account_account_proto_rawDescData
 }
 
-var file_budget_v1_account_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_budget_v1_account_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
-var file_budget_v1_account_proto_goTypes = []any{
-	(AccountType)(0),              // 0: budget.v1.AccountType
-	(*Account)(nil),               // 1: budget.v1.Account
-	(*ListAccountsCursor)(nil),    // 2: budget.v1.ListAccountsCursor
-	(*ListAccountsRequest)(nil),   // 3: budget.v1.ListAccountsRequest
-	(*ListAccountsResponse)(nil),  // 4: budget.v1.ListAccountsResponse
-	(*CreateAccountRequest)(nil),  // 5: budget.v1.CreateAccountRequest
-	(*CreateAccountResponse)(nil), // 6: budget.v1.CreateAccountResponse
-	(*SyncAccountsRequest)(nil),   // 7: budget.v1.SyncAccountsRequest
-	(*SyncAccountsResponse)(nil),  // 8: budget.v1.SyncAccountsResponse
+var file_account_account_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_account_account_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_account_account_proto_goTypes = []any{
+	(AccountType)(0),              // 0: account.v1.AccountType
+	(*Account)(nil),               // 1: account.v1.Account
+	(*ListAccountsCursor)(nil),    // 2: account.v1.ListAccountsCursor
+	(*ListAccountsRequest)(nil),   // 3: account.v1.ListAccountsRequest
+	(*ListAccountsResponse)(nil),  // 4: account.v1.ListAccountsResponse
+	(*CreateAccountRequest)(nil),  // 5: account.v1.CreateAccountRequest
+	(*CreateAccountResponse)(nil), // 6: account.v1.CreateAccountResponse
+	(*SyncAccountsRequest)(nil),   // 7: account.v1.SyncAccountsRequest
+	(*SyncAccountsResponse)(nil),  // 8: account.v1.SyncAccountsResponse
 	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
 }
-var file_budget_v1_account_proto_depIdxs = []int32{
-	0, // 0: budget.v1.Account.type:type_name -> budget.v1.AccountType
-	9, // 1: budget.v1.Account.created_at:type_name -> google.protobuf.Timestamp
-	2, // 2: budget.v1.ListAccountsRequest.cursor:type_name -> budget.v1.ListAccountsCursor
-	1, // 3: budget.v1.ListAccountsResponse.accounts:type_name -> budget.v1.Account
-	2, // 4: budget.v1.ListAccountsResponse.next_cursor:type_name -> budget.v1.ListAccountsCursor
-	0, // 5: budget.v1.CreateAccountRequest.type:type_name -> budget.v1.AccountType
-	3, // 6: budget.v1.AccountService.ListAccounts:input_type -> budget.v1.ListAccountsRequest
-	5, // 7: budget.v1.AccountService.CreateAccount:input_type -> budget.v1.CreateAccountRequest
-	7, // 8: budget.v1.AccountService.SyncAccounts:input_type -> budget.v1.SyncAccountsRequest
-	4, // 9: budget.v1.AccountService.ListAccounts:output_type -> budget.v1.ListAccountsResponse
-	6, // 10: budget.v1.AccountService.CreateAccount:output_type -> budget.v1.CreateAccountResponse
-	8, // 11: budget.v1.AccountService.SyncAccounts:output_type -> budget.v1.SyncAccountsResponse
+var file_account_account_proto_depIdxs = []int32{
+	0, // 0: account.v1.Account.type:type_name -> account.v1.AccountType
+	9, // 1: account.v1.Account.created_at:type_name -> google.protobuf.Timestamp
+	2, // 2: account.v1.ListAccountsRequest.cursor:type_name -> account.v1.ListAccountsCursor
+	1, // 3: account.v1.ListAccountsResponse.accounts:type_name -> account.v1.Account
+	2, // 4: account.v1.ListAccountsResponse.next_cursor:type_name -> account.v1.ListAccountsCursor
+	0, // 5: account.v1.CreateAccountRequest.type:type_name -> account.v1.AccountType
+	3, // 6: account.v1.AccountService.ListAccounts:input_type -> account.v1.ListAccountsRequest
+	5, // 7: account.v1.AccountService.CreateAccount:input_type -> account.v1.CreateAccountRequest
+	7, // 8: account.v1.AccountService.SyncAccounts:input_type -> account.v1.SyncAccountsRequest
+	4, // 9: account.v1.AccountService.ListAccounts:output_type -> account.v1.ListAccountsResponse
+	6, // 10: account.v1.AccountService.CreateAccount:output_type -> account.v1.CreateAccountResponse
+	8, // 11: account.v1.AccountService.SyncAccounts:output_type -> account.v1.SyncAccountsResponse
 	9, // [9:12] is the sub-list for method output_type
 	6, // [6:9] is the sub-list for method input_type
 	6, // [6:6] is the sub-list for extension type_name
@@ -592,29 +594,29 @@ var file_budget_v1_account_proto_depIdxs = []int32{
 	0, // [0:6] is the sub-list for field type_name
 }
 
-func init() { file_budget_v1_account_proto_init() }
-func file_budget_v1_account_proto_init() {
-	if File_budget_v1_account_proto != nil {
+func init() { file_account_account_proto_init() }
+func file_account_account_proto_init() {
+	if File_account_account_proto != nil {
 		return
 	}
-	file_budget_v1_account_proto_msgTypes[2].OneofWrappers = []any{}
-	file_budget_v1_account_proto_msgTypes[3].OneofWrappers = []any{}
+	file_account_account_proto_msgTypes[2].OneofWrappers = []any{}
+	file_account_account_proto_msgTypes[3].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_budget_v1_account_proto_rawDesc), len(file_budget_v1_account_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_account_account_proto_rawDesc), len(file_account_account_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_budget_v1_account_proto_goTypes,
-		DependencyIndexes: file_budget_v1_account_proto_depIdxs,
-		EnumInfos:         file_budget_v1_account_proto_enumTypes,
-		MessageInfos:      file_budget_v1_account_proto_msgTypes,
+		GoTypes:           file_account_account_proto_goTypes,
+		DependencyIndexes: file_account_account_proto_depIdxs,
+		EnumInfos:         file_account_account_proto_enumTypes,
+		MessageInfos:      file_account_account_proto_msgTypes,
 	}.Build()
-	File_budget_v1_account_proto = out.File
-	file_budget_v1_account_proto_goTypes = nil
-	file_budget_v1_account_proto_depIdxs = nil
+	File_account_account_proto = out.File
+	file_account_account_proto_goTypes = nil
+	file_account_account_proto_depIdxs = nil
 }

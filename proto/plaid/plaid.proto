@@ -1,16 +1,15 @@
 syntax = "proto3";
 
-package budget.v1;
+package plaid.v1;
+option go_package = "gen/plaid";
 
-import "budget/v1/account.proto";
+import "account/account.proto";
 import "google/protobuf/timestamp.proto";
-
-option go_package = "github.com/carson-networks/budget-server/gen/budget/v1;budgetv1";
 
 message SyncAccount {
   string plaid_account_id = 1;
   string name = 2;
-  AccountType type = 3;
+  account.v1.AccountType type = 3;
   string sub_type = 4;
   string balance = 5;
 }
