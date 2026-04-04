@@ -9,7 +9,6 @@ import (
 
 	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/category"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
-	storagecategory "github.com/carson-networks/budget-server/internal/storage/category"
 	"github.com/gofrs/uuid/v5"
 )
 
@@ -24,12 +23,17 @@ func (s *Service) CreateCategory(ctx context.Context, req *connect.Request[categ
 		parentCategoryID = &id
 	}
 
+	catType, err := StorageCategoryTypeFromProto(req.Msg.GetCategoryType())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
 	action := &actions.CreateCategory{
 		Name:             req.Msg.GetName(),
 		IsParent:         req.Msg.GetIsParent(),
 		ParentCategoryID: parentCategoryID,
 		IsDisabled:       req.Msg.GetIsDisabled(),
-		CategoryType:     storagecategory.CategoryType(req.Msg.GetCategoryType()),
+		CategoryType:     catType,
 	}
 
 	if err := s.Operator.Process(ctx, action); err != nil {

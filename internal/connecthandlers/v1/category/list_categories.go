@@ -60,7 +60,7 @@ func (s *Service) ListCategories(ctx context.Context, req *connect.Request[categ
 			Name:         cat.Name,
 			IsParent:     cat.IsParent,
 			IsDisabled:   cat.IsDisabled,
-			CategoryType: category.CategoryType(cat.CategoryType),
+			CategoryType: ProtoCategoryTypeFromStorage(cat.CategoryType),
 			CreatedAt:    timestamppb.New(cat.CreatedAt),
 		}
 		if cat.ParentCategoryID != nil {

@@ -6,8 +6,9 @@ option go_package = "github.com/carson-networks/budget-server/internal/connectha
 import "google/protobuf/timestamp.proto";
 
 enum AccountType {
-  ACCOUNT_TYPE_CASH = 0;
-  ACCOUNT_TYPE_CREDIT_CARDS = 1;
+  ACCOUNT_TYPE_UNSPECIFIED = 0;
+  ACCOUNT_TYPE_CASH = 1;
+  ACCOUNT_TYPE_CREDIT_CARDS = 2;
 }
 
 message Account {

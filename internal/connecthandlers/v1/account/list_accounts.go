@@ -58,7 +58,7 @@ func (s *Service) ListAccounts(ctx context.Context, req *connect.Request[account
 		out.Accounts[i] = &account.Account{
 			Id:              acc.ID.String(),
 			Name:            acc.Name,
-			Type:            account.AccountType(acc.Type),
+			Type:            toConnectAccountType(acc.Type),
 			SubType:         acc.SubType,
 			Balance:         acc.Balance.String(),
 			StartingBalance: acc.StartingBalance.String(),

@@ -6,8 +6,9 @@ option go_package = "github.com/carson-networks/budget-server/internal/connectha
 import "google/protobuf/timestamp.proto";
 
 enum CategoryType {
-  CATEGORY_TYPE_INCOME = 0;
-  CATEGORY_TYPE_EXPENSE = 1;
+  CATEGORY_TYPE_UNSPECIFIED = 0;
+  CATEGORY_TYPE_INCOME = 1;
+  CATEGORY_TYPE_EXPENSE = 2;
 }
 
 message Category {

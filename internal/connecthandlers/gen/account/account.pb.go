@@ -25,19 +25,22 @@ const (
 type AccountType int32
 
 const (
-	AccountType_ACCOUNT_TYPE_CASH         AccountType = 0
-	AccountType_ACCOUNT_TYPE_CREDIT_CARDS AccountType = 1
+	AccountType_ACCOUNT_TYPE_UNSPECIFIED  AccountType = 0
+	AccountType_ACCOUNT_TYPE_CASH         AccountType = 1
+	AccountType_ACCOUNT_TYPE_CREDIT_CARDS AccountType = 2
 )
 
 // Enum value maps for AccountType.
 var (
 	AccountType_name = map[int32]string{
-		0: "ACCOUNT_TYPE_CASH",
-		1: "ACCOUNT_TYPE_CREDIT_CARDS",
+		0: "ACCOUNT_TYPE_UNSPECIFIED",
+		1: "ACCOUNT_TYPE_CASH",
+		2: "ACCOUNT_TYPE_CREDIT_CARDS",
 	}
 	AccountType_value = map[string]int32{
-		"ACCOUNT_TYPE_CASH":         0,
-		"ACCOUNT_TYPE_CREDIT_CARDS": 1,
+		"ACCOUNT_TYPE_UNSPECIFIED":  0,
+		"ACCOUNT_TYPE_CASH":         1,
+		"ACCOUNT_TYPE_CREDIT_CARDS": 2,
 	}
 )
 
@@ -129,7 +132,7 @@ func (x *Account) GetType() AccountType {
 	if x != nil {
 		return x.Type
 	}
-	return AccountType_ACCOUNT_TYPE_CASH
+	return AccountType_ACCOUNT_TYPE_UNSPECIFIED
 }
 
 func (x *Account) GetSubType() string {
@@ -359,7 +362,7 @@ func (x *CreateAccountRequest) GetType() AccountType {
 	if x != nil {
 		return x.Type
 	}
-	return AccountType_ACCOUNT_TYPE_CASH
+	return AccountType_ACCOUNT_TYPE_UNSPECIFIED
 }
 
 func (x *CreateAccountRequest) GetSubType() string {
@@ -536,10 +539,11 @@ const file_account_account_proto_rawDesc = "" +
 	"\x13SyncAccountsRequest\x12\x1f\n" +
 	"\vaccount_ids\x18\x01 \x03(\tR\n" +
 	"accountIds\"\x16\n" +
-	"\x14SyncAccountsResponse*C\n" +
-	"\vAccountType\x12\x15\n" +
-	"\x11ACCOUNT_TYPE_CASH\x10\x00\x12\x1d\n" +
-	"\x19ACCOUNT_TYPE_CREDIT_CARDS\x10\x012\x8c\x02\n" +
+	"\x14SyncAccountsResponse*a\n" +
+	"\vAccountType\x12\x1c\n" +
+	"\x18ACCOUNT_TYPE_UNSPECIFIED\x10\x00\x12\x15\n" +
+	"\x11ACCOUNT_TYPE_CASH\x10\x01\x12\x1d\n" +
+	"\x19ACCOUNT_TYPE_CREDIT_CARDS\x10\x022\x8c\x02\n" +
 	"\x0eAccountService\x12Q\n" +
 	"\fListAccounts\x12\x1f.account.v1.ListAccountsRequest\x1a .account.v1.ListAccountsResponse\x12T\n" +
 	"\rCreateAccount\x12 .account.v1.CreateAccountRequest\x1a!.account.v1.CreateAccountResponse\x12Q\n" +

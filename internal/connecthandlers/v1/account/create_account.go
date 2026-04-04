@@ -8,19 +8,22 @@ import (
 
 	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/account"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
-	storageaccount "github.com/carson-networks/budget-server/internal/storage/account"
 	"github.com/shopspring/decimal"
 )
 
 // CreateAccount implements budget.v1.AccountService.CreateAccount.
 func (s *Service) CreateAccount(ctx context.Context, req *connect.Request[account.CreateAccountRequest]) (*connect.Response[account.CreateAccountResponse], error) {
+	accType, err := FromConnectAccountType(req.Msg.GetType())
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
 	startingBalance, err := decimal.NewFromString(req.Msg.GetStartingBalance())
 	if err != nil {
 		startingBalance = decimal.Zero
 	}
 	action := &actions.CreateAccount{
 		Name:            req.Msg.GetName(),
-		Type:            storageaccount.AccountType(req.Msg.GetType()),
+		Type:            accType,
 		SubType:         req.Msg.GetSubType(),
 		StartingBalance: startingBalance,
 	}

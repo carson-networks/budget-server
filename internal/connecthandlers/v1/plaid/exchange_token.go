@@ -8,8 +8,8 @@ import (
 	"connectrpc.com/connect"
 
 	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/plaid"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/v1/account"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
-	storageaccount "github.com/carson-networks/budget-server/internal/storage/account"
 	"github.com/shopspring/decimal"
 )
 
@@ -30,10 +30,14 @@ func (s *Service) ExchangeToken(ctx context.Context, req *connect.Request[plaid.
 		if derr != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, derr)
 		}
+		accType, terr := v1Account.FromConnectAccountType(a.GetType())
+		if terr != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, terr)
+		}
 		plaidAccounts[i] = actions.PlaidAccountToLink{
 			PlaidAccountID: a.GetPlaidAccountId(),
 			Name:           a.GetName(),
-			Type:           storageaccount.AccountType(a.GetType()),
+			Type:           accType,
 			SubType:        a.GetSubType(),
 			Balance:        bal,
 		}

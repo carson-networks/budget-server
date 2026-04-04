@@ -25,19 +25,22 @@ const (
 type CategoryType int32
 
 const (
-	CategoryType_CATEGORY_TYPE_INCOME  CategoryType = 0
-	CategoryType_CATEGORY_TYPE_EXPENSE CategoryType = 1
+	CategoryType_CATEGORY_TYPE_UNSPECIFIED CategoryType = 0
+	CategoryType_CATEGORY_TYPE_INCOME      CategoryType = 1
+	CategoryType_CATEGORY_TYPE_EXPENSE     CategoryType = 2
 )
 
 // Enum value maps for CategoryType.
 var (
 	CategoryType_name = map[int32]string{
-		0: "CATEGORY_TYPE_INCOME",
-		1: "CATEGORY_TYPE_EXPENSE",
+		0: "CATEGORY_TYPE_UNSPECIFIED",
+		1: "CATEGORY_TYPE_INCOME",
+		2: "CATEGORY_TYPE_EXPENSE",
 	}
 	CategoryType_value = map[string]int32{
-		"CATEGORY_TYPE_INCOME":  0,
-		"CATEGORY_TYPE_EXPENSE": 1,
+		"CATEGORY_TYPE_UNSPECIFIED": 0,
+		"CATEGORY_TYPE_INCOME":      1,
+		"CATEGORY_TYPE_EXPENSE":     2,
 	}
 )
 
@@ -150,7 +153,7 @@ func (x *Category) GetCategoryType() CategoryType {
 	if x != nil {
 		return x.CategoryType
 	}
-	return CategoryType_CATEGORY_TYPE_INCOME
+	return CategoryType_CATEGORY_TYPE_UNSPECIFIED
 }
 
 func (x *Category) GetCreatedAt() *timestamppb.Timestamp {
@@ -381,7 +384,7 @@ func (x *CreateCategoryRequest) GetCategoryType() CategoryType {
 	if x != nil {
 		return x.CategoryType
 	}
-	return CategoryType_CATEGORY_TYPE_INCOME
+	return CategoryType_CATEGORY_TYPE_UNSPECIFIED
 }
 
 type CreateCategoryResponse struct {
@@ -580,10 +583,11 @@ const file_category_category_proto_rawDesc = "" +
 	"\x05_nameB\x15\n" +
 	"\x13_parent_category_idB\x0e\n" +
 	"\f_is_disabled\"\x18\n" +
-	"\x16UpdateCategoryResponse*C\n" +
-	"\fCategoryType\x12\x18\n" +
-	"\x14CATEGORY_TYPE_INCOME\x10\x00\x12\x19\n" +
-	"\x15CATEGORY_TYPE_EXPENSE\x10\x012\xa8\x02\n" +
+	"\x16UpdateCategoryResponse*b\n" +
+	"\fCategoryType\x12\x1d\n" +
+	"\x19CATEGORY_TYPE_UNSPECIFIED\x10\x00\x12\x18\n" +
+	"\x14CATEGORY_TYPE_INCOME\x10\x01\x12\x19\n" +
+	"\x15CATEGORY_TYPE_EXPENSE\x10\x022\xa8\x02\n" +
 	"\x0fCategoryService\x12[\n" +
 	"\x0eListCategories\x12#.catergory.v1.ListCategoriesRequest\x1a$.catergory.v1.ListCategoriesResponse\x12[\n" +
 	"\x0eCreateCategory\x12#.catergory.v1.CreateCategoryRequest\x1a$.catergory.v1.CreateCategoryResponse\x12[\n" +
