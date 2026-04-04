@@ -1,0 +1,12 @@
+version: v2
+name: github.com/carson-networks/budget-server
+deps:
+  - buf.build/protocolbuffers/wellknowntypes
+
+lint:
+  use:
+    - STANDARD
+
+breaking:
+  use:
+    - FILE

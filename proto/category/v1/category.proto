@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package category.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/carson-networks/budget-server/internal/connecthandlers/gen/category/v1";
+
+enum CategoryType {
+  CATEGORY_TYPE_UNSPECIFIED = 0;
+  CATEGORY_TYPE_INCOME = 1;
+  CATEGORY_TYPE_EXPENSE = 2;
+}
+
+message Category {
+  string id = 1;
+  string name = 2;
+  bool is_parent = 3;
+  optional string parent_category_id = 4;
+  bool is_disabled = 5;
+  CategoryType category_type = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+message ListCategoriesCursor {
+  int32 position = 1;
+  int32 limit = 2;
+}
+
+message ListCategoriesRequest {
+  optional ListCategoriesCursor cursor = 1;
+}
+
+message ListCategoriesResponse {
+  repeated Category categories = 1;
+  optional ListCategoriesCursor next_cursor = 2;
+}
+
+message CreateCategoryRequest {
+  string name = 1;
+  bool is_parent = 2;
+  optional string parent_category_id = 3;
+  bool is_disabled = 4;
+  CategoryType category_type = 5;
+}
+
+message CreateCategoryResponse {
+  int32 status = 1;
+}
+
+message UpdateCategoryRequest {
+  string id = 1;
+  optional string name = 2;
+  optional string parent_category_id = 3;
+  optional bool is_disabled = 4;
+}
+
+message UpdateCategoryResponse {}
+
+service CategoryService {
+  rpc ListCategories(ListCategoriesRequest) returns (ListCategoriesResponse);
+  rpc CreateCategory(CreateCategoryRequest) returns (CreateCategoryResponse);
+  rpc UpdateCategory(UpdateCategoryRequest) returns (UpdateCategoryResponse);
+}

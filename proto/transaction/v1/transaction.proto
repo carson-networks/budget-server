@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package transaction.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction/v1";
+
+message Transaction {
+  string id = 1;
+  string account_id = 2;
+  optional string category_id = 3;
+  string amount = 4;
+  string transaction_name = 5;
+  google.protobuf.Timestamp transaction_date = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+message ListTransactionsCursor {
+  int32 position = 1;
+  int32 limit = 2;
+  google.protobuf.Timestamp max_creation_time = 3;
+}
+
+message ListTransactionsRequest {
+  optional ListTransactionsCursor cursor = 1;
+}
+
+message ListTransactionsResponse {
+  repeated Transaction transactions = 1;
+  optional ListTransactionsCursor next_cursor = 2;
+}
+
+message GetTransactionTotalsRequest {
+  int32 start_month = 1;
+  int32 start_year = 2;
+  int32 end_month = 3;
+  int32 end_year = 4;
+}
+
+message TransactionTotalsCategory {
+  string category_id = 1;
+  string total = 2;
+}
+
+message TransactionTotalsMonth {
+  int32 year = 1;
+  int32 month = 2;
+  repeated TransactionTotalsCategory by_category = 3;
+}
+
+message GetTransactionTotalsResponse {
+  repeated TransactionTotalsMonth by_month = 1;
+}
+
+message CreateTransactionRequest {
+  string account_id = 1;
+  string category_id = 2;
+  string amount = 3;
+  string transaction_name = 4;
+  optional google.protobuf.Timestamp transaction_date = 5;
+}
+
+message CreateTransactionResponse {
+  int32 status = 1;
+}
+
+service TransactionService {
+  rpc ListTransactions(ListTransactionsRequest) returns (ListTransactionsResponse);
+  rpc GetTransactionTotals(GetTransactionTotalsRequest) returns (GetTransactionTotalsResponse);
+  rpc CreateTransaction(CreateTransactionRequest) returns (CreateTransactionResponse);
+}

@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package account.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/carson-networks/budget-server/internal/connecthandlers/gen/account/v1";
+
+enum AccountType {
+  ACCOUNT_TYPE_UNSPECIFIED = 0;
+  ACCOUNT_TYPE_CASH = 1;
+  ACCOUNT_TYPE_CREDIT_CARDS = 2;
+}
+
+message Account {
+  string id = 1;
+  string name = 2;
+  AccountType type = 3;
+  string sub_type = 4;
+  string balance = 5;
+  string starting_balance = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+message ListAccountsCursor {
+  int32 position = 1;
+  int32 limit = 2;
+}
+
+message ListAccountsRequest {
+  optional ListAccountsCursor cursor = 1;
+}
+
+message ListAccountsResponse {
+  repeated Account accounts = 1;
+  optional ListAccountsCursor next_cursor = 2;
+}
+
+message CreateAccountRequest {
+  string name = 1;
+  AccountType type = 2;
+  string sub_type = 3;
+  string starting_balance = 4;
+}
+
+message CreateAccountResponse {
+  int32 status = 1;
+}
+
+message SyncAccountsRequest {
+  repeated string account_ids = 1;
+}
+
+message SyncAccountsResponse {}
+
+service AccountService {
+  rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse);
+  rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse);
+  rpc SyncAccounts(SyncAccountsRequest) returns (SyncAccountsResponse);
+}

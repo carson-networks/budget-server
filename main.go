@@ -37,9 +37,10 @@ func main() {
 	orchestrator := budgetsync.NewOrchestrator(syncRegistry, dbStorage)
 
 	wg := sync.WaitGroup{}
-	wg.Add(1)
+	wg.Add(2)
 
 	go func() {
+		defer wg.Done()
 		httpRest := api.Rest{
 			Logger:       logger,
 			Port:         "9446",
@@ -49,6 +50,19 @@ func main() {
 			Orchestrator: orchestrator,
 		}
 		httpRest.Serve()
+	}()
+
+	go func() {
+		defer wg.Done()
+		connectSrv := api.ConnectServer{
+			Logger:       logger,
+			Port:         "9447",
+			Storage:      dbStorage,
+			Operator:     op,
+			PlaidClient:  plaid,
+			Orchestrator: orchestrator,
+		}
+		connectSrv.Serve()
 	}()
 
 	wg.Wait()

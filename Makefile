@@ -1,5 +1,7 @@
 BINARY_NAME=budget-server
 
+BUF_VERSION=1.66.1
+
 GREEN  := $(shell tput -Txterm setaf 2)
 YELLOW := $(shell tput -Txterm setaf 3)
 WHITE  := $(shell tput -Txterm setaf 7)
@@ -62,3 +64,6 @@ migrate: ## Run DB migrations (requires Postgres; use serve or serve-local first
 
 generate: ## Run Bob codegen for storage (requires Postgres with migrations applied; run migrate first)
 	go generate ./internal/storage/sqlconfig/bobgen/
+
+proto-generate: ## Generate protobuf and Connect Go code (uses buf via go run)
+	cd proto && go run github.com/bufbuild/buf/cmd/buf@v$(BUF_VERSION) dep update && go run github.com/bufbuild/buf/cmd/buf@v$(BUF_VERSION) generate

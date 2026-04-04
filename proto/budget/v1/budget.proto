@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package budget.v1;
+
+option go_package = "github.com/carson-networks/budget-server/internal/connecthandlers/gen/budget/v1";
+
+message Budget {
+  string category_id = 1;
+  int32 month = 2;
+  int32 year = 3;
+  string amount = 4;
+}
+
+message ListBudgetsRequest {
+  int32 start_month = 1;
+  int32 start_year = 2;
+  int32 end_month = 3;
+  int32 end_year = 4;
+}
+
+message ListBudgetsResponse {
+  repeated Budget budgets = 1;
+}
+
+message SetBudgetRequest {
+  string category_id = 1;
+  int32 month = 2;
+  int32 year = 3;
+  string amount = 4;
+  bool overwrite_future_months = 5;
+}
+
+message SetBudgetResponse {}
+
+service BudgetService {
+  rpc ListBudgets(ListBudgetsRequest) returns (ListBudgetsResponse);
+  rpc SetBudget(SetBudgetRequest) returns (SetBudgetResponse);
+}

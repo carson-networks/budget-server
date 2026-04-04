@@ -2,13 +2,13 @@ FROM golang:1.25-alpine as build
 
 WORKDIR /app
 COPY . .
-RUN go build -o /budget-server
+RUN go build -mod=vendor -o /budget-server
 
 FROM golang:1.25-alpine as build-sql
 
 WORKDIR /build
 COPY . .
-RUN go build -o budget-db-migration scripts/db_migrations/main.go
+RUN go build -mod=vendor -o budget-db-migration scripts/db_migrations/main.go
 
 FROM alpine
 
