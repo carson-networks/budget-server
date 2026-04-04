@@ -23,7 +23,7 @@ import (
 	budgetsync "github.com/carson-networks/budget-server/internal/sync"
 )
 
-// ConnectServer serves ConnectRPC (protobuf + JSON) on a dedicated port alongside the REST API.
+// ConnectServer serves ConnectRPC (protobuf + JSON) and the /status health check.
 type ConnectServer struct {
 	Logger       *logrus.Logger
 	Port         string

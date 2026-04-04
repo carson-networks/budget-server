@@ -34,7 +34,6 @@ services:
     hostname: budget-server
     image: ghrc.io/carson-networks/budget-server:master
     ports:
-      - "9446:9446"
       - "9447:9447"
     profiles:
       - serve
@@ -54,7 +53,6 @@ services:
     image: ghrc.io/carson-networks/budget-server:local
     hostname: budget-server
     ports:
-      - "9446:9446"
       - "9447:9447"
     profiles:
       - serve-local
