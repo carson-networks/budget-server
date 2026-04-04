@@ -1,8 +1,6 @@
 package main
 
 import (
-	"sync"
-
 	"github.com/sirupsen/logrus"
 
 	"github.com/carson-networks/budget-server/api"
@@ -36,34 +34,13 @@ func main() {
 	syncRegistry.Register(providers.NewPlaidProvider(plaid))
 	orchestrator := budgetsync.NewOrchestrator(syncRegistry, dbStorage)
 
-	wg := sync.WaitGroup{}
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
-		httpRest := api.Rest{
-			Logger:       logger,
-			Port:         "9446",
-			Storage:      dbStorage,
-			Operator:     op,
-			PlaidClient:  plaid,
-			Orchestrator: orchestrator,
-		}
-		httpRest.Serve()
-	}()
-
-	go func() {
-		defer wg.Done()
-		connectSrv := api.ConnectServer{
-			Logger:       logger,
-			Port:         "9447",
-			Storage:      dbStorage,
-			Operator:     op,
-			PlaidClient:  plaid,
-			Orchestrator: orchestrator,
-		}
-		connectSrv.Serve()
-	}()
-
-	wg.Wait()
+	connectSrv := api.ConnectServer{
+		Logger:       logger,
+		Port:         "9447",
+		Storage:      dbStorage,
+		Operator:     op,
+		PlaidClient:  plaid,
+		Orchestrator: orchestrator,
+	}
+	connectSrv.Serve()
 }
