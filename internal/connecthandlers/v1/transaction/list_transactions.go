@@ -1,4 +1,4 @@
-package transaction
+package v1Transaction
 
 import (
 	"context"
@@ -8,13 +8,13 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	budgetv1 "github.com/carson-networks/budget-server/gen/budget/v1"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction"
 	"github.com/carson-networks/budget-server/internal/logging"
 	storagetransaction "github.com/carson-networks/budget-server/internal/storage/transaction"
 )
 
 // ListTransactions implements budget.v1.TransactionService.ListTransactions.
-func (s *Service) ListTransactions(ctx context.Context, req *connect.Request[budgetv1.ListTransactionsRequest]) (*connect.Response[budgetv1.ListTransactionsResponse], error) {
+func (s *Service) ListTransactions(ctx context.Context, req *connect.Request[transaction.ListTransactionsRequest]) (*connect.Response[transaction.ListTransactionsResponse], error) {
 	logData := logging.GetLogData(ctx)
 	limit := 20
 	offset := 0
@@ -60,11 +60,11 @@ func (s *Service) ListTransactions(ctx context.Context, req *connect.Request[bud
 		logData.AddData("transactionCount", len(transactions))
 	}
 
-	out := &budgetv1.ListTransactionsResponse{
-		Transactions: make([]*budgetv1.Transaction, len(transactions)),
+	out := &transaction.ListTransactionsResponse{
+		Transactions: make([]*transaction.Transaction, len(transactions)),
 	}
 	for i, tx := range transactions {
-		t := &budgetv1.Transaction{
+		t := &transaction.Transaction{
 			Id:              tx.ID.String(),
 			AccountId:       tx.AccountID.String(),
 			Amount:          tx.Amount.String(),
@@ -79,7 +79,7 @@ func (s *Service) ListTransactions(ctx context.Context, req *connect.Request[bud
 		out.Transactions[i] = t
 	}
 	if result.NextCursor != nil {
-		out.NextCursor = &budgetv1.ListTransactionsCursor{
+		out.NextCursor = &transaction.ListTransactionsCursor{
 			Position:        int32(result.NextCursor.Position),
 			Limit:           int32(result.NextCursor.Limit),
 			MaxCreationTime: timestamppb.New(result.NextCursor.MaxCreationTime),

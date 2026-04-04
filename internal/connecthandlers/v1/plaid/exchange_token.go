@@ -1,4 +1,4 @@
-package plaid
+package v1Plaid
 
 import (
 	"context"
@@ -7,14 +7,14 @@ import (
 
 	"connectrpc.com/connect"
 
-	budgetv1 "github.com/carson-networks/budget-server/gen/budget/v1"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/plaid"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
 	storageaccount "github.com/carson-networks/budget-server/internal/storage/account"
 	"github.com/shopspring/decimal"
 )
 
 // ExchangeToken implements budget.v1.PlaidService.ExchangeToken.
-func (s *Service) ExchangeToken(ctx context.Context, req *connect.Request[budgetv1.ExchangeTokenRequest]) (*connect.Response[budgetv1.ExchangeTokenResponse], error) {
+func (s *Service) ExchangeToken(ctx context.Context, req *connect.Request[plaid.ExchangeTokenRequest]) (*connect.Response[plaid.ExchangeTokenResponse], error) {
 	if len(req.Msg.GetAccounts()) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("at least one account must be selected"))
 	}
@@ -55,5 +55,5 @@ func (s *Service) ExchangeToken(ctx context.Context, req *connect.Request[budget
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
-	return connect.NewResponse(&budgetv1.ExchangeTokenResponse{Status: http.StatusCreated}), nil
+	return connect.NewResponse(&plaid.ExchangeTokenResponse{Status: http.StatusCreated}), nil
 }

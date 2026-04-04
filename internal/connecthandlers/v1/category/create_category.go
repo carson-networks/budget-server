@@ -1,4 +1,4 @@
-package category
+package v1Category
 
 import (
 	"context"
@@ -7,14 +7,14 @@ import (
 
 	"connectrpc.com/connect"
 
-	budgetv1 "github.com/carson-networks/budget-server/gen/budget/v1"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/category"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
 	storagecategory "github.com/carson-networks/budget-server/internal/storage/category"
 	"github.com/gofrs/uuid/v5"
 )
 
 // CreateCategory implements budget.v1.CategoryService.CreateCategory.
-func (s *Service) CreateCategory(ctx context.Context, req *connect.Request[budgetv1.CreateCategoryRequest]) (*connect.Response[budgetv1.CreateCategoryResponse], error) {
+func (s *Service) CreateCategory(ctx context.Context, req *connect.Request[category.CreateCategoryRequest]) (*connect.Response[category.CreateCategoryResponse], error) {
 	var parentCategoryID *uuid.UUID
 	if req.Msg.ParentCategoryId != nil && *req.Msg.ParentCategoryId != "" {
 		id, err := uuid.FromString(*req.Msg.ParentCategoryId)
@@ -44,5 +44,5 @@ func (s *Service) CreateCategory(ctx context.Context, req *connect.Request[budge
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 	}
-	return connect.NewResponse(&budgetv1.CreateCategoryResponse{Status: http.StatusCreated}), nil
+	return connect.NewResponse(&category.CreateCategoryResponse{Status: http.StatusCreated}), nil
 }

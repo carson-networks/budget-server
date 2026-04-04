@@ -343,9 +343,8 @@ const file_budget_budget_proto_rawDesc = "" +
 	"\x11SetBudgetResponse2\xa5\x01\n" +
 	"\rBudgetService\x12L\n" +
 	"\vListBudgets\x12\x1d.budget.v1.ListBudgetsRequest\x1a\x1e.budget.v1.ListBudgetsResponse\x12F\n" +
-	"\tSetBudget\x12\x1b.budget.v1.SetBudgetRequest\x1a\x1c.budget.v1.SetBudgetResponseBm\n" +
-	"\rcom.budget.v1B\vBudgetProtoP\x01Z\n" +
-	"gen/budget\xa2\x02\x03BXX\xaa\x02\tBudget.V1\xca\x02\tBudget\\V1\xe2\x02\x15Budget\\V1\\GPBMetadata\xea\x02\n" +
+	"\tSetBudget\x12\x1b.budget.v1.SetBudgetRequest\x1a\x1c.budget.v1.SetBudgetResponseB\xaf\x01\n" +
+	"\rcom.budget.v1B\vBudgetProtoP\x01ZLgithub.com/carson-networks/budget-server/internal/connecthandlers/gen/budget\xa2\x02\x03BXX\xaa\x02\tBudget.V1\xca\x02\tBudget\\V1\xe2\x02\x15Budget\\V1\\GPBMetadata\xea\x02\n" +
 	"Budget::V1b\x06proto3"
 
 var (

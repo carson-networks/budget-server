@@ -1,17 +1,17 @@
-package category
+package v1Category
 
 import (
 	"context"
 
 	"connectrpc.com/connect"
 
-	budgetv1 "github.com/carson-networks/budget-server/gen/budget/v1"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/category"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
 	"github.com/gofrs/uuid/v5"
 )
 
 // UpdateCategory implements budget.v1.CategoryService.UpdateCategory.
-func (s *Service) UpdateCategory(ctx context.Context, req *connect.Request[budgetv1.UpdateCategoryRequest]) (*connect.Response[budgetv1.UpdateCategoryResponse], error) {
+func (s *Service) UpdateCategory(ctx context.Context, req *connect.Request[category.UpdateCategoryRequest]) (*connect.Response[category.UpdateCategoryResponse], error) {
 	id, err := uuid.FromString(req.Msg.GetId())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -53,5 +53,5 @@ func (s *Service) UpdateCategory(ctx context.Context, req *connect.Request[budge
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 	}
-	return connect.NewResponse(&budgetv1.UpdateCategoryResponse{}), nil
+	return connect.NewResponse(&category.UpdateCategoryResponse{}), nil
 }

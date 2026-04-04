@@ -6,13 +6,17 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/carson-networks/budget-server/gen/budget/v1/budgetv1connect"
-	connecthandlers "github.com/carson-networks/budget-server/internal/connecthandlers/v1"
-	connectaccount "github.com/carson-networks/budget-server/internal/connecthandlers/v1/account"
-	connectbudget "github.com/carson-networks/budget-server/internal/connecthandlers/v1/budget"
-	connectcategory "github.com/carson-networks/budget-server/internal/connecthandlers/v1/category"
-	connectplaid "github.com/carson-networks/budget-server/internal/connecthandlers/v1/plaid"
-	connecttransaction "github.com/carson-networks/budget-server/internal/connecthandlers/v1/transaction"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/account"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/budget"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/category"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/plaid"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/v1"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/v1/account"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/v1/budget"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/v1/category"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/v1/plaid"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/v1/transaction"
 	"github.com/carson-networks/budget-server/internal/operator"
 	plaidclient "github.com/carson-networks/budget-server/internal/plaid"
 	"github.com/carson-networks/budget-server/internal/storage"
@@ -38,19 +42,19 @@ func (c *ConnectServer) Serve() {
 		Orchestrator: c.Orchestrator,
 	}
 
-	accountSvc := &connectaccount.Service{Deps: deps}
-	transactionSvc := &connecttransaction.Service{Deps: deps}
-	categorySvc := &connectcategory.Service{Deps: deps}
-	budgetSvc := &connectbudget.Service{Deps: deps}
-	plaidSvc := &connectplaid.Service{Deps: deps}
+	accountSvc := &v1Account.Service{Deps: deps}
+	transactionSvc := &v1Transaction.Service{Deps: deps}
+	categorySvc := &v1Category.Service{Deps: deps}
+	budgetSvc := &v1Budget.Service{Deps: deps}
+	plaidSvc := &v1Plaid.Service{Deps: deps}
 
 	mux := http.NewServeMux()
 	for _, reg := range []func() (string, http.Handler){
-		func() (string, http.Handler) { return budgetv1connect.NewAccountServiceHandler(accountSvc) },
-		func() (string, http.Handler) { return budgetv1connect.NewTransactionServiceHandler(transactionSvc) },
-		func() (string, http.Handler) { return budgetv1connect.NewCategoryServiceHandler(categorySvc) },
-		func() (string, http.Handler) { return budgetv1connect.NewBudgetServiceHandler(budgetSvc) },
-		func() (string, http.Handler) { return budgetv1connect.NewPlaidServiceHandler(plaidSvc) },
+		func() (string, http.Handler) { return account.NewAccountServiceHandler(accountSvc) },
+		func() (string, http.Handler) { return transaction.NewTransactionServiceHandler(transactionSvc) },
+		func() (string, http.Handler) { return category.NewCategoryServiceHandler(categorySvc) },
+		func() (string, http.Handler) { return budget.NewBudgetServiceHandler(budgetSvc) },
+		func() (string, http.Handler) { return plaid.NewPlaidServiceHandler(plaidSvc) },
 	} {
 		path, h := reg()
 		mux.Handle(path, h)

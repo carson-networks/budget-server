@@ -587,8 +587,8 @@ const file_category_category_proto_rawDesc = "" +
 	"\x0fCategoryService\x12[\n" +
 	"\x0eListCategories\x12#.catergory.v1.ListCategoriesRequest\x1a$.catergory.v1.ListCategoriesResponse\x12[\n" +
 	"\x0eCreateCategory\x12#.catergory.v1.CreateCategoryRequest\x1a$.catergory.v1.CreateCategoryResponse\x12[\n" +
-	"\x0eUpdateCategory\x12#.catergory.v1.UpdateCategoryRequest\x1a$.catergory.v1.UpdateCategoryResponseB\x80\x01\n" +
-	"\x10com.catergory.v1B\rCategoryProtoP\x01Z\fgen/category\xa2\x02\x03CXX\xaa\x02\fCatergory.V1\xca\x02\fCatergory\\V1\xe2\x02\x18Catergory\\V1\\GPBMetadata\xea\x02\rCatergory::V1b\x06proto3"
+	"\x0eUpdateCategory\x12#.catergory.v1.UpdateCategoryRequest\x1a$.catergory.v1.UpdateCategoryResponseB\xc2\x01\n" +
+	"\x10com.catergory.v1B\rCategoryProtoP\x01ZNgithub.com/carson-networks/budget-server/internal/connecthandlers/gen/category\xa2\x02\x03CXX\xaa\x02\fCatergory.V1\xca\x02\fCatergory\\V1\xe2\x02\x18Catergory\\V1\\GPBMetadata\xea\x02\rCatergory::V1b\x06proto3"
 
 var (
 	file_category_category_proto_rawDescOnce sync.Once

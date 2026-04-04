@@ -1,4 +1,4 @@
-package account
+package v1Account
 
 import (
 	"context"
@@ -7,13 +7,13 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	budgetv1 "github.com/carson-networks/budget-server/gen/budget/v1"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/account"
 	"github.com/carson-networks/budget-server/internal/logging"
 	storageaccount "github.com/carson-networks/budget-server/internal/storage/account"
 )
 
 // ListAccounts implements budget.v1.AccountService.ListAccounts.
-func (s *Service) ListAccounts(ctx context.Context, req *connect.Request[budgetv1.ListAccountsRequest]) (*connect.Response[budgetv1.ListAccountsResponse], error) {
+func (s *Service) ListAccounts(ctx context.Context, req *connect.Request[account.ListAccountsRequest]) (*connect.Response[account.ListAccountsResponse], error) {
 	logData := logging.GetLogData(ctx)
 	limit := 20
 	offset := 0
@@ -51,14 +51,14 @@ func (s *Service) ListAccounts(ctx context.Context, req *connect.Request[budgetv
 		logData.AddData("accountCount", len(accounts))
 	}
 
-	out := &budgetv1.ListAccountsResponse{
-		Accounts: make([]*budgetv1.Account, len(accounts)),
+	out := &account.ListAccountsResponse{
+		Accounts: make([]*account.Account, len(accounts)),
 	}
 	for i, acc := range accounts {
-		out.Accounts[i] = &budgetv1.Account{
+		out.Accounts[i] = &account.Account{
 			Id:              acc.ID.String(),
 			Name:            acc.Name,
-			Type:            budgetv1.AccountType(acc.Type),
+			Type:            account.AccountType(acc.Type),
 			SubType:         acc.SubType,
 			Balance:         acc.Balance.String(),
 			StartingBalance: acc.StartingBalance.String(),
@@ -66,7 +66,7 @@ func (s *Service) ListAccounts(ctx context.Context, req *connect.Request[budgetv
 		}
 	}
 	if result.NextCursor != nil {
-		out.NextCursor = &budgetv1.ListAccountsCursor{
+		out.NextCursor = &account.ListAccountsCursor{
 			Position: int32(result.NextCursor.Position),
 			Limit:    int32(result.NextCursor.Limit),
 		}

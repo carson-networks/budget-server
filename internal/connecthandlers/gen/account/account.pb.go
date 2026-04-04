@@ -543,8 +543,8 @@ const file_account_account_proto_rawDesc = "" +
 	"\x0eAccountService\x12Q\n" +
 	"\fListAccounts\x12\x1f.account.v1.ListAccountsRequest\x1a .account.v1.ListAccountsResponse\x12T\n" +
 	"\rCreateAccount\x12 .account.v1.CreateAccountRequest\x1a!.account.v1.CreateAccountResponse\x12Q\n" +
-	"\fSyncAccounts\x12\x1f.account.v1.SyncAccountsRequest\x1a .account.v1.SyncAccountsResponseBt\n" +
-	"\x0ecom.account.v1B\fAccountProtoP\x01Z\vgen/account\xa2\x02\x03AXX\xaa\x02\n" +
+	"\fSyncAccounts\x12\x1f.account.v1.SyncAccountsRequest\x1a .account.v1.SyncAccountsResponseB\xb6\x01\n" +
+	"\x0ecom.account.v1B\fAccountProtoP\x01ZMgithub.com/carson-networks/budget-server/internal/connecthandlers/gen/account\xa2\x02\x03AXX\xaa\x02\n" +
 	"Account.V1\xca\x02\n" +
 	"Account\\V1\xe2\x02\x16Account\\V1\\GPBMetadata\xea\x02\vAccount::V1b\x06proto3"
 

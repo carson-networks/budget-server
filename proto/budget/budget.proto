@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package budget.v1;
-option go_package = "gen/budget";
+option go_package = "github.com/carson-networks/budget-server/internal/connecthandlers/gen/budget";
 
 message Budget {
   string category_id = 1;

@@ -7,7 +7,7 @@
 package plaid
 
 import (
-	account "gen/account"
+	account "github.com/carson-networks/budget-server/internal/connecthandlers/gen/account"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -326,9 +326,9 @@ const file_plaid_plaid_proto_rawDesc = "" +
 	"\x06status\x18\x01 \x01(\x05R\x06status2\xb8\x01\n" +
 	"\fPlaidService\x12V\n" +
 	"\x0fCreateLinkToken\x12 .plaid.v1.CreateLinkTokenRequest\x1a!.plaid.v1.CreateLinkTokenResponse\x12P\n" +
-	"\rExchangeToken\x12\x1e.plaid.v1.ExchangeTokenRequest\x1a\x1f.plaid.v1.ExchangeTokenResponseBf\n" +
+	"\rExchangeToken\x12\x1e.plaid.v1.ExchangeTokenRequest\x1a\x1f.plaid.v1.ExchangeTokenResponseB\xa8\x01\n" +
 	"\fcom.plaid.v1B\n" +
-	"PlaidProtoP\x01Z\tgen/plaid\xa2\x02\x03PXX\xaa\x02\bPlaid.V1\xca\x02\bPlaid\\V1\xe2\x02\x14Plaid\\V1\\GPBMetadata\xea\x02\tPlaid::V1b\x06proto3"
+	"PlaidProtoP\x01ZKgithub.com/carson-networks/budget-server/internal/connecthandlers/gen/plaid\xa2\x02\x03PXX\xaa\x02\bPlaid.V1\xca\x02\bPlaid\\V1\xe2\x02\x14Plaid\\V1\\GPBMetadata\xea\x02\tPlaid::V1b\x06proto3"
 
 var (
 	file_plaid_plaid_proto_rawDescOnce sync.Once

@@ -675,8 +675,8 @@ const file_transaction_transaction_proto_rawDesc = "" +
 	"\x12TransactionService\x12e\n" +
 	"\x10ListTransactions\x12'.transaction.v1.ListTransactionsRequest\x1a(.transaction.v1.ListTransactionsResponse\x12q\n" +
 	"\x14GetTransactionTotals\x12+.transaction.v1.GetTransactionTotalsRequest\x1a,.transaction.v1.GetTransactionTotalsResponse\x12h\n" +
-	"\x11CreateTransaction\x12(.transaction.v1.CreateTransactionRequest\x1a).transaction.v1.CreateTransactionResponseB\x90\x01\n" +
-	"\x12com.transaction.v1B\x10TransactionProtoP\x01Z\x0fgen/transaction\xa2\x02\x03TXX\xaa\x02\x0eTransaction.V1\xca\x02\x0eTransaction\\V1\xe2\x02\x1aTransaction\\V1\\GPBMetadata\xea\x02\x0fTransaction::V1b\x06proto3"
+	"\x11CreateTransaction\x12(.transaction.v1.CreateTransactionRequest\x1a).transaction.v1.CreateTransactionResponseB\xd2\x01\n" +
+	"\x12com.transaction.v1B\x10TransactionProtoP\x01ZQgithub.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction\xa2\x02\x03TXX\xaa\x02\x0eTransaction.V1\xca\x02\x0eTransaction\\V1\xe2\x02\x1aTransaction\\V1\\GPBMetadata\xea\x02\x0fTransaction::V1b\x06proto3"
 
 var (
 	file_transaction_transaction_proto_rawDescOnce sync.Once

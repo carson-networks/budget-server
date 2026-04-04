@@ -1,4 +1,4 @@
-package budget
+package v1Budget
 
 import (
 	"context"
@@ -6,14 +6,14 @@ import (
 
 	"connectrpc.com/connect"
 
-	budgetv1 "github.com/carson-networks/budget-server/gen/budget/v1"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/budget"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
 	"github.com/gofrs/uuid/v5"
 	"github.com/shopspring/decimal"
 )
 
 // SetBudget implements budget.v1.BudgetService.SetBudget.
-func (s *Service) SetBudget(ctx context.Context, req *connect.Request[budgetv1.SetBudgetRequest]) (*connect.Response[budgetv1.SetBudgetResponse], error) {
+func (s *Service) SetBudget(ctx context.Context, req *connect.Request[budget.SetBudgetRequest]) (*connect.Response[budget.SetBudgetResponse], error) {
 	categoryID, err := uuid.FromString(req.Msg.GetCategoryId())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -44,5 +44,5 @@ func (s *Service) SetBudget(ctx context.Context, req *connect.Request[budgetv1.S
 		}
 	}
 
-	return connect.NewResponse(&budgetv1.SetBudgetResponse{}), nil
+	return connect.NewResponse(&budget.SetBudgetResponse{}), nil
 }

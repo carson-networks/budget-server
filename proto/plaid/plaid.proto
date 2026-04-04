@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package plaid.v1;
-option go_package = "gen/plaid";
+option go_package = "github.com/carson-networks/budget-server/internal/connecthandlers/gen/plaid";
 
 import "account/account.proto";
 import "google/protobuf/timestamp.proto";

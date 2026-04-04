@@ -1,4 +1,4 @@
-package transaction
+package v1Transaction
 
 import (
 	"context"
@@ -6,13 +6,13 @@ import (
 
 	"connectrpc.com/connect"
 
-	budgetv1 "github.com/carson-networks/budget-server/gen/budget/v1"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction"
 	"github.com/carson-networks/budget-server/internal/logging"
 	storagetransaction "github.com/carson-networks/budget-server/internal/storage/transaction"
 )
 
 // GetTransactionTotals implements budget.v1.TransactionService.GetTransactionTotals.
-func (s *Service) GetTransactionTotals(ctx context.Context, req *connect.Request[budgetv1.GetTransactionTotalsRequest]) (*connect.Response[budgetv1.GetTransactionTotalsResponse], error) {
+func (s *Service) GetTransactionTotals(ctx context.Context, req *connect.Request[transaction.GetTransactionTotalsRequest]) (*connect.Response[transaction.GetTransactionTotalsResponse], error) {
 	logData := logging.GetLogData(ctx)
 	sm, sy := int(req.Msg.GetStartMonth()), int(req.Msg.GetStartYear())
 	em, ey := int(req.Msg.GetEndMonth()), int(req.Msg.GetEndYear())
@@ -38,18 +38,18 @@ func (s *Service) GetTransactionTotals(ctx context.Context, req *connect.Request
 		logData.AddData("monthCount", len(months))
 	}
 
-	out := &budgetv1.GetTransactionTotalsResponse{
-		ByMonth: make([]*budgetv1.TransactionTotalsMonth, len(months)),
+	out := &transaction.GetTransactionTotalsResponse{
+		ByMonth: make([]*transaction.TransactionTotalsMonth, len(months)),
 	}
 	for i, m := range months {
-		cats := make([]*budgetv1.TransactionTotalsCategory, 0, len(m.Categories))
+		cats := make([]*transaction.TransactionTotalsCategory, 0, len(m.Categories))
 		for _, c := range m.Categories {
-			cats = append(cats, &budgetv1.TransactionTotalsCategory{
+			cats = append(cats, &transaction.TransactionTotalsCategory{
 				CategoryId: c.CategoryID.String(),
 				Total:      c.Total.String(),
 			})
 		}
-		out.ByMonth[i] = &budgetv1.TransactionTotalsMonth{
+		out.ByMonth[i] = &transaction.TransactionTotalsMonth{
 			Year:       int32(m.Year),
 			Month:      int32(m.Month),
 			ByCategory: cats,

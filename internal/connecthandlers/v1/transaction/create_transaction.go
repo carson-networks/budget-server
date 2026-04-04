@@ -1,4 +1,4 @@
-package transaction
+package v1Transaction
 
 import (
 	"context"
@@ -8,14 +8,14 @@ import (
 
 	"connectrpc.com/connect"
 
-	budgetv1 "github.com/carson-networks/budget-server/gen/budget/v1"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
 	"github.com/gofrs/uuid/v5"
 	"github.com/shopspring/decimal"
 )
 
 // CreateTransaction implements budget.v1.TransactionService.CreateTransaction.
-func (s *Service) CreateTransaction(ctx context.Context, req *connect.Request[budgetv1.CreateTransactionRequest]) (*connect.Response[budgetv1.CreateTransactionResponse], error) {
+func (s *Service) CreateTransaction(ctx context.Context, req *connect.Request[transaction.CreateTransactionRequest]) (*connect.Response[transaction.CreateTransactionResponse], error) {
 	accountID, err := uuid.FromString(req.Msg.GetAccountId())
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -58,5 +58,5 @@ func (s *Service) CreateTransaction(ctx context.Context, req *connect.Request[bu
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 	}
-	return connect.NewResponse(&budgetv1.CreateTransactionResponse{Status: http.StatusCreated}), nil
+	return connect.NewResponse(&transaction.CreateTransactionResponse{Status: http.StatusCreated}), nil
 }
