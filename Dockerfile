@@ -1,10 +1,10 @@
-FROM golang:1.25-alpine as build
+FROM golang:1.27-alpine as build
 
 WORKDIR /app
 COPY . .
 RUN go build -mod=vendor -o /budget-server
 
-FROM golang:1.25-alpine as build-sql
+FROM golang:1.27-alpine as build-sql
 
 WORKDIR /build
 COPY . .
