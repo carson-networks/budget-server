@@ -1,0 +1,26 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "packageRules": [
+    {
+      "description": "Group Go module updates",
+      "matchManagers": ["gomod"],
+      "groupName": "go"
+    },
+    {
+      "description": "Group Go toolchain / asdf updates",
+      "matchManagers": ["asdf"],
+      "groupName": "go"
+    },
+    {
+      "description": "Group GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions"
+    },
+    {
+      "description": "Group Docker and Compose updates",
+      "matchManagers": ["dockerfile", "docker-compose"],
+      "groupName": "docker"
+    }
+  ]
+}
