@@ -302,6 +302,7 @@ github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/plaid/plaid-go/v41 v41.4.0 h1:D3PiYt7c94FCe8P+C4QHIrx/J3xytpYY1yao10+fzlk=
 github.com/plaid/plaid-go/v41 v41.4.0/go.mod h1:zcOgIXu5LmSN+dv8w/OqNNkVSLHpk7vkm1lASY1rv5c=
+github.com/plaid/plaid-go/v47 v47.0.0/go.mod h1:IRCQJUxnBOyXtNlFxkOI090SyeqcqvkUGbMppbPovyE=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c h1:ncq/mPwQF4JjgDlrVEn3C11VoGHZN7m8qihwgMEtzYw=
 github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c/go.mod h1:OmDBASR4679mdNQnz2pUhc2G8CO2JrUAVFDRBDP/hJE=
@@ -367,6 +368,7 @@ github.com/tklauser/numcpus v0.6.1 h1:ng9scYS7az0Bk4OZLvrNXNSAO2Pxr1XXRAPyjhIx+F
 github.com/tklauser/numcpus v0.6.1/go.mod h1:1XfjsgE2zo8GVw7POkMbHENHzVg3GzmoZ9fESEdAacY=
 github.com/vektra/mockery/v2 v2.53.7 h1:ms47n3ZfOrI6UC13dEzExiTbVWFPRWaPdcuUchfZvbU=
 github.com/vektra/mockery/v2 v2.53.7/go.mod h1:EfkbujEmR0Y30bm+PArI1iZnEZa7af9dt6Vy5rGhmmc=
+github.com/vektra/mockery/v3 v3.8.0/go.mod h1:K+L72OoFVizA9eWtO4L+kU65oylgreiJEJ57Gu8g9Ew=
 github.com/wasilibs/go-pgquery v0.0.0-20250409022910-10ac41983c07 h1:mJdDDPblDfPe7z7go8Dvv1AJQDI3eQ/5xith3q2mFlo=
 github.com/wasilibs/go-pgquery v0.0.0-20250409022910-10ac41983c07/go.mod h1:Ak17IJ037caFp4jpCw/iQQ7/W74Sqpb1YuKJU6HTKfM=
 github.com/wasilibs/wazero-helpers v0.0.0-20240620070341-3dff1577cd52 h1:OvLBa8SqJnZ6P+mjlzc2K7PM22rRUPE1x32G9DTPrC4=

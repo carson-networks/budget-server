@@ -14,6 +14,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/lib/pq v1.12.3
 	github.com/plaid/plaid-go/v41 v41.4.0
+	github.com/plaid/plaid-go/v47 v47.0.0
 	github.com/shopspring/decimal v1.4.0
 	github.com/sirupsen/logrus v1.10.2
 	github.com/stephenafamo/bob v0.42.0
@@ -47,7 +48,7 @@ require (
 	github.com/stephenafamo/scan v0.9.0 // indirect
 	github.com/stretchr/objx v0.5.3 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	github.com/vektra/mockery/v2 v2.53.7 // indirect
+	github.com/vektra/mockery/v3 v3.8.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/mod v0.41.0 // indirect
 	golang.org/x/oauth2 v0.37.0 // indirect
