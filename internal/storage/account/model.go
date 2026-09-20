@@ -48,8 +48,6 @@ type AccountCreate struct {
 
 // IAccountTable defines the interface for account storage operations.
 // This abstraction allows swapping the implementation (e.g. Bob) without changing callers.
-//
-//go:generate mockery --name IAccountTable --output mock_IAccountTable.go
 type IAccountTable interface {
 	FindByID(ctx context.Context, id uuid.UUID, forUpdate bool) (*Account, error)
 	Insert(ctx context.Context, create *AccountCreate) (uuid.UUID, error)

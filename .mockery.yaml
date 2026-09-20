@@ -1,8 +1,9 @@
-with-expecter: true
-filename: "mock_{{.InterfaceName}}.go"
-mockname: "Mock{{.InterfaceName}}"
-inpackage: true
 dir: "{{.InterfaceDir}}"
+filename: "mock_{{.InterfaceName}}.go"
+structname: "Mock{{.InterfaceName}}"
+template: testify
+template-data:
+  unroll-variadic: true
 packages:
   github.com/carson-networks/budget-server/internal/storage:
     interfaces:
@@ -19,3 +20,9 @@ packages:
   github.com/carson-networks/budget-server/internal/operator/actions:
     interfaces:
       IAction:
+  github.com/carson-networks/budget-server/internal/storage/account:
+    interfaces:
+      IAccountTable:
+  github.com/carson-networks/budget-server/internal/storage/transaction:
+    interfaces:
+      ITransactionTable:

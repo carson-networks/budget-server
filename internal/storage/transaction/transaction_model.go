@@ -93,8 +93,6 @@ type MonthTotals struct {
 
 // ITransactionTable defines the interface for transaction storage operations.
 // This abstraction allows swapping the implementation (e.g. Bob) without changing callers.
-//
-//go:generate mockery --name ITransactionTable --output mock_ITransactionTable.go
 type ITransactionTable interface {
 	FindByID(ctx context.Context, id uuid.UUID) (*Transaction, error)
 	Insert(ctx context.Context, create *TransactionCreate) (uuid.UUID, error)
