@@ -46,6 +46,13 @@ type AccountCreate struct {
 	StartingBalance decimal.Decimal
 }
 
+// AccountUpdate is the input for updating an account (mutable fields only).
+type AccountUpdate struct {
+	Name            *string
+	SubType         *string
+	StartingBalance *decimal.Decimal
+}
+
 // IAccountTable defines the interface for account storage operations.
 // This abstraction allows swapping the implementation (e.g. Bob) without changing callers.
 type IAccountTable interface {

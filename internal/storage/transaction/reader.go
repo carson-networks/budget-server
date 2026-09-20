@@ -110,7 +110,7 @@ func (r *Reader) TotalsByMonthAndCategory(ctx context.Context, startMonth, start
 	month := psql.Cast(psql.Raw("EXTRACT(MONTH FROM ? AT TIME ZONE 'UTC')", cols.TransactionDate), "int")
 	q := psql.Select(
 		sm.Columns(year, month, cols.CategoryID, psql.F("SUM", cols.Amount)),
-		sm.From(bobgen.Transactions.NameAs()),
+		sm.From(bobgen.Transactions.NameAsExpr()),
 		psql.WhereAnd(
 			bobgen.SelectWhere.Transactions.TransactionDate.GTE(start),
 			bobgen.SelectWhere.Transactions.TransactionDate.LT(endExclusive),
