@@ -16,7 +16,7 @@ require (
 	github.com/plaid/plaid-go/v47 v47.0.0
 	github.com/shopspring/decimal v1.4.0
 	github.com/sirupsen/logrus v1.10.2
-	github.com/stephenafamo/bob v0.42.0
+	github.com/stephenafamo/bob v0.50.0
 	github.com/stretchr/testify v1.12.1
 	google.golang.org/protobuf v1.36.12
 )
