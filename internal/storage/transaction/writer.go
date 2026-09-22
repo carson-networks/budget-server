@@ -43,6 +43,16 @@ func (w *Writer) Delete(ctx context.Context, id uuid.UUID) (*Transaction, error)
 	return txn, nil
 }
 
+// DeleteByAccountID deletes all transactions for an account.
+// There is no FK from transactions to accounts, so this must be done explicitly
+// before deleting the account. plaid_transaction_links cascade from transactions.
+func (w *Writer) DeleteByAccountID(ctx context.Context, accountID uuid.UUID) error {
+	_, err := bobgen.Transactions.Delete(
+		bobgen.DeleteWhere.Transactions.AccountID.EQ(accountID),
+	).Exec(ctx, w.tx)
+	return err
+}
+
 // Update updates the mutable fields of an existing transaction. CategoryID and AccountID are not touched.
 func (w *Writer) Update(ctx context.Context, id uuid.UUID, update *TransactionUpdate) error {
 	setter := bobgen.TransactionSetter{

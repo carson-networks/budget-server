@@ -20,6 +20,7 @@ type IAccountWriter interface {
 	Create(ctx context.Context, name string, accountType account.AccountType, accountSubType string, startingBalance decimal.Decimal) (uuid.UUID, error)
 	UpdateBalance(ctx context.Context, id uuid.UUID, balance decimal.Decimal) error
 	Update(ctx context.Context, id uuid.UUID, update *account.AccountUpdate) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 // ITransactionWriter defines the transaction write operations used by actions.
@@ -28,6 +29,7 @@ type ITransactionWriter interface {
 	Insert(ctx context.Context, create *transaction.TransactionCreate) (uuid.UUID, error)
 	Update(ctx context.Context, id uuid.UUID, update *transaction.TransactionUpdate) error
 	Delete(ctx context.Context, id uuid.UUID) (*transaction.Transaction, error)
+	DeleteByAccountID(ctx context.Context, accountID uuid.UUID) error
 }
 
 // ICategoryWriter defines the category write operations used by actions.
@@ -55,6 +57,7 @@ type IPlaidWriter interface {
 	CreateAccountLink(ctx context.Context, link *plaidstore.AccountLink) error
 	CreateTransactionLink(ctx context.Context, link *plaidstore.TransactionLink) error
 	DeleteTransactionLink(ctx context.Context, plaidTxnID string) error
+	DeleteAccountLinksByAccountID(ctx context.Context, accountID uuid.UUID) error
 	FindTransactionLink(ctx context.Context, plaidTxnID string) (*plaidstore.TransactionLink, error)
 	ListAccountLinksByItemID(ctx context.Context, itemID uuid.UUID) ([]*plaidstore.AccountLink, error)
 }

@@ -86,3 +86,10 @@ func (w *Writer) Update(ctx context.Context, id uuid.UUID, update *AccountUpdate
 	).Exec(ctx, w.tx)
 	return err
 }
+
+func (w *Writer) Delete(ctx context.Context, id uuid.UUID) error {
+	_, err := bobgen.Accounts.Delete(
+		bobgen.DeleteWhere.Accounts.ID.EQ(id),
+	).Exec(ctx, w.tx)
+	return err
+}

@@ -79,3 +79,12 @@ func (w *Writer) DeleteTransactionLink(ctx context.Context, plaidTxnID string) e
 	).Exec(ctx, w.tx)
 	return err
 }
+
+// DeleteAccountLinksByAccountID removes plaid_account_links for an account.
+// The column also has ON DELETE CASCADE from accounts; this is the explicit path.
+func (w *Writer) DeleteAccountLinksByAccountID(ctx context.Context, accountID uuid.UUID) error {
+	_, err := bobgen.PlaidAccountLinks.Delete(
+		bobgen.DeleteWhere.PlaidAccountLinks.AccountID.EQ(accountID),
+	).Exec(ctx, w.tx)
+	return err
+}

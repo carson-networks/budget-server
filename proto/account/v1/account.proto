@@ -56,6 +56,12 @@ message UpdateAccountRequest {
 
 message UpdateAccountResponse {}
 
+message DeleteAccountRequest {
+  string id = 1;
+}
+
+message DeleteAccountResponse {}
+
 message SyncAccountsRequest {
   repeated string account_ids = 1;
 }
@@ -66,5 +72,6 @@ service AccountService {
   rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse);
   rpc CreateAccount(CreateAccountRequest) returns (CreateAccountResponse);
   rpc UpdateAccount(UpdateAccountRequest) returns (UpdateAccountResponse);
+  rpc DeleteAccount(DeleteAccountRequest) returns (DeleteAccountResponse);
   rpc SyncAccounts(SyncAccountsRequest) returns (SyncAccountsResponse);
 }
