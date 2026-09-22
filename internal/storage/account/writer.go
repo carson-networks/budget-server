@@ -77,6 +77,9 @@ func (w *Writer) Update(ctx context.Context, id uuid.UUID, update *AccountUpdate
 	if update.StartingBalance != nil {
 		setter.StartingBalance = omit.From(*update.StartingBalance)
 	}
+	if update.Balance != nil {
+		setter.Balance = omit.From(*update.Balance)
+	}
 	if len(setter.SetColumns()) == 0 {
 		return nil
 	}

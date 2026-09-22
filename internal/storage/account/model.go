@@ -51,6 +51,7 @@ type AccountUpdate struct {
 	Name            *string
 	SubType         *string
 	StartingBalance *decimal.Decimal
+	Balance         *decimal.Decimal
 }
 
 // IAccountTable defines the interface for account storage operations.

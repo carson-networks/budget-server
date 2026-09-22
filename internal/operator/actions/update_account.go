@@ -37,5 +37,13 @@ func (u *UpdateAccount) Perform(ctx context.Context, writer *storage.Writer) err
 		SubType:         u.SubType,
 		StartingBalance: u.StartingBalance,
 	}
+	// Create seeds balance from starting_balance; transactions only move balance.
+	// When starting_balance changes, shift current balance by the same delta so
+	// prior activity is preserved relative to the corrected opening balance.
+	if u.StartingBalance != nil {
+		delta := u.StartingBalance.Sub(existing.StartingBalance)
+		newBalance := existing.Balance.Add(delta)
+		update.Balance = &newBalance
+	}
 	return writer.Account.Update(ctx, u.ID, update)
 }
