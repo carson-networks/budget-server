@@ -203,6 +203,69 @@ func (_c *MockIAccountWriter_FindByIDForUpdate_Call) RunAndReturn(run func(ctx c
 	return _c
 }
 
+// Update provides a mock function for the type MockIAccountWriter
+func (_mock *MockIAccountWriter) Update(ctx context.Context, id uuid.UUID, update *account.AccountUpdate) error {
+	ret := _mock.Called(ctx, id, update)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Update")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID, *account.AccountUpdate) error); ok {
+		r0 = returnFunc(ctx, id, update)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockIAccountWriter_Update_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Update'
+type MockIAccountWriter_Update_Call struct {
+	*mock.Call
+}
+
+// Update is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id uuid.UUID
+//   - update *account.AccountUpdate
+func (_e *MockIAccountWriter_Expecter) Update(ctx any, id any, update any) *MockIAccountWriter_Update_Call {
+	return &MockIAccountWriter_Update_Call{Call: _e.mock.On("Update", ctx, id, update)}
+}
+
+func (_c *MockIAccountWriter_Update_Call) Run(run func(ctx context.Context, id uuid.UUID, update *account.AccountUpdate)) *MockIAccountWriter_Update_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		var arg2 *account.AccountUpdate
+		if args[2] != nil {
+			arg2 = args[2].(*account.AccountUpdate)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockIAccountWriter_Update_Call) Return(err error) *MockIAccountWriter_Update_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockIAccountWriter_Update_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID, update *account.AccountUpdate) error) *MockIAccountWriter_Update_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // UpdateBalance provides a mock function for the type MockIAccountWriter
 func (_mock *MockIAccountWriter) UpdateBalance(ctx context.Context, id uuid.UUID, balance decimal.Decimal) error {
 	ret := _mock.Called(ctx, id, balance)

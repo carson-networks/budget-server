@@ -65,3 +65,27 @@ func (w *Writer) UpdateBalance(ctx context.Context, id uuid.UUID, balance decima
 	_, err := bobgen.Accounts.Update(setter.UpdateMod(), um.Where(bobgen.Accounts.Columns.ID.EQ(psql.Arg(id)))).Exec(ctx, w.tx)
 	return err
 }
+
+func (w *Writer) Update(ctx context.Context, id uuid.UUID, update *AccountUpdate) error {
+	setter := bobgen.AccountSetter{}
+	if update.Name != nil {
+		setter.Name = omit.From(*update.Name)
+	}
+	if update.SubType != nil {
+		setter.SubType = omit.From(*update.SubType)
+	}
+	if update.StartingBalance != nil {
+		setter.StartingBalance = omit.From(*update.StartingBalance)
+	}
+	if update.Balance != nil {
+		setter.Balance = omit.From(*update.Balance)
+	}
+	if len(setter.SetColumns()) == 0 {
+		return nil
+	}
+	_, err := bobgen.Accounts.Update(
+		setter.UpdateMod(),
+		um.Where(bobgen.Accounts.Columns.ID.EQ(psql.Arg(id))),
+	).Exec(ctx, w.tx)
+	return err
+}

@@ -5,11 +5,12 @@
 package v1
 
 import (
-	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
 	http "net/http"
 	strings "strings"
+
+	connect "connectrpc.com/connect"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -38,6 +39,9 @@ const (
 	// AccountServiceCreateAccountProcedure is the fully-qualified name of the AccountService's
 	// CreateAccount RPC.
 	AccountServiceCreateAccountProcedure = "/account.v1.AccountService/CreateAccount"
+	// AccountServiceUpdateAccountProcedure is the fully-qualified name of the AccountService's
+	// UpdateAccount RPC.
+	AccountServiceUpdateAccountProcedure = "/account.v1.AccountService/UpdateAccount"
 	// AccountServiceSyncAccountsProcedure is the fully-qualified name of the AccountService's
 	// SyncAccounts RPC.
 	AccountServiceSyncAccountsProcedure = "/account.v1.AccountService/SyncAccounts"
@@ -47,6 +51,7 @@ const (
 type AccountServiceClient interface {
 	ListAccounts(context.Context, *connect.Request[ListAccountsRequest]) (*connect.Response[ListAccountsResponse], error)
 	CreateAccount(context.Context, *connect.Request[CreateAccountRequest]) (*connect.Response[CreateAccountResponse], error)
+	UpdateAccount(context.Context, *connect.Request[UpdateAccountRequest]) (*connect.Response[UpdateAccountResponse], error)
 	SyncAccounts(context.Context, *connect.Request[SyncAccountsRequest]) (*connect.Response[SyncAccountsResponse], error)
 }
 
@@ -73,6 +78,12 @@ func NewAccountServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 			connect.WithSchema(accountServiceMethods.ByName("CreateAccount")),
 			connect.WithClientOptions(opts...),
 		),
+		updateAccount: connect.NewClient[UpdateAccountRequest, UpdateAccountResponse](
+			httpClient,
+			baseURL+AccountServiceUpdateAccountProcedure,
+			connect.WithSchema(accountServiceMethods.ByName("UpdateAccount")),
+			connect.WithClientOptions(opts...),
+		),
 		syncAccounts: connect.NewClient[SyncAccountsRequest, SyncAccountsResponse](
 			httpClient,
 			baseURL+AccountServiceSyncAccountsProcedure,
@@ -86,6 +97,7 @@ func NewAccountServiceClient(httpClient connect.HTTPClient, baseURL string, opts
 type accountServiceClient struct {
 	listAccounts  *connect.Client[ListAccountsRequest, ListAccountsResponse]
 	createAccount *connect.Client[CreateAccountRequest, CreateAccountResponse]
+	updateAccount *connect.Client[UpdateAccountRequest, UpdateAccountResponse]
 	syncAccounts  *connect.Client[SyncAccountsRequest, SyncAccountsResponse]
 }
 
@@ -99,6 +111,11 @@ func (c *accountServiceClient) CreateAccount(ctx context.Context, req *connect.R
 	return c.createAccount.CallUnary(ctx, req)
 }
 
+// UpdateAccount calls account.v1.AccountService.UpdateAccount.
+func (c *accountServiceClient) UpdateAccount(ctx context.Context, req *connect.Request[UpdateAccountRequest]) (*connect.Response[UpdateAccountResponse], error) {
+	return c.updateAccount.CallUnary(ctx, req)
+}
+
 // SyncAccounts calls account.v1.AccountService.SyncAccounts.
 func (c *accountServiceClient) SyncAccounts(ctx context.Context, req *connect.Request[SyncAccountsRequest]) (*connect.Response[SyncAccountsResponse], error) {
 	return c.syncAccounts.CallUnary(ctx, req)
@@ -108,6 +125,7 @@ func (c *accountServiceClient) SyncAccounts(ctx context.Context, req *connect.Re
 type AccountServiceHandler interface {
 	ListAccounts(context.Context, *connect.Request[ListAccountsRequest]) (*connect.Response[ListAccountsResponse], error)
 	CreateAccount(context.Context, *connect.Request[CreateAccountRequest]) (*connect.Response[CreateAccountResponse], error)
+	UpdateAccount(context.Context, *connect.Request[UpdateAccountRequest]) (*connect.Response[UpdateAccountResponse], error)
 	SyncAccounts(context.Context, *connect.Request[SyncAccountsRequest]) (*connect.Response[SyncAccountsResponse], error)
 }
 
@@ -130,6 +148,12 @@ func NewAccountServiceHandler(svc AccountServiceHandler, opts ...connect.Handler
 		connect.WithSchema(accountServiceMethods.ByName("CreateAccount")),
 		connect.WithHandlerOptions(opts...),
 	)
+	accountServiceUpdateAccountHandler := connect.NewUnaryHandler(
+		AccountServiceUpdateAccountProcedure,
+		svc.UpdateAccount,
+		connect.WithSchema(accountServiceMethods.ByName("UpdateAccount")),
+		connect.WithHandlerOptions(opts...),
+	)
 	accountServiceSyncAccountsHandler := connect.NewUnaryHandler(
 		AccountServiceSyncAccountsProcedure,
 		svc.SyncAccounts,
@@ -142,6 +166,8 @@ func NewAccountServiceHandler(svc AccountServiceHandler, opts ...connect.Handler
 			accountServiceListAccountsHandler.ServeHTTP(w, r)
 		case AccountServiceCreateAccountProcedure:
 			accountServiceCreateAccountHandler.ServeHTTP(w, r)
+		case AccountServiceUpdateAccountProcedure:
+			accountServiceUpdateAccountHandler.ServeHTTP(w, r)
 		case AccountServiceSyncAccountsProcedure:
 			accountServiceSyncAccountsHandler.ServeHTTP(w, r)
 		default:
@@ -159,6 +185,10 @@ func (UnimplementedAccountServiceHandler) ListAccounts(context.Context, *connect
 
 func (UnimplementedAccountServiceHandler) CreateAccount(context.Context, *connect.Request[CreateAccountRequest]) (*connect.Response[CreateAccountResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("account.v1.AccountService.CreateAccount is not implemented"))
+}
+
+func (UnimplementedAccountServiceHandler) UpdateAccount(context.Context, *connect.Request[UpdateAccountRequest]) (*connect.Response[UpdateAccountResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("account.v1.AccountService.UpdateAccount is not implemented"))
 }
 
 func (UnimplementedAccountServiceHandler) SyncAccounts(context.Context, *connect.Request[SyncAccountsRequest]) (*connect.Response[SyncAccountsResponse], error) {
