@@ -29,6 +29,8 @@ func TestUpdateAccount_Perform_Success(t *testing.T) {
 		Balance:         decimal.NewFromInt(100),
 		StartingBalance: decimal.Zero,
 	}
+	// delta = 250 - 0 = 250; new balance = 100 + 250 = 350
+	expectedBalance := decimal.NewFromInt(350)
 
 	mockAccount := &storage.MockIAccountWriter{}
 	mockAccount.EXPECT().
@@ -39,7 +41,8 @@ func TestUpdateAccount_Perform_Success(t *testing.T) {
 			return u != nil &&
 				u.Name != nil && *u.Name == newName &&
 				u.SubType != nil && *u.SubType == newSubType &&
-				u.StartingBalance != nil && u.StartingBalance.Equal(newStarting)
+				u.StartingBalance != nil && u.StartingBalance.Equal(newStarting) &&
+				u.Balance != nil && u.Balance.Equal(expectedBalance)
 		})).
 		Return(nil)
 
@@ -57,13 +60,53 @@ func TestUpdateAccount_Perform_Success(t *testing.T) {
 	mockAccount.AssertExpectations(t)
 }
 
+func TestUpdateAccount_Perform_StartingBalanceAdjustsBalanceByDelta(t *testing.T) {
+	accID := uuid.Must(uuid.NewV4())
+	newStarting := decimal.NewFromInt(50)
+	existing := &account.Account{
+		ID:              accID,
+		Name:            "Checking",
+		Type:            account.AccountTypeCash,
+		Balance:         decimal.NewFromInt(200),
+		StartingBalance: decimal.NewFromInt(100),
+	}
+	// delta = 50 - 100 = -50; new balance = 200 - 50 = 150
+	expectedBalance := decimal.NewFromInt(150)
+
+	mockAccount := &storage.MockIAccountWriter{}
+	mockAccount.EXPECT().
+		FindByIDForUpdate(mock.Anything, accID).
+		Return(existing, nil)
+	mockAccount.EXPECT().
+		Update(mock.Anything, accID, mock.MatchedBy(func(u *account.AccountUpdate) bool {
+			return u != nil &&
+				u.StartingBalance != nil && u.StartingBalance.Equal(newStarting) &&
+				u.Balance != nil && u.Balance.Equal(expectedBalance) &&
+				u.Name == nil && u.SubType == nil
+		})).
+		Return(nil)
+
+	wt := storage.NewWriterForTest()
+	wt.Account = mockAccount
+	action := &UpdateAccount{
+		ID:              accID,
+		StartingBalance: &newStarting,
+	}
+
+	err := action.Perform(context.Background(), wt)
+	require.NoError(t, err)
+	mockAccount.AssertExpectations(t)
+}
+
 func TestUpdateAccount_Perform_NameOnly(t *testing.T) {
 	accID := uuid.Must(uuid.NewV4())
 	newName := "Savings"
 	existing := &account.Account{
-		ID:   accID,
-		Name: "Old",
-		Type: account.AccountTypeCash,
+		ID:              accID,
+		Name:            "Old",
+		Type:            account.AccountTypeCash,
+		Balance:         decimal.NewFromInt(75),
+		StartingBalance: decimal.NewFromInt(50),
 	}
 
 	mockAccount := &storage.MockIAccountWriter{}
@@ -73,7 +116,7 @@ func TestUpdateAccount_Perform_NameOnly(t *testing.T) {
 	mockAccount.EXPECT().
 		Update(mock.Anything, accID, mock.MatchedBy(func(u *account.AccountUpdate) bool {
 			return u != nil && u.Name != nil && *u.Name == newName &&
-				u.SubType == nil && u.StartingBalance == nil
+				u.SubType == nil && u.StartingBalance == nil && u.Balance == nil
 		})).
 		Return(nil)
 

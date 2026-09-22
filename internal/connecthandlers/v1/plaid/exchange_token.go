@@ -8,7 +8,7 @@ import (
 	"connectrpc.com/connect"
 
 	plaid "github.com/carson-networks/budget-server/internal/connecthandlers/gen/plaid/v1"
-	v1Account "github.com/carson-networks/budget-server/internal/connecthandlers/v1/account"
+	"github.com/carson-networks/budget-server/internal/connecthandlers/v1/account"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
 	"github.com/shopspring/decimal"
 )
