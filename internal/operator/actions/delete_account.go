@@ -27,20 +27,9 @@ func (d *DeleteAccount) Perform(ctx context.Context, writer *storage.Writer) err
 		return ErrAccountNotFound
 	}
 
-	// transactions.account_id has no FK — delete explicitly so rows are not left dangling.
-	// plaid_transaction_links cascade from transactions ON DELETE CASCADE.
-	if err := writer.Transaction.DeleteByAccountID(ctx, d.ID); err != nil {
-		return err
-	}
-
-	// plaid_account_links and syncs also CASCADE from accounts; delete explicitly
-	// so related cleanup is clear and covered by action tests.
-	if err := writer.Plaid.DeleteAccountLinksByAccountID(ctx, d.ID); err != nil {
-		return err
-	}
-	if err := writer.Sync.Delete(ctx, d.ID); err != nil {
-		return err
-	}
-
+	// Related rows cascade from accounts:
+	// - transactions (fk_transactions_account_id ON DELETE CASCADE)
+	// - plaid_transaction_links (cascade from transactions)
+	// - plaid_account_links, syncs (ON DELETE CASCADE)
 	return writer.Account.Delete(ctx, d.ID)
 }
