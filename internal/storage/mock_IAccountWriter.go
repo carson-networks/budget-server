@@ -328,3 +328,60 @@ func (_c *MockIAccountWriter_UpdateBalance_Call) RunAndReturn(run func(ctx conte
 	_c.Call.Return(run)
 	return _c
 }
+
+// Delete provides a mock function for the type MockIAccountWriter
+func (_mock *MockIAccountWriter) Delete(ctx context.Context, id uuid.UUID) error {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Delete")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, uuid.UUID) error); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockIAccountWriter_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type MockIAccountWriter_Delete_Call struct {
+	*mock.Call
+}
+
+// Delete is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id uuid.UUID
+func (_e *MockIAccountWriter_Expecter) Delete(ctx any, id any) *MockIAccountWriter_Delete_Call {
+	return &MockIAccountWriter_Delete_Call{Call: _e.mock.On("Delete", ctx, id)}
+}
+
+func (_c *MockIAccountWriter_Delete_Call) Run(run func(ctx context.Context, id uuid.UUID)) *MockIAccountWriter_Delete_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 uuid.UUID
+		if args[1] != nil {
+			arg1 = args[1].(uuid.UUID)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockIAccountWriter_Delete_Call) Return(err error) *MockIAccountWriter_Delete_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockIAccountWriter_Delete_Call) RunAndReturn(run func(ctx context.Context, id uuid.UUID) error) *MockIAccountWriter_Delete_Call {
+	_c.Call.Return(run)
+	return _c
+}
