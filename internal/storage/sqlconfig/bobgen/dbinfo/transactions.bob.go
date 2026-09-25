@@ -78,6 +78,15 @@ var Transactions = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
+		MerchantName: column{
+			Name:      "merchant_name",
+			DBType:    "text",
+			Default:   "NULL",
+			Comment:   "",
+			Nullable:  true,
+			Generated: false,
+			AutoIncr:  false,
+		},
 	},
 	Indexes: transactionIndexes{
 		TransactionsPkey: index{
@@ -97,6 +106,23 @@ var Transactions = Table[
 			Where:         "",
 			Include:       []string{},
 		},
+		IdxTransactionsAccountID: index{
+			Type: "btree",
+			Name: "idx_transactions_account_id",
+			Columns: []indexColumn{
+				{
+					Name:         "account_id",
+					Desc:         null.FromCond(false, true),
+					IsExpression: false,
+				},
+			},
+			Unique:        false,
+			Comment:       "",
+			NullsFirst:    []bool{false},
+			NullsDistinct: false,
+			Where:         "",
+			Include:       []string{},
+		},
 	},
 	PrimaryKey: &constraint{
 		Name:    "transactions_pkey",
@@ -104,6 +130,15 @@ var Transactions = Table[
 		Comment: "",
 	},
 	ForeignKeys: transactionForeignKeys{
+		TransactionsFKTransactionsAccountID: foreignKey{
+			constraint: constraint{
+				Name:    "transactions.fk_transactions_account_id",
+				Columns: []string{"account_id"},
+				Comment: "",
+			},
+			ForeignTable:   "accounts",
+			ForeignColumns: []string{"id"},
+		},
 		TransactionsFKTransactionsCategoryID: foreignKey{
 			constraint: constraint{
 				Name:    "transactions.fk_transactions_category_id",
@@ -126,31 +161,34 @@ type transactionColumns struct {
 	TransactionName column
 	TransactionDate column
 	CreatedAt       column
+	MerchantName    column
 }
 
 func (c transactionColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.AccountID, c.CategoryID, c.Amount, c.TransactionName, c.TransactionDate, c.CreatedAt,
+		c.ID, c.AccountID, c.CategoryID, c.Amount, c.TransactionName, c.TransactionDate, c.CreatedAt, c.MerchantName,
 	}
 }
 
 type transactionIndexes struct {
-	TransactionsPkey index
+	TransactionsPkey         index
+	IdxTransactionsAccountID index
 }
 
 func (i transactionIndexes) AsSlice() []index {
 	return []index{
-		i.TransactionsPkey,
+		i.TransactionsPkey, i.IdxTransactionsAccountID,
 	}
 }
 
 type transactionForeignKeys struct {
+	TransactionsFKTransactionsAccountID  foreignKey
 	TransactionsFKTransactionsCategoryID foreignKey
 }
 
 func (f transactionForeignKeys) AsSlice() []foreignKey {
 	return []foreignKey{
-		f.TransactionsFKTransactionsCategoryID,
+		f.TransactionsFKTransactionsAccountID, f.TransactionsFKTransactionsCategoryID,
 	}
 }
 

@@ -18,13 +18,15 @@ import (
 )
 
 func validPlaidAddTransaction() *PlaidAddTransaction {
+	merchant := "Coffee Shop"
 	return &PlaidAddTransaction{
 		TransactionID:      uuid.Must(uuid.NewV4()),
 		AccountID:          uuid.Must(uuid.NewV4()),
 		PlaidTransactionID: "plaid-txn-1",
 		PlaidAccountID:     "plaid-acc-1",
 		Amount:             decimal.NewFromFloat(-42.00),
-		Name:               "Coffee Shop",
+		Name:               "COFFEE SHOP DOWNTOWN",
+		MerchantName:       &merchant,
 		Date:               time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC),
 	}
 }
@@ -39,6 +41,7 @@ func TestPlaidAddTransaction_Perform_Success(t *testing.T) {
 			AccountID:       a.AccountID,
 			Amount:          a.Amount,
 			TransactionName: a.Name,
+			MerchantName:    a.MerchantName,
 			TransactionDate: a.Date,
 		}).
 		Return(a.TransactionID, nil)
@@ -93,4 +96,37 @@ func TestPlaidAddTransaction_Perform_CreateTransactionLinkError(t *testing.T) {
 	wt.Plaid = mockPlaid
 
 	assert.ErrorIs(t, a.Perform(context.Background(), wt), linkErr)
+}
+
+func TestPlaidAddTransaction_Perform_NilMerchantName(t *testing.T) {
+	a := validPlaidAddTransaction()
+	a.MerchantName = nil
+
+	mockTxn := &storage.MockITransactionWriter{}
+	mockTxn.EXPECT().
+		Insert(mock.Anything, &transaction.TransactionCreate{
+			ID:              &a.TransactionID,
+			AccountID:       a.AccountID,
+			Amount:          a.Amount,
+			TransactionName: a.Name,
+			MerchantName:    nil,
+			TransactionDate: a.Date,
+		}).
+		Return(a.TransactionID, nil)
+
+	mockPlaid := &storage.MockIPlaidWriter{}
+	mockPlaid.EXPECT().
+		CreateTransactionLink(mock.Anything, &plaidstore.TransactionLink{
+			PlaidTransactionID: a.PlaidTransactionID,
+			TransactionID:      a.TransactionID,
+			PlaidAccountID:     a.PlaidAccountID,
+		}).
+		Return(nil)
+
+	wt := storage.NewWriterForTest()
+	wt.Transaction = mockTxn
+	wt.Plaid = mockPlaid
+
+	require.NoError(t, a.Perform(context.Background(), wt))
+	mockTxn.AssertExpectations(t)
 }

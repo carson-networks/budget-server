@@ -48,6 +48,7 @@ func (w *Writer) Update(ctx context.Context, id uuid.UUID, update *TransactionUp
 	setter := bobgen.TransactionSetter{
 		Amount:          omit.From(update.Amount),
 		TransactionName: omit.From(update.TransactionName),
+		MerchantName:    omitnull.FromPtr(update.MerchantName),
 	}
 	if !update.TransactionDate.IsZero() {
 		setter.TransactionDate = omit.From(update.TransactionDate)
@@ -65,6 +66,7 @@ func (w *Writer) Insert(ctx context.Context, create *TransactionCreate) (uuid.UU
 		CategoryID:      omitnull.FromPtr(create.CategoryID),
 		Amount:          omit.From(create.Amount),
 		TransactionName: omit.From(create.TransactionName),
+		MerchantName:    omitnull.FromPtr(create.MerchantName),
 	}
 	if create.ID != nil {
 		setter.ID = omit.From(*create.ID)

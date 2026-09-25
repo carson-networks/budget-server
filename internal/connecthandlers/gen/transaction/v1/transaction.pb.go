@@ -32,6 +32,7 @@ type Transaction struct {
 	TransactionName string                 `protobuf:"bytes,5,opt,name=transaction_name,json=transactionName,proto3" json:"transaction_name,omitempty"`
 	TransactionDate *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=transaction_date,json=transactionDate,proto3" json:"transaction_date,omitempty"`
 	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	MerchantName    *string                `protobuf:"bytes,8,opt,name=merchant_name,json=merchantName,proto3,oneof" json:"merchant_name,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -113,6 +114,13 @@ func (x *Transaction) GetCreatedAt() *timestamppb.Timestamp {
 		return x.CreatedAt
 	}
 	return nil
+}
+
+func (x *Transaction) GetMerchantName() string {
+	if x != nil && x.MerchantName != nil {
+		return *x.MerchantName
+	}
+	return ""
 }
 
 type ListTransactionsCursor struct {
@@ -619,7 +627,7 @@ var File_transaction_v1_transaction_proto protoreflect.FileDescriptor
 
 const file_transaction_v1_transaction_proto_rawDesc = "" +
 	"\n" +
-	" transaction/v1/transaction.proto\x12\x0etransaction.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb7\x02\n" +
+	" transaction/v1/transaction.proto\x12\x0etransaction.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf3\x02\n" +
 	"\vTransaction\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
@@ -630,8 +638,10 @@ const file_transaction_v1_transaction_proto_rawDesc = "" +
 	"\x10transaction_name\x18\x05 \x01(\tR\x0ftransactionName\x12E\n" +
 	"\x10transaction_date\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\x0ftransactionDate\x129\n" +
 	"\n" +
-	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAtB\x0e\n" +
-	"\f_category_id\"\x92\x01\n" +
+	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12(\n" +
+	"\rmerchant_name\x18\b \x01(\tH\x01R\fmerchantName\x88\x01\x01B\x0e\n" +
+	"\f_category_idB\x10\n" +
+	"\x0e_merchant_name\"\x92\x01\n" +
 	"\x16ListTransactionsCursor\x12\x1a\n" +
 	"\bposition\x18\x01 \x01(\x05R\bposition\x12\x14\n" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\x12F\n" +

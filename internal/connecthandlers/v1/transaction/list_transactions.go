@@ -64,19 +64,7 @@ func (s *Service) ListTransactions(ctx context.Context, req *connect.Request[tra
 		Transactions: make([]*transaction.Transaction, len(transactions)),
 	}
 	for i, tx := range transactions {
-		t := &transaction.Transaction{
-			Id:              tx.ID.String(),
-			AccountId:       tx.AccountID.String(),
-			Amount:          tx.Amount.String(),
-			TransactionName: tx.TransactionName,
-			TransactionDate: timestamppb.New(tx.TransactionDate),
-			CreatedAt:       timestamppb.New(tx.CreatedAt),
-		}
-		if tx.CategoryID != nil {
-			cid := tx.CategoryID.String()
-			t.CategoryId = &cid
-		}
-		out.Transactions[i] = t
+		out.Transactions[i] = transactionToProto(tx)
 	}
 	if result.NextCursor != nil {
 		out.NextCursor = &transaction.ListTransactionsCursor{
