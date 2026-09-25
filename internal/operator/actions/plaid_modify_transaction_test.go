@@ -17,11 +17,13 @@ import (
 )
 
 func validPlaidModifyTransaction() *PlaidModifyTransaction {
+	merchant := "Updated Merchant"
 	return &PlaidModifyTransaction{
 		TransactionID: uuid.Must(uuid.NewV4()),
 		AccountID:     uuid.Must(uuid.NewV4()),
 		Amount:        decimal.NewFromFloat(-55.00),
-		Name:          "Updated Merchant",
+		Name:          "UPDATED MERCHANT LLC",
+		MerchantName:  &merchant,
 		Date:          time.Date(2025, 3, 2, 0, 0, 0, 0, time.UTC),
 	}
 }
@@ -38,6 +40,7 @@ func TestPlaidModifyTransaction_Perform_Success(t *testing.T) {
 		Update(mock.Anything, a.TransactionID, &transaction.TransactionUpdate{
 			Amount:          a.Amount,
 			TransactionName: a.Name,
+			MerchantName:    a.MerchantName,
 			TransactionDate: a.Date,
 		}).
 		Return(nil)

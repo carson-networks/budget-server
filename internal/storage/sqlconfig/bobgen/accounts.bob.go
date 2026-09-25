@@ -56,6 +56,7 @@ type AccountsQuery = *psql.ViewQuery[*Account, AccountSlice]
 type accountR struct {
 	PlaidAccountLinks PlaidAccountLinkSlice // plaid_account_links.plaid_account_links_account_id_fkey
 	Sync              *Sync                 // syncs.syncs_account_id_fkey
+	Transactions      TransactionSlice      // transactions.fk_transactions_account_id
 	// Loaded reports whether each relationship has been loaded.
 	// A relationship's bool is set by Load*, Preload, ThenLoad, factory builds,
 	// and to-one Attach/Insert operations. To-many Attach/Insert operations leave it unchanged.
@@ -66,6 +67,7 @@ type accountR struct {
 type accountRLoaded struct {
 	PlaidAccountLinks bool // plaid_account_links.plaid_account_links_account_id_fkey
 	Sync              bool // syncs.syncs_account_id_fkey
+	Transactions      bool // transactions.fk_transactions_account_id
 }
 
 func buildAccountColumns(tableName string) accountColumns {
@@ -652,6 +654,29 @@ func (os AccountSlice) Sync(mods ...bob.Mod[*dialect.SelectQuery]) SyncsQuery {
 	)...)
 }
 
+// Transactions starts a query for related objects on transactions
+func (o *Account) Transactions(mods ...bob.Mod[*dialect.SelectQuery]) TransactionsQuery {
+	return Transactions.Query(append(mods,
+		sm.Where(Transactions.Columns.AccountID.EQ(psql.Arg(o.ID))),
+	)...)
+}
+
+func (os AccountSlice) Transactions(mods ...bob.Mod[*dialect.SelectQuery]) TransactionsQuery {
+	pkID := make(pgtypes.Array[uuid.UUID], 0, len(os))
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		pkID = append(pkID, o.ID)
+	}
+	PKArgExpr := psql.Any(psql.Cast(psql.Arg(pkID), "uuid[]"))
+
+	return Transactions.Query(append(mods,
+		sm.Where(Transactions.Columns.AccountID.EQ(PKArgExpr)),
+	)...)
+}
+
 func insertAccountPlaidAccountLinks0(ctx context.Context, exec bob.Executor, plaidAccountLinks1 []*PlaidAccountLinkSetter, account0 *Account) (PlaidAccountLinkSlice, error) {
 	for i := range plaidAccountLinks1 {
 		plaidAccountLinks1[i].AccountID = omit.From(account0.ID)
@@ -780,6 +805,76 @@ func (account0 *Account) AttachSync(ctx context.Context, exec bob.Executor, sync
 	return nil
 }
 
+func insertAccountTransactions0(ctx context.Context, exec bob.Executor, transactions1 []*TransactionSetter, account0 *Account) (TransactionSlice, error) {
+	for i := range transactions1 {
+		transactions1[i].AccountID = omit.From(account0.ID)
+	}
+
+	ret, err := Transactions.Insert(bob.ToMods(transactions1...)).All(ctx, exec)
+	if err != nil {
+		return ret, fmt.Errorf("insertAccountTransactions0: %w", err)
+	}
+
+	return ret, nil
+}
+
+func attachAccountTransactions0(ctx context.Context, exec bob.Executor, count int, transactions1 TransactionSlice, account0 *Account) (TransactionSlice, error) {
+	setter := &TransactionSetter{
+		AccountID: omit.From(account0.ID),
+	}
+
+	err := transactions1.UpdateAll(ctx, exec, *setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachAccountTransactions0: %w", err)
+	}
+
+	return transactions1, nil
+}
+
+func (account0 *Account) InsertTransactions(ctx context.Context, exec bob.Executor, related ...*TransactionSetter) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+
+	transactions1, err := insertAccountTransactions0(ctx, exec, related, account0)
+	if err != nil {
+		return err
+	}
+
+	account0.R.Transactions = append(account0.R.Transactions, transactions1...)
+
+	for _, rel := range transactions1 {
+		rel.R.Account = account0
+		rel.R.Loaded.Account = true
+	}
+	return nil
+}
+
+func (account0 *Account) AttachTransactions(ctx context.Context, exec bob.Executor, related ...*Transaction) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	transactions1 := TransactionSlice(related)
+
+	_, err = attachAccountTransactions0(ctx, exec, len(related), transactions1, account0)
+	if err != nil {
+		return err
+	}
+
+	account0.R.Transactions = append(account0.R.Transactions, transactions1...)
+
+	for _, rel := range related {
+		rel.R.Account = account0
+		rel.R.Loaded.Account = true
+	}
+
+	return nil
+}
+
 type accountWhere[Q psql.Filterable] struct {
 	cols            accountColumns
 	ID              psql.WhereMod[Q, uuid.UUID]
@@ -840,6 +935,20 @@ func (w accountWhereR[Q]) HasSync(filters ...bob.Mod[*dialect.SelectQuery]) mods
 		sm.Columns(psql.Raw("1")),
 		sm.From(Syncs.NameExpr()),
 		sm.Where(Syncs.Columns.AccountID.EQ(w.cols.ID)),
+	)
+	q.Apply(filters...)
+	return mods.Where[Q]{E: psql.Exists(q)}
+}
+
+// HasTransactions filters parents that have a matching Transactions using a
+// correlated EXISTS subquery (semi-join). Unlike an INNER JOIN it does not
+// multiply parent rows, so no DISTINCT is needed. The optional filters are
+// applied to the subquery (i.e. to Transactions).
+func (w accountWhereR[Q]) HasTransactions(filters ...bob.Mod[*dialect.SelectQuery]) mods.Where[Q] {
+	q := psql.Select(
+		sm.Columns(psql.Raw("1")),
+		sm.From(Transactions.NameExpr()),
+		sm.Where(Transactions.Columns.AccountID.EQ(w.cols.ID)),
 	)
 	q.Apply(filters...)
 	return mods.Where[Q]{E: psql.Exists(q)}
@@ -986,6 +1095,22 @@ func (o *Account) Preload(name string, retrieved any) error {
 			rel.R.Loaded.Account = true
 		}
 		return nil
+	case "Transactions":
+		rels, ok := retrieved.(TransactionSlice)
+		if !ok {
+			return fmt.Errorf("account cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.Transactions = rels
+		o.R.Loaded.Transactions = true
+
+		for _, rel := range rels {
+			if rel != nil {
+				rel.R.Account = o
+				rel.R.Loaded.Account = true
+			}
+		}
+		return nil
 	default:
 		return fmt.Errorf("account has no relationship %q", name)
 	}
@@ -1016,6 +1141,7 @@ func buildAccountPreloader() accountPreloader {
 type accountThenLoader[Q orm.Loadable] struct {
 	PlaidAccountLinks func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 	Sync              func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	Transactions      func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 }
 
 func buildAccountThenLoader[Q orm.Loadable]() accountThenLoader[Q] {
@@ -1024,6 +1150,9 @@ func buildAccountThenLoader[Q orm.Loadable]() accountThenLoader[Q] {
 	}
 	type SyncLoadInterface interface {
 		LoadSync(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
+	type TransactionsLoadInterface interface {
+		LoadTransactions(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
 	}
 
 	return accountThenLoader[Q]{
@@ -1037,6 +1166,12 @@ func buildAccountThenLoader[Q orm.Loadable]() accountThenLoader[Q] {
 			"Sync",
 			func(ctx context.Context, exec bob.Executor, retrieved SyncLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
 				return retrieved.LoadSync(ctx, exec, mods...)
+			},
+		),
+		Transactions: thenLoadBuilder[Q](
+			"Transactions",
+			func(ctx context.Context, exec bob.Executor, retrieved TransactionsLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadTransactions(ctx, exec, mods...)
 			},
 		),
 	}
@@ -1193,9 +1328,84 @@ func (os AccountSlice) LoadSync(ctx context.Context, exec bob.Executor, mods ...
 	return nil
 }
 
+// LoadTransactions loads the account's Transactions into the .R struct
+func (o *Account) LoadTransactions(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.Transactions = nil
+	o.R.Loaded.Transactions = false
+
+	related, err := o.Transactions(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, rel := range related {
+		rel.R.Account = o
+		rel.R.Loaded.Account = true
+	}
+
+	o.R.Transactions = related
+	o.R.Loaded.Transactions = true
+	return nil
+}
+
+// LoadTransactions loads the account's Transactions into the .R struct
+func (os AccountSlice) LoadTransactions(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	transactions, err := os.Transactions(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		o.R.Transactions = nil
+		o.R.Loaded.Transactions = true
+	}
+	// O(N+M) stitch via a map keyed by the join column (key -> []parent; was O(N*M)).
+	accountByKey := make(map[uuid.UUID][]*Account, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		accountByKey[o.ID] = append(accountByKey[o.ID], o)
+	}
+
+	for _, rel := range transactions {
+
+		owners, ok := accountByKey[rel.AccountID]
+		if !ok {
+			continue
+		}
+
+		for _, o := range owners {
+
+			rel.R.Account = o
+			rel.R.Loaded.Account = true
+
+			o.R.Transactions = append(o.R.Transactions, rel)
+
+		}
+	}
+
+	return nil
+}
+
 // accountC is where relationship counts are stored.
 type accountC struct {
 	PlaidAccountLinks *int64
+	Transactions      *int64
 }
 
 // PreloadCount sets a count in the C struct by name
@@ -1207,12 +1417,15 @@ func (o *Account) PreloadCount(name string, count int64) error {
 	switch name {
 	case "PlaidAccountLinks":
 		o.C.PlaidAccountLinks = &count
+	case "Transactions":
+		o.C.Transactions = &count
 	}
 	return nil
 }
 
 type accountCountPreloader struct {
 	PlaidAccountLinks func(...bob.Mod[*dialect.SelectQuery]) psql.Preloader
+	Transactions      func(...bob.Mod[*dialect.SelectQuery]) psql.Preloader
 }
 
 func buildAccountCountPreloader() accountCountPreloader {
@@ -1234,16 +1447,37 @@ func buildAccountCountPreloader() accountCountPreloader {
 				return psql.Group(psql.Select(subqueryMods...).Expression)
 			})
 		},
+		Transactions: func(mods ...bob.Mod[*dialect.SelectQuery]) psql.Preloader {
+			return countPreloader[*Account]("Transactions", func(parent string) bob.Expression {
+				// Build a correlated subquery: (SELECT COUNT(*) FROM related WHERE fk = parent.pk)
+				if parent == "" {
+					parent = Accounts.Alias()
+				}
+
+				subqueryMods := []bob.Mod[*dialect.SelectQuery]{
+					sm.Columns(psql.Raw("count(*)")),
+
+					sm.From(Transactions.NameAsExpr()),
+					sm.Where(psql.Quote(Transactions.Alias(), "account_id").EQ(psql.Quote(parent, "id"))),
+				}
+				subqueryMods = append(subqueryMods, mods...)
+				return psql.Group(psql.Select(subqueryMods...).Expression)
+			})
+		},
 	}
 }
 
 type accountCountThenLoader[Q orm.Loadable] struct {
 	PlaidAccountLinks func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	Transactions      func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 }
 
 func buildAccountCountThenLoader[Q orm.Loadable]() accountCountThenLoader[Q] {
 	type PlaidAccountLinksCountInterface interface {
 		LoadCountPlaidAccountLinks(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
+	type TransactionsCountInterface interface {
+		LoadCountTransactions(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
 	}
 
 	return accountCountThenLoader[Q]{
@@ -1251,6 +1485,12 @@ func buildAccountCountThenLoader[Q orm.Loadable]() accountCountThenLoader[Q] {
 			"PlaidAccountLinks",
 			func(ctx context.Context, exec bob.Executor, retrieved PlaidAccountLinksCountInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
 				return retrieved.LoadCountPlaidAccountLinks(ctx, exec, mods...)
+			},
+		),
+		Transactions: countThenLoadBuilder[Q](
+			"Transactions",
+			func(ctx context.Context, exec bob.Executor, retrieved TransactionsCountInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadCountTransactions(ctx, exec, mods...)
 			},
 		),
 	}
@@ -1335,10 +1575,90 @@ func (os AccountSlice) LoadCountPlaidAccountLinks(ctx context.Context, exec bob.
 	return nil
 }
 
+// LoadCountTransactions loads the count of Transactions into the C struct
+func (o *Account) LoadCountTransactions(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	count, err := o.Transactions(mods...).Count(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	o.C.Transactions = &count
+	return nil
+}
+
+// LoadCountTransactions loads the count of Transactions for a slice in a single batch query
+func (os AccountSlice) LoadCountTransactions(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	// Build the IN arg expression from parent PKs
+
+	pkID := make(pgtypes.Array[uuid.UUID], 0, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		pkID = append(pkID, o.ID)
+	}
+	PKArgExpr := psql.Any(psql.Cast(psql.Arg(pkID), "uuid[]"))
+
+	// countResult holds one scanned row from the batch count query.
+	// FK columns are aliased to the parent PK column names for direct map lookup.
+	type countResult struct {
+		ID    uuid.UUID
+		Count int64
+	}
+
+	batchMods := []bob.Mod[*dialect.SelectQuery]{
+		// SELECT fk AS parent_pk, count(*)
+		sm.Columns(
+			Transactions.Columns.AccountID.As("id"),
+			psql.Raw("count(*) as count"),
+		),
+		// Single-hop: FROM related table directly
+		sm.From(Transactions.NameAsExpr()),
+
+		// WHERE fk IN (parent PKs) — psql single-column FK uses `= ANY(array)` (see PKArgExpr above)
+		sm.Where(Transactions.Columns.AccountID.EQ(PKArgExpr)),
+		// GROUP BY fk columns
+		sm.GroupBy(Transactions.Columns.AccountID),
+	}
+	batchMods = append(batchMods, mods...)
+
+	results, err := bob.All(ctx, exec,
+		psql.Select(batchMods...),
+		scan.StructMapper[countResult](),
+	)
+	if err != nil {
+		return err
+	}
+
+	// Single-column FK: direct map lookup
+	countMap := make(map[uuid.UUID]int64, len(results))
+	for _, r := range results {
+		countMap[r.ID] = r.Count
+	}
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		count := countMap[o.ID]
+		o.C.Transactions = &count
+	}
+
+	return nil
+}
+
 type accountJoins[Q dialect.Joinable] struct {
 	typ               string
 	PlaidAccountLinks modAs[Q, plaidAccountLinkColumns]
 	Sync              modAs[Q, syncColumns]
+	Transactions      modAs[Q, transactionColumns]
 }
 
 func (j accountJoins[Q]) aliasedAs(alias string) accountJoins[Q] {
@@ -1369,6 +1689,20 @@ func buildAccountJoins[Q dialect.Joinable](cols accountColumns, typ string) acco
 
 				{
 					mods = append(mods, dialect.Join[Q](typ, Syncs.NameExpr().As(to.Alias())).On(
+						to.AccountID.EQ(cols.ID),
+					))
+				}
+
+				return mods
+			},
+		},
+		Transactions: modAs[Q, transactionColumns]{
+			c: Transactions.Columns,
+			f: func(to transactionColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, Transactions.NameExpr().As(to.Alias())).On(
 						to.AccountID.EQ(cols.ID),
 					))
 				}

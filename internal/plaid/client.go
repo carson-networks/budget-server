@@ -61,8 +61,31 @@ type SyncTransaction struct {
 	PlaidAccountID     string
 	Amount             float64 // Plaid convention: positive = debit (money leaving account)
 	Name               string
-	Date               string // "YYYY-MM-DD"
+	MerchantName       *string // nil when Plaid omits or nulls merchant_name
+	Date               string  // "YYYY-MM-DD"
 	Pending            bool
+}
+
+// merchantNameFromPlaid returns a copy of Plaid's merchant_name when set to a non-null value.
+func merchantNameFromPlaid(t plaidlib.Transaction) *string {
+	v, ok := t.GetMerchantNameOk()
+	if !ok || v == nil {
+		return nil
+	}
+	s := *v
+	return &s
+}
+
+func mapPlaidTransaction(t plaidlib.Transaction) SyncTransaction {
+	return SyncTransaction{
+		PlaidTransactionID: t.TransactionId,
+		PlaidAccountID:     t.AccountId,
+		Amount:             t.Amount,
+		Name:               t.Name,
+		MerchantName:       merchantNameFromPlaid(t),
+		Date:               t.Date,
+		Pending:            t.Pending,
+	}
 }
 
 type SyncResult struct {
@@ -92,25 +115,11 @@ func (c *Client) SyncTransactions(ctx context.Context, accessToken, cursor strin
 	}
 
 	for _, t := range resp.Added {
-		result.Added = append(result.Added, SyncTransaction{
-			PlaidTransactionID: t.TransactionId,
-			PlaidAccountID:     t.AccountId,
-			Amount:             t.Amount,
-			Name:               t.Name,
-			Date:               t.Date,
-			Pending:            t.Pending,
-		})
+		result.Added = append(result.Added, mapPlaidTransaction(t))
 	}
 
 	for _, t := range resp.Modified {
-		result.Modified = append(result.Modified, SyncTransaction{
-			PlaidTransactionID: t.TransactionId,
-			PlaidAccountID:     t.AccountId,
-			Amount:             t.Amount,
-			Name:               t.Name,
-			Date:               t.Date,
-			Pending:            t.Pending,
-		})
+		result.Modified = append(result.Modified, mapPlaidTransaction(t))
 	}
 
 	for _, r := range resp.Removed {

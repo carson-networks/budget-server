@@ -37,6 +37,7 @@ type Transaction struct {
 	TransactionName string              `db:"transaction_name" `
 	TransactionDate time.Time           `db:"transaction_date" `
 	CreatedAt       time.Time           `db:"created_at" `
+	MerchantName    null.Val[string]    `db:"merchant_name" `
 
 	R transactionR `db:"-" `
 
@@ -56,6 +57,7 @@ type TransactionsQuery = *psql.ViewQuery[*Transaction, TransactionSlice]
 // transactionR is where relationships are stored.
 type transactionR struct {
 	PlaidTransactionLinks PlaidTransactionLinkSlice // plaid_transaction_links.plaid_transaction_links_transaction_id_fkey
+	Account               *Account                  // transactions.fk_transactions_account_id
 	Category              *Category                 // transactions.fk_transactions_category_id
 	// Loaded reports whether each relationship has been loaded.
 	// A relationship's bool is set by Load*, Preload, ThenLoad, factory builds,
@@ -66,12 +68,13 @@ type transactionR struct {
 // transactionRLoaded tracks which relationships on Transaction have been loaded.
 type transactionRLoaded struct {
 	PlaidTransactionLinks bool // plaid_transaction_links.plaid_transaction_links_transaction_id_fkey
+	Account               bool // transactions.fk_transactions_account_id
 	Category              bool // transactions.fk_transactions_category_id
 }
 
 func buildTransactionColumns(tableName string) transactionColumns {
 	columnsExpr := expr.NewColumnsExpr(
-		"id", "account_id", "category_id", "amount", "transaction_name", "transaction_date", "created_at",
+		"id", "account_id", "category_id", "amount", "transaction_name", "transaction_date", "created_at", "merchant_name",
 	)
 
 	if tableName != "" {
@@ -88,6 +91,7 @@ func buildTransactionColumns(tableName string) transactionColumns {
 		TransactionName: buildTransactionColumn(tableName, "transaction_name"),
 		TransactionDate: buildTransactionColumn(tableName, "transaction_date"),
 		CreatedAt:       buildTransactionColumn(tableName, "created_at"),
+		MerchantName:    buildTransactionColumn(tableName, "merchant_name"),
 	}
 }
 
@@ -101,6 +105,7 @@ type transactionColumns struct {
 	TransactionName transactionColumn
 	TransactionDate transactionColumn
 	CreatedAt       transactionColumn
+	MerchantName    transactionColumn
 }
 
 // Alias returns the current table alias for the columns set.
@@ -153,10 +158,11 @@ type TransactionSetter struct {
 	TransactionName omit.Val[string]          `db:"transaction_name" `
 	TransactionDate omit.Val[time.Time]       `db:"transaction_date" `
 	CreatedAt       omit.Val[time.Time]       `db:"created_at" `
+	MerchantName    omitnull.Val[string]      `db:"merchant_name" `
 }
 
 func (s TransactionSetter) SetColumns() []string {
-	vals := make([]string, 0, 7)
+	vals := make([]string, 0, 8)
 	if s.ID.IsValue() {
 		vals = append(vals, "id")
 	}
@@ -177,6 +183,9 @@ func (s TransactionSetter) SetColumns() []string {
 	}
 	if s.CreatedAt.IsValue() {
 		vals = append(vals, "created_at")
+	}
+	if s.MerchantName.IsValue() || s.MerchantName.IsNull() {
+		vals = append(vals, "merchant_name")
 	}
 	return vals
 }
@@ -202,6 +211,9 @@ func (s TransactionSetter) Overwrite(t *Transaction) {
 	}
 	if s.CreatedAt.IsValue() {
 		t.CreatedAt = s.CreatedAt.MustGet()
+	}
+	if s.MerchantName.IsValue() || s.MerchantName.IsNull() {
+		t.MerchantName = s.MerchantName.MustGetNull()
 	}
 }
 
@@ -246,6 +258,11 @@ func (s *TransactionSetter) Apply(q *dialect.InsertQuery) {
 				return psql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
 			}
 			return psql.Arg(s.CreatedAt.MustGet()).WriteSQL(ctx, w, d, start)
+		}), bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
+			if s.MerchantName.IsUnset() {
+				return psql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
+			}
+			return psql.Arg(s.MerchantName.MustGetNull()).WriteSQL(ctx, w, d, start)
 		}))
 }
 
@@ -254,7 +271,7 @@ func (s TransactionSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s TransactionSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 7)
+	exprs := make([]bob.Expression, 0, 8)
 
 	if s.ID.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -305,6 +322,13 @@ func (s TransactionSetter) Expressions(prefix ...string) []bob.Expression {
 		}})
 	}
 
+	if s.MerchantName.IsValue() || s.MerchantName.IsNull() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "merchant_name")...),
+			psql.Arg(s.MerchantName),
+		}})
+	}
+
 	return exprs
 }
 
@@ -315,7 +339,7 @@ func transactionScanMapper(ctx context.Context, cols []string) (scan.BeforeFunc,
 		idx int
 		dst func(o *Transaction) any
 	}
-	targets := make([]target, 0, 7)
+	targets := make([]target, 0, 8)
 	for i, col := range cols {
 		switch col {
 		case "id":
@@ -332,6 +356,8 @@ func transactionScanMapper(ctx context.Context, cols []string) (scan.BeforeFunc,
 			targets = append(targets, target{i, func(o *Transaction) any { return &o.TransactionDate }})
 		case "created_at":
 			targets = append(targets, target{i, func(o *Transaction) any { return &o.CreatedAt }})
+		case "merchant_name":
+			targets = append(targets, target{i, func(o *Transaction) any { return &o.MerchantName }})
 		}
 	}
 
@@ -630,6 +656,36 @@ func (os TransactionSlice) PlaidTransactionLinks(mods ...bob.Mod[*dialect.Select
 	)...)
 }
 
+// Account starts a query for related objects on accounts
+func (o *Transaction) Account(mods ...bob.Mod[*dialect.SelectQuery]) AccountsQuery {
+	return Accounts.Query(append(mods,
+		sm.Where(Accounts.Columns.ID.EQ(psql.Arg(o.AccountID))),
+	)...)
+}
+
+func (os TransactionSlice) Account(mods ...bob.Mod[*dialect.SelectQuery]) AccountsQuery {
+	pkAccountID := make(pgtypes.Array[uuid.UUID], 0, len(os))
+
+	// the array is only a filter (semi-join), so duplicate keys can be
+	// dropped before they are sent over the wire
+	seenAccountID := make(map[uuid.UUID]struct{}, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+		if _, ok := seenAccountID[o.AccountID]; ok {
+			continue
+		}
+		seenAccountID[o.AccountID] = struct{}{}
+		pkAccountID = append(pkAccountID, o.AccountID)
+	}
+	PKArgExpr := psql.Any(psql.Cast(psql.Arg(pkAccountID), "uuid[]"))
+
+	return Accounts.Query(append(mods,
+		sm.Where(Accounts.Columns.ID.EQ(PKArgExpr)),
+	)...)
+}
+
 // Category starts a query for related objects on categories
 func (o *Transaction) Category(mods ...bob.Mod[*dialect.SelectQuery]) CategoriesQuery {
 	return Categories.Query(append(mods,
@@ -730,6 +786,56 @@ func (transaction0 *Transaction) AttachPlaidTransactionLinks(ctx context.Context
 	return nil
 }
 
+func attachTransactionAccount0(ctx context.Context, exec bob.Executor, count int, transaction0 *Transaction, account1 *Account) (*Transaction, error) {
+	setter := &TransactionSetter{
+		AccountID: omit.From(account1.ID),
+	}
+
+	err := transaction0.Update(ctx, exec, setter)
+	if err != nil {
+		return nil, fmt.Errorf("attachTransactionAccount0: %w", err)
+	}
+
+	return transaction0, nil
+}
+
+func (transaction0 *Transaction) InsertAccount(ctx context.Context, exec bob.Executor, related *AccountSetter) error {
+	var err error
+
+	account1, err := Accounts.Insert(related).One(ctx, exec)
+	if err != nil {
+		return fmt.Errorf("inserting related objects: %w", err)
+	}
+
+	_, err = attachTransactionAccount0(ctx, exec, 1, transaction0, account1)
+	if err != nil {
+		return err
+	}
+
+	transaction0.R.Account = account1
+	transaction0.R.Loaded.Account = true
+
+	account1.R.Transactions = append(account1.R.Transactions, transaction0)
+
+	return nil
+}
+
+func (transaction0 *Transaction) AttachAccount(ctx context.Context, exec bob.Executor, account1 *Account) error {
+	var err error
+
+	_, err = attachTransactionAccount0(ctx, exec, 1, transaction0, account1)
+	if err != nil {
+		return err
+	}
+
+	transaction0.R.Account = account1
+	transaction0.R.Loaded.Account = true
+
+	account1.R.Transactions = append(account1.R.Transactions, transaction0)
+
+	return nil
+}
+
 func attachTransactionCategory0(ctx context.Context, exec bob.Executor, count int, transaction0 *Transaction, category1 *Category) (*Transaction, error) {
 	setter := &TransactionSetter{
 		CategoryID: omitnull.From(category1.ID),
@@ -789,6 +895,7 @@ type transactionWhere[Q psql.Filterable] struct {
 	TransactionName psql.WhereMod[Q, string]
 	TransactionDate psql.WhereMod[Q, time.Time]
 	CreatedAt       psql.WhereMod[Q, time.Time]
+	MerchantName    psql.WhereNullMod[Q, string]
 	R               transactionWhereR[Q]
 }
 
@@ -806,6 +913,7 @@ func buildTransactionWhere[Q psql.Filterable](cols transactionColumns) transacti
 		TransactionName: psql.Where[Q, string](cols.TransactionName.Expression),
 		TransactionDate: psql.Where[Q, time.Time](cols.TransactionDate.Expression),
 		CreatedAt:       psql.Where[Q, time.Time](cols.CreatedAt.Expression),
+		MerchantName:    psql.WhereNull[Q, string](cols.MerchantName.Expression),
 		R:               transactionWhereR[Q]{cols: cols},
 	}
 }
@@ -826,6 +934,20 @@ func (w transactionWhereR[Q]) HasPlaidTransactionLinks(filters ...bob.Mod[*diale
 		sm.Columns(psql.Raw("1")),
 		sm.From(PlaidTransactionLinks.NameExpr()),
 		sm.Where(PlaidTransactionLinks.Columns.TransactionID.EQ(w.cols.ID)),
+	)
+	q.Apply(filters...)
+	return mods.Where[Q]{E: psql.Exists(q)}
+}
+
+// HasAccount filters parents that have a matching Account using a
+// correlated EXISTS subquery (semi-join). Unlike an INNER JOIN it does not
+// multiply parent rows, so no DISTINCT is needed. The optional filters are
+// applied to the subquery (i.e. to Accounts).
+func (w transactionWhereR[Q]) HasAccount(filters ...bob.Mod[*dialect.SelectQuery]) mods.Where[Q] {
+	q := psql.Select(
+		sm.Columns(psql.Raw("1")),
+		sm.From(Accounts.NameExpr()),
+		sm.Where(Accounts.Columns.ID.EQ(w.cols.AccountID)),
 	)
 	q.Apply(filters...)
 	return mods.Where[Q]{E: psql.Exists(q)}
@@ -856,6 +978,7 @@ type transactionPreloadBuf struct {
 	TransactionName null.Val[string]
 	TransactionDate null.Val[time.Time]
 	CreatedAt       null.Val[time.Time]
+	MerchantName    null.Val[string]
 }
 
 // transactionScanMapperNullable maps the preloaded transaction
@@ -870,7 +993,7 @@ func transactionScanMapperNullable(prefix string) scan.Mapper[*Transaction] {
 			idx int
 			dst func(b *transactionPreloadBuf) any
 		}
-		targets := make([]target, 0, 7)
+		targets := make([]target, 0, 8)
 		for i, col := range cols {
 			name, ok := strings.CutPrefix(col, prefix)
 			if !ok {
@@ -891,6 +1014,8 @@ func transactionScanMapperNullable(prefix string) scan.Mapper[*Transaction] {
 				targets = append(targets, target{i, func(b *transactionPreloadBuf) any { return &b.TransactionDate }})
 			case "created_at":
 				targets = append(targets, target{i, func(b *transactionPreloadBuf) any { return &b.CreatedAt }})
+			case "merchant_name":
+				targets = append(targets, target{i, func(b *transactionPreloadBuf) any { return &b.MerchantName }})
 			}
 		}
 
@@ -919,7 +1044,8 @@ func transactionScanMapperNullable(prefix string) scan.Mapper[*Transaction] {
 					!(buf.Amount.IsValue()) &&
 					!(buf.TransactionName.IsValue()) &&
 					!(buf.TransactionDate.IsValue()) &&
-					!(buf.CreatedAt.IsValue()) {
+					!(buf.CreatedAt.IsValue()) &&
+					!(buf.MerchantName.IsValue()) {
 					return nil, nil
 				}
 
@@ -943,6 +1069,7 @@ func transactionScanMapperNullable(prefix string) scan.Mapper[*Transaction] {
 				if buf.CreatedAt.IsValue() {
 					o.CreatedAt = buf.CreatedAt.MustGet()
 				}
+				o.MerchantName = buf.MerchantName
 				return o, nil
 			}
 	}
@@ -970,6 +1097,19 @@ func (o *Transaction) Preload(name string, retrieved any) error {
 			}
 		}
 		return nil
+	case "Account":
+		rel, ok := retrieved.(*Account)
+		if !ok {
+			return fmt.Errorf("transaction cannot load %T as %q", retrieved, name)
+		}
+
+		o.R.Account = rel
+		o.R.Loaded.Account = true
+
+		if rel != nil {
+			rel.R.Transactions = TransactionSlice{o}
+		}
+		return nil
 	case "Category":
 		rel, ok := retrieved.(*Category)
 		if !ok {
@@ -989,11 +1129,25 @@ func (o *Transaction) Preload(name string, retrieved any) error {
 }
 
 type transactionPreloader struct {
+	Account  func(...psql.PreloadOption) psql.Preloader
 	Category func(...psql.PreloadOption) psql.Preloader
 }
 
 func buildTransactionPreloader() transactionPreloader {
 	return transactionPreloader{
+		Account: func(opts ...psql.PreloadOption) psql.Preloader {
+			return psql.Preload[*Account, AccountSlice](psql.PreloadRel{
+				Name: "Account",
+				Sides: []psql.PreloadSide{
+					{
+						From:        Transactions,
+						To:          Accounts,
+						FromColumns: []string{"account_id"},
+						ToColumns:   []string{"id"},
+					},
+				},
+			}, Accounts.Columns.Names(), accountScanMapperNullable, opts...)
+		},
 		Category: func(opts ...psql.PreloadOption) psql.Preloader {
 			return psql.Preload[*Category, CategorySlice](psql.PreloadRel{
 				Name: "Category",
@@ -1012,12 +1166,16 @@ func buildTransactionPreloader() transactionPreloader {
 
 type transactionThenLoader[Q orm.Loadable] struct {
 	PlaidTransactionLinks func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
+	Account               func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 	Category              func(...bob.Mod[*dialect.SelectQuery]) orm.Loader[Q]
 }
 
 func buildTransactionThenLoader[Q orm.Loadable]() transactionThenLoader[Q] {
 	type PlaidTransactionLinksLoadInterface interface {
 		LoadPlaidTransactionLinks(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
+	}
+	type AccountLoadInterface interface {
+		LoadAccount(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
 	}
 	type CategoryLoadInterface interface {
 		LoadCategory(context.Context, bob.Executor, ...bob.Mod[*dialect.SelectQuery]) error
@@ -1028,6 +1186,12 @@ func buildTransactionThenLoader[Q orm.Loadable]() transactionThenLoader[Q] {
 			"PlaidTransactionLinks",
 			func(ctx context.Context, exec bob.Executor, retrieved PlaidTransactionLinksLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
 				return retrieved.LoadPlaidTransactionLinks(ctx, exec, mods...)
+			},
+		),
+		Account: thenLoadBuilder[Q](
+			"Account",
+			func(ctx context.Context, exec bob.Executor, retrieved AccountLoadInterface, mods ...bob.Mod[*dialect.SelectQuery]) error {
+				return retrieved.LoadAccount(ctx, exec, mods...)
 			},
 		),
 		Category: thenLoadBuilder[Q](
@@ -1106,6 +1270,81 @@ func (os TransactionSlice) LoadPlaidTransactionLinks(ctx context.Context, exec b
 			rel.R.Loaded.Transaction = true
 
 			o.R.PlaidTransactionLinks = append(o.R.PlaidTransactionLinks, rel)
+
+		}
+	}
+
+	return nil
+}
+
+// LoadAccount loads the transaction's Account into the .R struct
+func (o *Transaction) LoadAccount(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if o == nil {
+		return nil
+	}
+
+	// Reset the relationship
+	o.R.Account = nil
+	o.R.Loaded.Account = false
+
+	related, err := o.Account(mods...).One(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	related.R.Transactions = TransactionSlice{o}
+
+	o.R.Account = related
+	o.R.Loaded.Account = true
+	return nil
+}
+
+// LoadAccount loads the transaction's Account into the .R struct
+func (os TransactionSlice) LoadAccount(ctx context.Context, exec bob.Executor, mods ...bob.Mod[*dialect.SelectQuery]) error {
+	if len(os) == 0 {
+		return nil
+	}
+
+	accounts, err := os.Account(mods...).All(ctx, exec)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		o.R.Account = nil
+		o.R.Loaded.Account = true
+	}
+	// O(N+M) stitch via a map keyed by the join column (key -> []parent; was O(N*M)).
+	transactionByKey := make(map[uuid.UUID][]*Transaction, len(os))
+	for _, o := range os {
+		if o == nil {
+			continue
+		}
+
+		transactionByKey[o.AccountID] = append(transactionByKey[o.AccountID], o)
+	}
+
+	for _, rel := range accounts {
+
+		owners, ok := transactionByKey[rel.ID]
+		if !ok {
+			continue
+		}
+
+		for _, o := range owners {
+
+			// to-one: keep only the first matching child (matches the previous break)
+			if o.R.Account != nil {
+				continue
+			}
+
+			rel.R.Transactions = append(rel.R.Transactions, o)
+
+			o.R.Account = rel
 
 		}
 	}
@@ -1338,6 +1577,7 @@ func (os TransactionSlice) LoadCountPlaidTransactionLinks(ctx context.Context, e
 type transactionJoins[Q dialect.Joinable] struct {
 	typ                   string
 	PlaidTransactionLinks modAs[Q, plaidTransactionLinkColumns]
+	Account               modAs[Q, accountColumns]
 	Category              modAs[Q, categoryColumns]
 }
 
@@ -1356,6 +1596,20 @@ func buildTransactionJoins[Q dialect.Joinable](cols transactionColumns, typ stri
 				{
 					mods = append(mods, dialect.Join[Q](typ, PlaidTransactionLinks.NameExpr().As(to.Alias())).On(
 						to.TransactionID.EQ(cols.ID),
+					))
+				}
+
+				return mods
+			},
+		},
+		Account: modAs[Q, accountColumns]{
+			c: Accounts.Columns,
+			f: func(to accountColumns) bob.Mod[Q] {
+				mods := make(mods.QueryMods[Q], 0, 1)
+
+				{
+					mods = append(mods, dialect.Join[Q](typ, Accounts.NameExpr().As(to.Alias())).On(
+						to.ID.EQ(cols.AccountID),
 					))
 				}
 

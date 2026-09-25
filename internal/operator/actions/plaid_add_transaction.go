@@ -20,6 +20,7 @@ type PlaidAddTransaction struct {
 	PlaidAccountID     string
 	Amount             decimal.Decimal
 	Name               string
+	MerchantName       *string
 	Date               time.Time
 }
 
@@ -30,6 +31,7 @@ func (a *PlaidAddTransaction) Perform(ctx context.Context, writer *storage.Write
 		CategoryID:      nil,
 		Amount:          a.Amount,
 		TransactionName: a.Name,
+		MerchantName:    a.MerchantName,
 		TransactionDate: a.Date,
 	})
 	if err != nil {

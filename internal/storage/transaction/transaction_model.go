@@ -14,12 +14,17 @@ func bobTransactionToTransaction(row *bobgen.Transaction) *Transaction {
 	if v, ok := row.CategoryID.Get(); ok {
 		catID = &v
 	}
+	var merchantName *string
+	if v, ok := row.MerchantName.Get(); ok {
+		merchantName = &v
+	}
 	return &Transaction{
 		ID:              row.ID,
 		AccountID:       row.AccountID,
 		CategoryID:      catID,
 		Amount:          row.Amount,
 		TransactionName: row.TransactionName,
+		MerchantName:    merchantName,
 		TransactionDate: row.TransactionDate,
 		CreatedAt:       row.CreatedAt,
 	}
@@ -32,6 +37,7 @@ type Transaction struct {
 	CategoryID      *uuid.UUID // nil when uncategorized
 	Amount          decimal.Decimal
 	TransactionName string
+	MerchantName    *string // nil when unknown / not provided by Plaid
 	TransactionDate time.Time
 	CreatedAt       time.Time
 }
@@ -43,6 +49,7 @@ type TransactionCreate struct {
 	CategoryID      *uuid.UUID // nil inserts NULL
 	Amount          decimal.Decimal
 	TransactionName string
+	MerchantName    *string   // nil inserts NULL
 	TransactionDate time.Time // defaults to now if zero
 }
 
@@ -51,6 +58,7 @@ type TransactionCreate struct {
 type TransactionUpdate struct {
 	Amount          decimal.Decimal
 	TransactionName string
+	MerchantName    *string // nil clears merchant_name
 	TransactionDate time.Time
 }
 

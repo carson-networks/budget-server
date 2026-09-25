@@ -173,6 +173,7 @@ func (p *PlaidProvider) buildAddAction(t plaidclient.SyncTransaction, accountID 
 		PlaidAccountID:     t.PlaidAccountID,
 		Amount:             amount,
 		Name:               t.Name,
+		MerchantName:       t.MerchantName,
 		Date:               date,
 	}, nil
 }
@@ -201,6 +202,7 @@ func (p *PlaidProvider) buildModifyAction(ctx context.Context, reader *storage.R
 		AccountID:     accountID,
 		Amount:        amount,
 		Name:          t.Name,
+		MerchantName:  t.MerchantName,
 		Date:          date,
 	}, nil
 }

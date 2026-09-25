@@ -18,13 +18,15 @@ import (
 )
 
 func validPlaidAddTransaction() *PlaidAddTransaction {
+	merchant := "Coffee Shop"
 	return &PlaidAddTransaction{
 		TransactionID:      uuid.Must(uuid.NewV4()),
 		AccountID:          uuid.Must(uuid.NewV4()),
 		PlaidTransactionID: "plaid-txn-1",
 		PlaidAccountID:     "plaid-acc-1",
 		Amount:             decimal.NewFromFloat(-42.00),
-		Name:               "Coffee Shop",
+		Name:               "COFFEE SHOP DOWNTOWN",
+		MerchantName:       &merchant,
 		Date:               time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC),
 	}
 }
@@ -39,6 +41,7 @@ func TestPlaidAddTransaction_Perform_Success(t *testing.T) {
 			AccountID:       a.AccountID,
 			Amount:          a.Amount,
 			TransactionName: a.Name,
+			MerchantName:    a.MerchantName,
 			TransactionDate: a.Date,
 		}).
 		Return(a.TransactionID, nil)

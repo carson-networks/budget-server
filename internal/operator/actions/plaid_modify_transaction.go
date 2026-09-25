@@ -17,6 +17,7 @@ type PlaidModifyTransaction struct {
 	AccountID     uuid.UUID
 	Amount        decimal.Decimal
 	Name          string
+	MerchantName  *string
 	Date          time.Time
 }
 
@@ -32,6 +33,7 @@ func (a *PlaidModifyTransaction) Perform(ctx context.Context, writer *storage.Wr
 	if err := writer.Transaction.Update(ctx, a.TransactionID, &transaction.TransactionUpdate{
 		Amount:          a.Amount,
 		TransactionName: a.Name,
+		MerchantName:    a.MerchantName,
 		TransactionDate: a.Date,
 	}); err != nil {
 		return fmt.Errorf("updating transaction: %w", err)
