@@ -97,3 +97,36 @@ func TestPlaidAddTransaction_Perform_CreateTransactionLinkError(t *testing.T) {
 
 	assert.ErrorIs(t, a.Perform(context.Background(), wt), linkErr)
 }
+
+func TestPlaidAddTransaction_Perform_NilMerchantName(t *testing.T) {
+	a := validPlaidAddTransaction()
+	a.MerchantName = nil
+
+	mockTxn := &storage.MockITransactionWriter{}
+	mockTxn.EXPECT().
+		Insert(mock.Anything, &transaction.TransactionCreate{
+			ID:              &a.TransactionID,
+			AccountID:       a.AccountID,
+			Amount:          a.Amount,
+			TransactionName: a.Name,
+			MerchantName:    nil,
+			TransactionDate: a.Date,
+		}).
+		Return(a.TransactionID, nil)
+
+	mockPlaid := &storage.MockIPlaidWriter{}
+	mockPlaid.EXPECT().
+		CreateTransactionLink(mock.Anything, &plaidstore.TransactionLink{
+			PlaidTransactionID: a.PlaidTransactionID,
+			TransactionID:      a.TransactionID,
+			PlaidAccountID:     a.PlaidAccountID,
+		}).
+		Return(nil)
+
+	wt := storage.NewWriterForTest()
+	wt.Transaction = mockTxn
+	wt.Plaid = mockPlaid
+
+	require.NoError(t, a.Perform(context.Background(), wt))
+	mockTxn.AssertExpectations(t)
+}
