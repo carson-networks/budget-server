@@ -31,49 +31,35 @@ func (r *Reader) FindByID(ctx context.Context, id uuid.UUID) (*Transaction, erro
 	return bobTransactionToTransaction(row), nil
 }
 
-func (r *Reader) List(ctx context.Context, filter *TransactionFilter) (*TransactionListResult, error) {
-	limit := 20
-	offset := 0
-	var maxCreationTime *time.Time
-	if filter != nil {
-		if filter.Limit > 0 {
-			limit = filter.Limit
-		}
-		offset = filter.Offset
-		maxCreationTime = filter.MaxCreationTime
+func listWhereMods(filter *TransactionFilter) []bob.Mod[*dialect.SelectQuery] {
+	if filter == nil {
+		return nil
 	}
+	var whereMods []mods.Where[*dialect.SelectQuery]
+	if filter.AccountID != nil {
+		whereMods = append(whereMods, bobgen.SelectWhere.Transactions.AccountID.EQ(*filter.AccountID))
+	}
+	if filter.CategoryID != nil {
+		whereMods = append(whereMods, bobgen.SelectWhere.Transactions.CategoryID.EQ(*filter.CategoryID))
+	}
+	if filter.MaxCreationTime != nil {
+		whereMods = append(whereMods, bobgen.SelectWhere.Transactions.CreatedAt.LTE(*filter.MaxCreationTime))
+	}
+	switch len(whereMods) {
+	case 0:
+		return nil
+	case 1:
+		return []bob.Mod[*dialect.SelectQuery]{whereMods[0]}
+	default:
+		return []bob.Mod[*dialect.SelectQuery]{psql.WhereAnd(whereMods...)}
+	}
+}
 
-	var queryMods []bob.Mod[*dialect.SelectQuery]
-	if filter != nil {
-		var whereMods []mods.Where[*dialect.SelectQuery]
-		if filter.AccountID != nil {
-			whereMods = append(whereMods, bobgen.SelectWhere.Transactions.AccountID.EQ(*filter.AccountID))
-		}
-		if filter.CategoryID != nil {
-			whereMods = append(whereMods, bobgen.SelectWhere.Transactions.CategoryID.EQ(*filter.CategoryID))
-		}
-		if filter.MaxCreationTime != nil {
-			whereMods = append(whereMods, bobgen.SelectWhere.Transactions.CreatedAt.LTE(*filter.MaxCreationTime))
-		}
-		if len(whereMods) == 1 {
-			queryMods = append(queryMods, whereMods[0])
-		} else if len(whereMods) > 1 {
-			queryMods = append(queryMods, psql.WhereAnd(whereMods...))
-		}
-	}
-	queryMods = append(queryMods,
-		sm.Limit(limit+1),
-		sm.Offset(offset),
-		sm.OrderBy(bobgen.Transactions.Columns.CreatedAt).Desc(),
-		sm.OrderBy(bobgen.Transactions.Columns.ID).Desc(),
-	)
-	rows, err := bobgen.Transactions.Query(queryMods...).All(ctx, r.exec)
-	if err != nil {
-		return nil, err
-	}
-
+// pageListResult builds a paginated list result from a limit+1 probe page and total count.
+// rows may contain up to limit+1 items; the extra row (if present) only signals a next page.
+func pageListResult(rows []*Transaction, limit, offset int, maxCreationTime *time.Time, totalCount int) *TransactionListResult {
 	if len(rows) == 0 {
-		return &TransactionListResult{Transactions: nil, NextCursor: nil}, nil
+		return &TransactionListResult{Transactions: nil, NextCursor: nil, TotalCount: totalCount}
 	}
 
 	var nextCursor *TransactionCursor
@@ -90,11 +76,48 @@ func (r *Reader) List(ctx context.Context, filter *TransactionFilter) (*Transact
 		}
 	}
 
+	return &TransactionListResult{
+		Transactions: rows,
+		NextCursor:   nextCursor,
+		TotalCount:   totalCount,
+	}
+}
+
+func (r *Reader) List(ctx context.Context, filter *TransactionFilter) (*TransactionListResult, error) {
+	limit := 20
+	offset := 0
+	var maxCreationTime *time.Time
+	if filter != nil {
+		if filter.Limit > 0 {
+			limit = filter.Limit
+		}
+		offset = filter.Offset
+		maxCreationTime = filter.MaxCreationTime
+	}
+
+	whereMods := listWhereMods(filter)
+
+	totalCount, err := bobgen.Transactions.Query(whereMods...).Count(ctx, r.exec)
+	if err != nil {
+		return nil, err
+	}
+
+	queryMods := append(append([]bob.Mod[*dialect.SelectQuery]{}, whereMods...),
+		sm.Limit(limit+1),
+		sm.Offset(offset),
+		sm.OrderBy(bobgen.Transactions.Columns.CreatedAt).Desc(),
+		sm.OrderBy(bobgen.Transactions.Columns.ID).Desc(),
+	)
+	rows, err := bobgen.Transactions.Query(queryMods...).All(ctx, r.exec)
+	if err != nil {
+		return nil, err
+	}
+
 	result := make([]*Transaction, len(rows))
 	for i, row := range rows {
 		result[i] = bobTransactionToTransaction(row)
 	}
-	return &TransactionListResult{Transactions: result, NextCursor: nextCursor}, nil
+	return pageListResult(result, limit, offset, maxCreationTime, int(totalCount)), nil
 }
 
 func firstOfMonth(year, month int) time.Time {

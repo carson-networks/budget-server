@@ -79,10 +79,12 @@ type TransactionCursor struct {
 	MaxCreationTime time.Time
 }
 
-// TransactionListResult contains a page of transactions and an optional next cursor.
+// TransactionListResult contains a page of transactions, an optional next cursor,
+// and the total number of rows matching the list filter (for numbered pagination).
 type TransactionListResult struct {
 	Transactions []*Transaction
 	NextCursor   *TransactionCursor
+	TotalCount   int
 }
 
 // CategoryTotal is the sum of transaction amounts for one category within a calendar month.

@@ -228,9 +228,11 @@ func (x *ListTransactionsRequest) GetCursor() *ListTransactionsCursor {
 }
 
 type ListTransactionsResponse struct {
-	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Transactions  []*Transaction          `protobuf:"bytes,1,rep,name=transactions,proto3" json:"transactions,omitempty"`
-	NextCursor    *ListTransactionsCursor `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3,oneof" json:"next_cursor,omitempty"`
+	state        protoimpl.MessageState  `protogen:"open.v1"`
+	Transactions []*Transaction          `protobuf:"bytes,1,rep,name=transactions,proto3" json:"transactions,omitempty"`
+	NextCursor   *ListTransactionsCursor `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3,oneof" json:"next_cursor,omitempty"`
+	// Total matching rows for the same filter as this page (for numbered pagination).
+	TotalCount    int32 `protobuf:"varint,3,opt,name=total_count,json=totalCount,proto3" json:"total_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -277,6 +279,13 @@ func (x *ListTransactionsResponse) GetNextCursor() *ListTransactionsCursor {
 		return x.NextCursor
 	}
 	return nil
+}
+
+func (x *ListTransactionsResponse) GetTotalCount() int32 {
+	if x != nil {
+		return x.TotalCount
+	}
+	return 0
 }
 
 type GetTransactionTotalsRequest struct {
@@ -648,11 +657,13 @@ const file_transaction_v1_transaction_proto_rawDesc = "" +
 	"\x11max_creation_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x0fmaxCreationTime\"i\n" +
 	"\x17ListTransactionsRequest\x12C\n" +
 	"\x06cursor\x18\x01 \x01(\v2&.transaction.v1.ListTransactionsCursorH\x00R\x06cursor\x88\x01\x01B\t\n" +
-	"\a_cursor\"\xb9\x01\n" +
+	"\a_cursor\"\xda\x01\n" +
 	"\x18ListTransactionsResponse\x12?\n" +
 	"\ftransactions\x18\x01 \x03(\v2\x1b.transaction.v1.TransactionR\ftransactions\x12L\n" +
 	"\vnext_cursor\x18\x02 \x01(\v2&.transaction.v1.ListTransactionsCursorH\x00R\n" +
-	"nextCursor\x88\x01\x01B\x0e\n" +
+	"nextCursor\x88\x01\x01\x12\x1f\n" +
+	"\vtotal_count\x18\x03 \x01(\x05R\n" +
+	"totalCountB\x0e\n" +
 	"\f_next_cursor\"\x95\x01\n" +
 	"\x1bGetTransactionTotalsRequest\x12\x1f\n" +
 	"\vstart_month\x18\x01 \x01(\x05R\n" +

@@ -30,6 +30,8 @@ message ListTransactionsRequest {
 message ListTransactionsResponse {
   repeated Transaction transactions = 1;
   optional ListTransactionsCursor next_cursor = 2;
+  // Total matching rows for the same filter as this page (for numbered pagination).
+  int32 total_count = 3;
 }
 
 message GetTransactionTotalsRequest {
