@@ -231,7 +231,6 @@ type ListTransactionsResponse struct {
 	state        protoimpl.MessageState  `protogen:"open.v1"`
 	Transactions []*Transaction          `protobuf:"bytes,1,rep,name=transactions,proto3" json:"transactions,omitempty"`
 	NextCursor   *ListTransactionsCursor `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3,oneof" json:"next_cursor,omitempty"`
-	// Total matching rows for the same filter as this page (for numbered pagination).
 	TotalCount    int32 `protobuf:"varint,3,opt,name=total_count,json=totalCount,proto3" json:"total_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
