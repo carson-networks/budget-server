@@ -60,8 +60,14 @@ func (s *Service) ListTransactions(ctx context.Context, req *connect.Request[tra
 		logData.AddData("transactionCount", len(transactions))
 	}
 
+	out := listTransactionsResponse(result, transactions)
+	return connect.NewResponse(out), nil
+}
+
+func listTransactionsResponse(result *storagetransaction.TransactionListResult, transactions []*storagetransaction.Transaction) *transaction.ListTransactionsResponse {
 	out := &transaction.ListTransactionsResponse{
 		Transactions: make([]*transaction.Transaction, len(transactions)),
+		TotalCount:   int32(result.TotalCount),
 	}
 	for i, tx := range transactions {
 		out.Transactions[i] = transactionToProto(tx)
@@ -73,5 +79,5 @@ func (s *Service) ListTransactions(ctx context.Context, req *connect.Request[tra
 			MaxCreationTime: timestamppb.New(result.NextCursor.MaxCreationTime),
 		}
 	}
-	return connect.NewResponse(out), nil
+	return out
 }

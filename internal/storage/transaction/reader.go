@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"context"
+	"database/sql"
 	"sort"
 	"time"
 
@@ -31,49 +32,35 @@ func (r *Reader) FindByID(ctx context.Context, id uuid.UUID) (*Transaction, erro
 	return bobTransactionToTransaction(row), nil
 }
 
-func (r *Reader) List(ctx context.Context, filter *TransactionFilter) (*TransactionListResult, error) {
-	limit := 20
-	offset := 0
-	var maxCreationTime *time.Time
-	if filter != nil {
-		if filter.Limit > 0 {
-			limit = filter.Limit
-		}
-		offset = filter.Offset
-		maxCreationTime = filter.MaxCreationTime
+func listWhereMods(filter *TransactionFilter) []bob.Mod[*dialect.SelectQuery] {
+	if filter == nil {
+		return nil
 	}
+	var whereMods []mods.Where[*dialect.SelectQuery]
+	if filter.AccountID != nil {
+		whereMods = append(whereMods, bobgen.SelectWhere.Transactions.AccountID.EQ(*filter.AccountID))
+	}
+	if filter.CategoryID != nil {
+		whereMods = append(whereMods, bobgen.SelectWhere.Transactions.CategoryID.EQ(*filter.CategoryID))
+	}
+	if filter.MaxCreationTime != nil {
+		whereMods = append(whereMods, bobgen.SelectWhere.Transactions.CreatedAt.LTE(*filter.MaxCreationTime))
+	}
+	switch len(whereMods) {
+	case 0:
+		return nil
+	case 1:
+		return []bob.Mod[*dialect.SelectQuery]{whereMods[0]}
+	default:
+		return []bob.Mod[*dialect.SelectQuery]{psql.WhereAnd(whereMods...)}
+	}
+}
 
-	var queryMods []bob.Mod[*dialect.SelectQuery]
-	if filter != nil {
-		var whereMods []mods.Where[*dialect.SelectQuery]
-		if filter.AccountID != nil {
-			whereMods = append(whereMods, bobgen.SelectWhere.Transactions.AccountID.EQ(*filter.AccountID))
-		}
-		if filter.CategoryID != nil {
-			whereMods = append(whereMods, bobgen.SelectWhere.Transactions.CategoryID.EQ(*filter.CategoryID))
-		}
-		if filter.MaxCreationTime != nil {
-			whereMods = append(whereMods, bobgen.SelectWhere.Transactions.CreatedAt.LTE(*filter.MaxCreationTime))
-		}
-		if len(whereMods) == 1 {
-			queryMods = append(queryMods, whereMods[0])
-		} else if len(whereMods) > 1 {
-			queryMods = append(queryMods, psql.WhereAnd(whereMods...))
-		}
-	}
-	queryMods = append(queryMods,
-		sm.Limit(limit+1),
-		sm.Offset(offset),
-		sm.OrderBy(bobgen.Transactions.Columns.CreatedAt).Desc(),
-		sm.OrderBy(bobgen.Transactions.Columns.ID).Desc(),
-	)
-	rows, err := bobgen.Transactions.Query(queryMods...).All(ctx, r.exec)
-	if err != nil {
-		return nil, err
-	}
-
+// pageListResult builds a paginated list result from a limit+1 probe page and total count.
+// rows may contain up to limit+1 items; the extra row (if present) only signals a next page.
+func pageListResult(rows []*Transaction, limit, offset int, maxCreationTime *time.Time, totalCount int) *TransactionListResult {
 	if len(rows) == 0 {
-		return &TransactionListResult{Transactions: nil, NextCursor: nil}, nil
+		return &TransactionListResult{Transactions: nil, NextCursor: nil, TotalCount: totalCount}
 	}
 
 	var nextCursor *TransactionCursor
@@ -90,11 +77,116 @@ func (r *Reader) List(ctx context.Context, filter *TransactionFilter) (*Transact
 		}
 	}
 
-	result := make([]*Transaction, len(rows))
-	for i, row := range rows {
-		result[i] = bobTransactionToTransaction(row)
+	return &TransactionListResult{
+		Transactions: rows,
+		NextCursor:   nextCursor,
+		TotalCount:   totalCount,
 	}
-	return &TransactionListResult{Transactions: result, NextCursor: nextCursor}, nil
+}
+
+func scanListRow(scanner interface {
+	Scan(dest ...any) error
+}) (*Transaction, int64, error) {
+	var (
+		id              uuid.UUID
+		accountID       uuid.UUID
+		categoryID      uuid.NullUUID
+		amount          decimal.Decimal
+		transactionName string
+		transactionDate time.Time
+		createdAt       time.Time
+		merchantName    sql.NullString
+		totalCount      int64
+	)
+	if err := scanner.Scan(
+		&id, &accountID, &categoryID, &amount, &transactionName,
+		&transactionDate, &createdAt, &merchantName, &totalCount,
+	); err != nil {
+		return nil, 0, err
+	}
+	tx := &Transaction{
+		ID:              id,
+		AccountID:       accountID,
+		Amount:          amount,
+		TransactionName: transactionName,
+		TransactionDate: transactionDate,
+		CreatedAt:       createdAt,
+	}
+	if categoryID.Valid {
+		tx.CategoryID = &categoryID.UUID
+	}
+	if merchantName.Valid {
+		name := merchantName.String
+		tx.MerchantName = &name
+	}
+	return tx, totalCount, nil
+}
+
+func (r *Reader) List(ctx context.Context, filter *TransactionFilter) (*TransactionListResult, error) {
+	limit := 20
+	offset := 0
+	var maxCreationTime *time.Time
+	if filter != nil {
+		if filter.Limit > 0 {
+			limit = filter.Limit
+		}
+		offset = filter.Offset
+		maxCreationTime = filter.MaxCreationTime
+	}
+
+	cols := bobgen.Transactions.Columns
+	// Single query: page rows plus total_count from Postgres COUNT(*) OVER()
+	// (window runs over the filtered set before LIMIT/OFFSET).
+	queryMods := []bob.Mod[*dialect.SelectQuery]{
+		sm.Columns(
+			cols.ID,
+			cols.AccountID,
+			cols.CategoryID,
+			cols.Amount,
+			cols.TransactionName,
+			cols.TransactionDate,
+			cols.CreatedAt,
+			cols.MerchantName,
+			psql.Raw("COUNT(*) OVER()"),
+		),
+		sm.From(bobgen.Transactions.NameAsExpr()),
+	}
+	queryMods = append(queryMods, listWhereMods(filter)...)
+	queryMods = append(queryMods,
+		sm.Limit(limit+1),
+		sm.Offset(offset),
+		sm.OrderBy(cols.CreatedAt).Desc(),
+		sm.OrderBy(cols.ID).Desc(),
+	)
+
+	q := psql.Select(queryMods...)
+	sqlStr, args, err := q.Build(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := r.exec.QueryContext(ctx, sqlStr, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var (
+		result     []*Transaction
+		totalCount int64
+	)
+	for rows.Next() {
+		tx, count, err := scanListRow(rows)
+		if err != nil {
+			return nil, err
+		}
+		totalCount = count
+		result = append(result, tx)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return pageListResult(result, limit, offset, maxCreationTime, int(totalCount)), nil
 }
 
 func firstOfMonth(year, month int) time.Time {

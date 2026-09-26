@@ -30,6 +30,7 @@ message ListTransactionsRequest {
 message ListTransactionsResponse {
   repeated Transaction transactions = 1;
   optional ListTransactionsCursor next_cursor = 2;
+  int32 total_count = 3;
 }
 
 message GetTransactionTotalsRequest {
