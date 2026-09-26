@@ -1,6 +1,8 @@
 package transaction
 
 import (
+	"database/sql"
+	"fmt"
 	"testing"
 	"time"
 
@@ -9,6 +11,65 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// fakeScanner feeds Scan destinations for scanListRow unit tests.
+type fakeScanner struct {
+	vals []any
+}
+
+func (f fakeScanner) Scan(dest ...any) error {
+	for i, d := range dest {
+		switch p := d.(type) {
+		case *uuid.UUID:
+			*p = f.vals[i].(uuid.UUID)
+		case *uuid.NullUUID:
+			*p = f.vals[i].(uuid.NullUUID)
+		case *decimal.Decimal:
+			*p = f.vals[i].(decimal.Decimal)
+		case *string:
+			*p = f.vals[i].(string)
+		case *time.Time:
+			*p = f.vals[i].(time.Time)
+		case *sql.NullString:
+			if f.vals[i] == nil {
+				*p = sql.NullString{}
+			} else {
+				*p = sql.NullString{String: f.vals[i].(string), Valid: true}
+			}
+		case *int64:
+			*p = f.vals[i].(int64)
+		default:
+			return fmt.Errorf("unsupported scan dest %T at %d", d, i)
+		}
+	}
+	return nil
+}
+
+func TestScanListRow_ReadsTotalCountFromSQLColumn(t *testing.T) {
+	id := uuid.Must(uuid.NewV4())
+	accountID := uuid.Must(uuid.NewV4())
+	created := time.Date(2025, 5, 1, 0, 0, 0, 0, time.UTC)
+	scanner := fakeScanner{vals: []any{
+		id,
+		accountID,
+		uuid.NullUUID{},
+		decimal.NewFromInt(5),
+		"Coffee",
+		created,
+		created,
+		nil,
+		int64(42),
+	}}
+
+	tx, totalCount, err := scanListRow(scanner)
+	require.NoError(t, err)
+	assert.Equal(t, id, tx.ID)
+	assert.Equal(t, accountID, tx.AccountID)
+	assert.Equal(t, "Coffee", tx.TransactionName)
+	assert.Nil(t, tx.CategoryID)
+	assert.Nil(t, tx.MerchantName)
+	assert.Equal(t, int64(42), totalCount)
+}
 
 func sampleTx(createdAt time.Time) *Transaction {
 	return &Transaction{

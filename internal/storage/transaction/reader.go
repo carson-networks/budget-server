@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"context"
+	"database/sql"
 	"sort"
 	"time"
 
@@ -83,6 +84,44 @@ func pageListResult(rows []*Transaction, limit, offset int, maxCreationTime *tim
 	}
 }
 
+func scanListRow(scanner interface {
+	Scan(dest ...any) error
+}) (*Transaction, int64, error) {
+	var (
+		id              uuid.UUID
+		accountID       uuid.UUID
+		categoryID      uuid.NullUUID
+		amount          decimal.Decimal
+		transactionName string
+		transactionDate time.Time
+		createdAt       time.Time
+		merchantName    sql.NullString
+		totalCount      int64
+	)
+	if err := scanner.Scan(
+		&id, &accountID, &categoryID, &amount, &transactionName,
+		&transactionDate, &createdAt, &merchantName, &totalCount,
+	); err != nil {
+		return nil, 0, err
+	}
+	tx := &Transaction{
+		ID:              id,
+		AccountID:       accountID,
+		Amount:          amount,
+		TransactionName: transactionName,
+		TransactionDate: transactionDate,
+		CreatedAt:       createdAt,
+	}
+	if categoryID.Valid {
+		tx.CategoryID = &categoryID.UUID
+	}
+	if merchantName.Valid {
+		name := merchantName.String
+		tx.MerchantName = &name
+	}
+	return tx, totalCount, nil
+}
+
 func (r *Reader) List(ctx context.Context, filter *TransactionFilter) (*TransactionListResult, error) {
 	limit := 20
 	offset := 0
@@ -95,28 +134,58 @@ func (r *Reader) List(ctx context.Context, filter *TransactionFilter) (*Transact
 		maxCreationTime = filter.MaxCreationTime
 	}
 
-	whereMods := listWhereMods(filter)
-
-	totalCount, err := bobgen.Transactions.Query(whereMods...).Count(ctx, r.exec)
-	if err != nil {
-		return nil, err
+	cols := bobgen.Transactions.Columns
+	// Single query: page rows plus total_count from Postgres COUNT(*) OVER()
+	// (window runs over the filtered set before LIMIT/OFFSET).
+	queryMods := []bob.Mod[*dialect.SelectQuery]{
+		sm.Columns(
+			cols.ID,
+			cols.AccountID,
+			cols.CategoryID,
+			cols.Amount,
+			cols.TransactionName,
+			cols.TransactionDate,
+			cols.CreatedAt,
+			cols.MerchantName,
+			psql.Raw("COUNT(*) OVER()"),
+		),
+		sm.From(bobgen.Transactions.NameAsExpr()),
 	}
-
-	queryMods := append(append([]bob.Mod[*dialect.SelectQuery]{}, whereMods...),
+	queryMods = append(queryMods, listWhereMods(filter)...)
+	queryMods = append(queryMods,
 		sm.Limit(limit+1),
 		sm.Offset(offset),
-		sm.OrderBy(bobgen.Transactions.Columns.CreatedAt).Desc(),
-		sm.OrderBy(bobgen.Transactions.Columns.ID).Desc(),
+		sm.OrderBy(cols.CreatedAt).Desc(),
+		sm.OrderBy(cols.ID).Desc(),
 	)
-	rows, err := bobgen.Transactions.Query(queryMods...).All(ctx, r.exec)
+
+	q := psql.Select(queryMods...)
+	sqlStr, args, err := q.Build(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	result := make([]*Transaction, len(rows))
-	for i, row := range rows {
-		result[i] = bobTransactionToTransaction(row)
+	rows, err := r.exec.QueryContext(ctx, sqlStr, args...)
+	if err != nil {
+		return nil, err
 	}
+	defer rows.Close()
+
+	var (
+		result     []*Transaction
+		totalCount int64
+	)
+	for rows.Next() {
+		tx, count, err := scanListRow(rows)
+		if err != nil {
+			return nil, err
+		}
+		totalCount = count
+		result = append(result, tx)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return pageListResult(result, limit, offset, maxCreationTime, int(totalCount)), nil
 }
 
