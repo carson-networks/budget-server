@@ -25,6 +25,8 @@ message ListTransactionsCursor {
 
 message ListTransactionsRequest {
   optional ListTransactionsCursor cursor = 1;
+  // When set, both the page and total_count are scoped to this account.
+  optional string account_id = 2;
 }
 
 message ListTransactionsResponse {
