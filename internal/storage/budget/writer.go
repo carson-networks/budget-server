@@ -2,10 +2,12 @@ package budget
 
 import (
 	"context"
+	"time"
 
 	"github.com/aarondl/opt/omit"
 	"github.com/carson-networks/budget-server/internal/storage/sqlconfig/bobgen"
 	"github.com/gofrs/uuid/v5"
+	"github.com/shopspring/decimal"
 	"github.com/stephenafamo/bob"
 	"github.com/stephenafamo/bob/dialect/psql"
 	"github.com/stephenafamo/bob/dialect/psql/dm"
@@ -26,25 +28,65 @@ func NewWriter(tx bob.Tx) *Writer {
 	}
 }
 
-// Set changes one month, or that month and every following month when requested.
+// Set inserts or updates a budget row (upsert on category_id, month).
+// If OverwriteFutureMonths is true, deletes budgets for this category in months after the given month first (same transaction).
+// Otherwise the following month keeps the amount already in effect, so this edit does not carry forward.
 func (w *Writer) Set(ctx context.Context, set *BudgetSet) error {
-	return setBudget(ctx, set, w.ListForRange, w.write, func(ctx context.Context) error {
-		return w.deleteByCategoryAndMonthsAfter(ctx, set.CategoryID, set.Month, set.Year)
-	})
+	if set.OverwriteFutureMonths {
+		if err := w.deleteByCategoryAndMonthsAfter(ctx, set.CategoryID, set.Month, set.Year); err != nil {
+			return err
+		}
+	} else if err := w.preserveNextMonth(ctx, set); err != nil {
+		return err
+	}
+
+	_, err := bobgen.Budgets.Insert(
+		newBudgetSetter(set.CategoryID, monthYearToTime(set.Month, set.Year), set.Amount),
+		im.OnConflict("category_id", "month").DoUpdate(im.SetExcluded("amount")),
+	).Exec(ctx, w.tx)
+	return err
 }
 
-func (w *Writer) write(ctx context.Context, set *BudgetSet, replaceExisting bool) error {
-	setter := &bobgen.BudgetSetter{
-		CategoryID: omit.From(set.CategoryID),
-		Month:      omit.From(monthYearToTime(set.Month, set.Year)),
-		Amount:     omit.From(set.Amount),
+// preserveNextMonth records the amount already in effect for the next month when that month has no row.
+func (w *Writer) preserveNextMonth(ctx context.Context, set *BudgetSet) error {
+	next := monthYearToTime(set.Month, set.Year).AddDate(0, 1, 0)
+	month, year := int(next.Month()), next.Year()
+	rows, err := w.ListForRange(ctx, month, year, month, year)
+	if err != nil {
+		return err
 	}
-	conflict := im.OnConflict("category_id", "month").DoNothing()
-	if replaceExisting {
-		conflict = im.OnConflict("category_id", "month").DoUpdate(im.SetExcluded("amount"))
+	amount, ok := amountToPreserve(rows, set.CategoryID, month, year)
+	if !ok {
+		return nil
 	}
-	_, err := bobgen.Budgets.Insert(setter, conflict).Exec(ctx, w.tx)
+	_, err = bobgen.Budgets.Insert(
+		newBudgetSetter(set.CategoryID, next, amount),
+		im.OnConflict("category_id", "month").DoNothing(),
+	).Exec(ctx, w.tx)
 	return err
+}
+
+func newBudgetSetter(categoryID uuid.UUID, month time.Time, amount decimal.Decimal) *bobgen.BudgetSetter {
+	return &bobgen.BudgetSetter{
+		CategoryID: omit.From(categoryID),
+		Month:      omit.From(month),
+		Amount:     omit.From(amount),
+	}
+}
+
+// amountToPreserve is the amount to copy onto month/year so an edit of the previous month does not carry forward.
+// The bool is false when that month already has its own row.
+func amountToPreserve(rows []*Budget, categoryID uuid.UUID, month, year int) (decimal.Decimal, bool) {
+	for _, row := range rows {
+		if row.CategoryID != categoryID {
+			continue
+		}
+		if row.Month == month && row.Year == year {
+			return decimal.Decimal{}, false
+		}
+		return row.Amount, true
+	}
+	return decimal.Zero, true
 }
 
 // deleteByCategoryAndMonthsAfter deletes all budgets for the given category where month > the given month/year.
