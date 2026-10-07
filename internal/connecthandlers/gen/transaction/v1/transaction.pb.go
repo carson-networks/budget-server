@@ -7,13 +7,12 @@
 package v1
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -186,6 +185,7 @@ func (x *ListTransactionsCursor) GetMaxCreationTime() *timestamppb.Timestamp {
 type ListTransactionsRequest struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
 	Cursor        *ListTransactionsCursor `protobuf:"bytes,1,opt,name=cursor,proto3,oneof" json:"cursor,omitempty"`
+	AccountId     *string                 `protobuf:"bytes,2,opt,name=account_id,json=accountId,proto3,oneof" json:"account_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -227,11 +227,18 @@ func (x *ListTransactionsRequest) GetCursor() *ListTransactionsCursor {
 	return nil
 }
 
+func (x *ListTransactionsRequest) GetAccountId() string {
+	if x != nil && x.AccountId != nil {
+		return *x.AccountId
+	}
+	return ""
+}
+
 type ListTransactionsResponse struct {
-	state        protoimpl.MessageState  `protogen:"open.v1"`
-	Transactions []*Transaction          `protobuf:"bytes,1,rep,name=transactions,proto3" json:"transactions,omitempty"`
-	NextCursor   *ListTransactionsCursor `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3,oneof" json:"next_cursor,omitempty"`
-	TotalCount    int32 `protobuf:"varint,3,opt,name=total_count,json=totalCount,proto3" json:"total_count,omitempty"`
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Transactions  []*Transaction          `protobuf:"bytes,1,rep,name=transactions,proto3" json:"transactions,omitempty"`
+	NextCursor    *ListTransactionsCursor `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3,oneof" json:"next_cursor,omitempty"`
+	TotalCount    int32                   `protobuf:"varint,3,opt,name=total_count,json=totalCount,proto3" json:"total_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -653,10 +660,13 @@ const file_transaction_v1_transaction_proto_rawDesc = "" +
 	"\x16ListTransactionsCursor\x12\x1a\n" +
 	"\bposition\x18\x01 \x01(\x05R\bposition\x12\x14\n" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\x12F\n" +
-	"\x11max_creation_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x0fmaxCreationTime\"i\n" +
+	"\x11max_creation_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x0fmaxCreationTime\"\x9c\x01\n" +
 	"\x17ListTransactionsRequest\x12C\n" +
-	"\x06cursor\x18\x01 \x01(\v2&.transaction.v1.ListTransactionsCursorH\x00R\x06cursor\x88\x01\x01B\t\n" +
-	"\a_cursor\"\xda\x01\n" +
+	"\x06cursor\x18\x01 \x01(\v2&.transaction.v1.ListTransactionsCursorH\x00R\x06cursor\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"account_id\x18\x02 \x01(\tH\x01R\taccountId\x88\x01\x01B\t\n" +
+	"\a_cursorB\r\n" +
+	"\v_account_id\"\xda\x01\n" +
 	"\x18ListTransactionsResponse\x12?\n" +
 	"\ftransactions\x18\x01 \x03(\v2\x1b.transaction.v1.TransactionR\ftransactions\x12L\n" +
 	"\vnext_cursor\x18\x02 \x01(\v2&.transaction.v1.ListTransactionsCursorH\x00R\n" +

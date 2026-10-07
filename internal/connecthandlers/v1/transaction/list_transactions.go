@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"github.com/gofrs/uuid/v5"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	transaction "github.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction/v1"
@@ -16,28 +17,9 @@ import (
 // ListTransactions implements transaction.v1.TransactionService.ListTransactions.
 func (s *Service) ListTransactions(ctx context.Context, req *connect.Request[transaction.ListTransactionsRequest]) (*connect.Response[transaction.ListTransactionsResponse], error) {
 	logData := logging.GetLogData(ctx)
-	limit := 20
-	offset := 0
-	var maxCreationTime *time.Time
-
-	if c := req.Msg.GetCursor(); c != nil {
-		if c.GetPosition() < 0 {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cursor position must be non-negative"))
-		}
-		offset = int(c.GetPosition())
-		if c.GetLimit() > 0 {
-			limit = int(c.GetLimit())
-		}
-		if ts := c.GetMaxCreationTime(); ts != nil {
-			t := ts.AsTime()
-			maxCreationTime = &t
-		}
-	}
-
-	filter := &storagetransaction.TransactionFilter{
-		Limit:           limit,
-		Offset:          offset,
-		MaxCreationTime: maxCreationTime,
+	filter, err := listTransactionsFilter(req.Msg)
+	if err != nil {
+		return nil, err
 	}
 
 	var stopTimer func()
@@ -62,6 +44,41 @@ func (s *Service) ListTransactions(ctx context.Context, req *connect.Request[tra
 
 	out := listTransactionsResponse(result, transactions)
 	return connect.NewResponse(out), nil
+}
+
+func listTransactionsFilter(req *transaction.ListTransactionsRequest) (*storagetransaction.TransactionFilter, error) {
+	limit := 20
+	offset := 0
+	var maxCreationTime *time.Time
+
+	if c := req.GetCursor(); c != nil {
+		if c.GetPosition() < 0 {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cursor position must be non-negative"))
+		}
+		offset = int(c.GetPosition())
+		if c.GetLimit() > 0 {
+			limit = int(c.GetLimit())
+		}
+		if ts := c.GetMaxCreationTime(); ts != nil {
+			t := ts.AsTime()
+			maxCreationTime = &t
+		}
+	}
+
+	filter := &storagetransaction.TransactionFilter{
+		Limit:           limit,
+		Offset:          offset,
+		MaxCreationTime: maxCreationTime,
+	}
+
+	if req.AccountId != nil {
+		accountID, err := uuid.FromString(req.GetAccountId())
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("account_id must be a valid UUID"))
+		}
+		filter.AccountID = &accountID
+	}
+	return filter, nil
 }
 
 func listTransactionsResponse(result *storagetransaction.TransactionListResult, transactions []*storagetransaction.Transaction) *transaction.ListTransactionsResponse {

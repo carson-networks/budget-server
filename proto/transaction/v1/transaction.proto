@@ -25,6 +25,7 @@ message ListTransactionsCursor {
 
 message ListTransactionsRequest {
   optional ListTransactionsCursor cursor = 1;
+  optional string account_id = 2;
 }
 
 message ListTransactionsResponse {
