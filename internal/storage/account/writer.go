@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/aarondl/opt/omit"
 	"github.com/carson-networks/budget-server/internal/storage/sqlconfig/bobgen"
@@ -17,6 +18,20 @@ import (
 type Writer struct {
 	tx bob.Tx
 	Reader
+}
+
+func (w *Writer) AdjustBalance(ctx context.Context, id uuid.UUID, delta decimal.Decimal) error {
+	result, err := bobgen.Accounts.Update(
+		um.Set(psql.Raw("balance = balance + ?", psql.Arg(delta))),
+		um.Where(bobgen.Accounts.Columns.ID.EQ(psql.Arg(id))),
+	).Exec(ctx, w.tx)
+	if err != nil {
+		return err
+	}
+	if result == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func NewWriter(tx bob.Tx) *Writer {

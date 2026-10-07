@@ -11,12 +11,54 @@ import (
 	"github.com/gofrs/uuid/v5"
 	"github.com/stephenafamo/bob"
 	"github.com/stephenafamo/bob/dialect/psql"
+	"github.com/stephenafamo/bob/dialect/psql/sm"
 	"github.com/stephenafamo/bob/dialect/psql/um"
 )
 
 type Writer struct {
 	tx bob.Tx
 	Reader
+}
+
+func (w *Writer) FindByIDForUpdate(ctx context.Context, id uuid.UUID) (*Transaction, error) {
+	row, err := bobgen.Transactions.Query(
+		bobgen.SelectWhere.Transactions.ID.EQ(id), sm.ForUpdate(),
+	).One(ctx, w.tx)
+	if err != nil {
+		return nil, err
+	}
+	return bobTransactionToTransaction(row), nil
+}
+
+func (w *Writer) Patch(ctx context.Context, id uuid.UUID, patch *TransactionPatch) error {
+	setter := transactionPatchSetter(patch)
+	if len(setter.SetColumns()) == 0 {
+		return nil
+	}
+	_, err := bobgen.Transactions.Update(
+		setter.UpdateMod(), um.Where(bobgen.Transactions.Columns.ID.EQ(psql.Arg(id))),
+	).Exec(ctx, w.tx)
+	return err
+}
+
+func transactionPatchSetter(patch *TransactionPatch) bobgen.TransactionSetter {
+	setter := bobgen.TransactionSetter{}
+	if patch.CategoryID != nil {
+		setter.CategoryID = omitnull.From(*patch.CategoryID)
+	}
+	if patch.Amount != nil {
+		setter.Amount = omit.From(*patch.Amount)
+	}
+	if patch.TransactionName != nil {
+		setter.TransactionName = omit.From(*patch.TransactionName)
+	}
+	if patch.MerchantName != nil {
+		setter.MerchantName = omitnull.From(*patch.MerchantName)
+	}
+	if patch.TransactionDate != nil {
+		setter.TransactionDate = omit.From(*patch.TransactionDate)
+	}
+	return setter
 }
 
 func NewWriter(tx bob.Tx) *Writer {

@@ -42,6 +42,9 @@ const (
 	// TransactionServiceCreateTransactionProcedure is the fully-qualified name of the
 	// TransactionService's CreateTransaction RPC.
 	TransactionServiceCreateTransactionProcedure = "/transaction.v1.TransactionService/CreateTransaction"
+	// TransactionServiceUpdateTransactionProcedure is the fully-qualified name of the
+	// TransactionService's UpdateTransaction RPC.
+	TransactionServiceUpdateTransactionProcedure = "/transaction.v1.TransactionService/UpdateTransaction"
 )
 
 // TransactionServiceClient is a client for the transaction.v1.TransactionService service.
@@ -49,6 +52,7 @@ type TransactionServiceClient interface {
 	ListTransactions(context.Context, *connect.Request[ListTransactionsRequest]) (*connect.Response[ListTransactionsResponse], error)
 	GetTransactionTotals(context.Context, *connect.Request[GetTransactionTotalsRequest]) (*connect.Response[GetTransactionTotalsResponse], error)
 	CreateTransaction(context.Context, *connect.Request[CreateTransactionRequest]) (*connect.Response[CreateTransactionResponse], error)
+	UpdateTransaction(context.Context, *connect.Request[UpdateTransactionRequest]) (*connect.Response[UpdateTransactionResponse], error)
 }
 
 // NewTransactionServiceClient constructs a client for the transaction.v1.TransactionService
@@ -80,6 +84,12 @@ func NewTransactionServiceClient(httpClient connect.HTTPClient, baseURL string, 
 			connect.WithSchema(transactionServiceMethods.ByName("CreateTransaction")),
 			connect.WithClientOptions(opts...),
 		),
+		updateTransaction: connect.NewClient[UpdateTransactionRequest, UpdateTransactionResponse](
+			httpClient,
+			baseURL+TransactionServiceUpdateTransactionProcedure,
+			connect.WithSchema(transactionServiceMethods.ByName("UpdateTransaction")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -88,6 +98,7 @@ type transactionServiceClient struct {
 	listTransactions     *connect.Client[ListTransactionsRequest, ListTransactionsResponse]
 	getTransactionTotals *connect.Client[GetTransactionTotalsRequest, GetTransactionTotalsResponse]
 	createTransaction    *connect.Client[CreateTransactionRequest, CreateTransactionResponse]
+	updateTransaction    *connect.Client[UpdateTransactionRequest, UpdateTransactionResponse]
 }
 
 // ListTransactions calls transaction.v1.TransactionService.ListTransactions.
@@ -105,11 +116,17 @@ func (c *transactionServiceClient) CreateTransaction(ctx context.Context, req *c
 	return c.createTransaction.CallUnary(ctx, req)
 }
 
+// UpdateTransaction calls transaction.v1.TransactionService.UpdateTransaction.
+func (c *transactionServiceClient) UpdateTransaction(ctx context.Context, req *connect.Request[UpdateTransactionRequest]) (*connect.Response[UpdateTransactionResponse], error) {
+	return c.updateTransaction.CallUnary(ctx, req)
+}
+
 // TransactionServiceHandler is an implementation of the transaction.v1.TransactionService service.
 type TransactionServiceHandler interface {
 	ListTransactions(context.Context, *connect.Request[ListTransactionsRequest]) (*connect.Response[ListTransactionsResponse], error)
 	GetTransactionTotals(context.Context, *connect.Request[GetTransactionTotalsRequest]) (*connect.Response[GetTransactionTotalsResponse], error)
 	CreateTransaction(context.Context, *connect.Request[CreateTransactionRequest]) (*connect.Response[CreateTransactionResponse], error)
+	UpdateTransaction(context.Context, *connect.Request[UpdateTransactionRequest]) (*connect.Response[UpdateTransactionResponse], error)
 }
 
 // NewTransactionServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -137,6 +154,12 @@ func NewTransactionServiceHandler(svc TransactionServiceHandler, opts ...connect
 		connect.WithSchema(transactionServiceMethods.ByName("CreateTransaction")),
 		connect.WithHandlerOptions(opts...),
 	)
+	transactionServiceUpdateTransactionHandler := connect.NewUnaryHandler(
+		TransactionServiceUpdateTransactionProcedure,
+		svc.UpdateTransaction,
+		connect.WithSchema(transactionServiceMethods.ByName("UpdateTransaction")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/transaction.v1.TransactionService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case TransactionServiceListTransactionsProcedure:
@@ -145,6 +168,8 @@ func NewTransactionServiceHandler(svc TransactionServiceHandler, opts ...connect
 			transactionServiceGetTransactionTotalsHandler.ServeHTTP(w, r)
 		case TransactionServiceCreateTransactionProcedure:
 			transactionServiceCreateTransactionHandler.ServeHTTP(w, r)
+		case TransactionServiceUpdateTransactionProcedure:
+			transactionServiceUpdateTransactionHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -164,4 +189,8 @@ func (UnimplementedTransactionServiceHandler) GetTransactionTotals(context.Conte
 
 func (UnimplementedTransactionServiceHandler) CreateTransaction(context.Context, *connect.Request[CreateTransactionRequest]) (*connect.Response[CreateTransactionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("transaction.v1.TransactionService.CreateTransaction is not implemented"))
+}
+
+func (UnimplementedTransactionServiceHandler) UpdateTransaction(context.Context, *connect.Request[UpdateTransactionRequest]) (*connect.Response[UpdateTransactionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("transaction.v1.TransactionService.UpdateTransaction is not implemented"))
 }
