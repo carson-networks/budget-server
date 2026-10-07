@@ -29,38 +29,36 @@ func NewWriter(tx bob.Tx) *Writer {
 }
 
 // Set inserts or updates a budget row (upsert on category_id, month).
-// If OverwriteFutureMonths is true, deletes budgets for this category in months after the given month first (same transaction).
-// Otherwise the following month keeps the amount already in effect, so this edit does not carry forward.
+// If OverwriteFutureMonths is true, deletes budgets for this category in months after the given month first (same transaction), and the new amount carries forward.
+// Otherwise the next month keeps the amount that was in effect before this edit when that month has no row of its own.
 func (w *Writer) Set(ctx context.Context, set *BudgetSet) error {
+	var prior decimal.Decimal
+	pinNext := false
 	if set.OverwriteFutureMonths {
 		if err := w.deleteByCategoryAndMonthsAfter(ctx, set.CategoryID, set.Month, set.Year); err != nil {
 			return err
 		}
-	} else if err := w.preserveNextMonth(ctx, set); err != nil {
-		return err
+	} else {
+		next := monthYearToTime(set.Month, set.Year).AddDate(0, 1, 0)
+		rows, err := w.ListForRange(ctx, int(next.Month()), next.Year(), int(next.Month()), next.Year())
+		if err != nil {
+			return err
+		}
+		prior, pinNext = amountToPreserve(rows, set.CategoryID, set.Month, set.Year)
 	}
 
-	_, err := bobgen.Budgets.Insert(
+	if _, err := bobgen.Budgets.Insert(
 		newBudgetSetter(set.CategoryID, monthYearToTime(set.Month, set.Year), set.Amount),
 		im.OnConflict("category_id", "month").DoUpdate(im.SetExcluded("amount")),
-	).Exec(ctx, w.tx)
-	return err
-}
-
-// preserveNextMonth records the amount already in effect for the next month when that month has no row.
-func (w *Writer) preserveNextMonth(ctx context.Context, set *BudgetSet) error {
-	next := monthYearToTime(set.Month, set.Year).AddDate(0, 1, 0)
-	month, year := int(next.Month()), next.Year()
-	rows, err := w.ListForRange(ctx, month, year, month, year)
-	if err != nil {
+	).Exec(ctx, w.tx); err != nil {
 		return err
 	}
-	amount, ok := amountToPreserve(rows, set.CategoryID, month, year)
-	if !ok {
+	if !pinNext {
 		return nil
 	}
-	_, err = bobgen.Budgets.Insert(
-		newBudgetSetter(set.CategoryID, next, amount),
+	next := monthYearToTime(set.Month, set.Year).AddDate(0, 1, 0)
+	_, err := bobgen.Budgets.Insert(
+		newBudgetSetter(set.CategoryID, next, prior),
 		im.OnConflict("category_id", "month").DoNothing(),
 	).Exec(ctx, w.tx)
 	return err
@@ -74,19 +72,40 @@ func newBudgetSetter(categoryID uuid.UUID, month time.Time, amount decimal.Decim
 	}
 }
 
-// amountToPreserve is the amount to copy onto month/year so an edit of the previous month does not carry forward.
-// The bool is false when that month already has its own row.
-func amountToPreserve(rows []*Budget, categoryID uuid.UUID, month, year int) (decimal.Decimal, bool) {
+// amountToPreserve is the amount to copy onto the month after editedMonth/editedYear.
+// The bool is false when that next month already has its own row.
+// Otherwise the amount is the latest budget for the category on or before the edited month, or zero when none exists.
+func amountToPreserve(rows []*Budget, categoryID uuid.UUID, editedMonth, editedYear int) (decimal.Decimal, bool) {
+	edited := monthYearToTime(editedMonth, editedYear)
+	next := edited.AddDate(0, 1, 0)
+	nextMonth, nextYear := int(next.Month()), next.Year()
+
+	var (
+		found  bool
+		latest time.Time
+		amount decimal.Decimal
+	)
 	for _, row := range rows {
 		if row.CategoryID != categoryID {
 			continue
 		}
-		if row.Month == month && row.Year == year {
+		if row.Month == nextMonth && row.Year == nextYear {
 			return decimal.Decimal{}, false
 		}
-		return row.Amount, true
+		rowTime := monthYearToTime(row.Month, row.Year)
+		if rowTime.After(edited) {
+			continue
+		}
+		if !found || rowTime.After(latest) {
+			found = true
+			latest = rowTime
+			amount = row.Amount
+		}
 	}
-	return decimal.Zero, true
+	if !found {
+		return decimal.Zero, true
+	}
+	return amount, true
 }
 
 // deleteByCategoryAndMonthsAfter deletes all budgets for the given category where month > the given month/year.
