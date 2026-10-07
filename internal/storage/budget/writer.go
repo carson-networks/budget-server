@@ -44,7 +44,7 @@ func (w *Writer) Set(ctx context.Context, set *BudgetSet) error {
 		if err != nil {
 			return err
 		}
-		prior, pinNext = amountToPreserve(rows, set.CategoryID, set.Month, set.Year)
+		prior, pinNext = preserveFutureMonths(rows, set.CategoryID, set.Month, set.Year)
 	}
 
 	if _, err := bobgen.Budgets.Insert(
@@ -72,10 +72,10 @@ func newBudgetSetter(categoryID uuid.UUID, month time.Time, amount decimal.Decim
 	}
 }
 
-// amountToPreserve is the amount to copy onto the month after editedMonth/editedYear.
+// preserveFutureMonths is the amount to copy onto the month after editedMonth/editedYear.
 // The bool is false when that next month already has its own row.
 // Otherwise the amount is the latest budget for the category on or before the edited month, or zero when none exists.
-func amountToPreserve(rows []*Budget, categoryID uuid.UUID, editedMonth, editedYear int) (decimal.Decimal, bool) {
+func preserveFutureMonths(rows []*Budget, categoryID uuid.UUID, editedMonth, editedYear int) (decimal.Decimal, bool) {
 	edited := monthYearToTime(editedMonth, editedYear)
 	next := edited.AddDate(0, 1, 0)
 	nextMonth, nextYear := int(next.Month()), next.Year()

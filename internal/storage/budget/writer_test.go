@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAmountToPreserve(t *testing.T) {
+func TestPreserveFutureMonths(t *testing.T) {
 	id := uuid.Must(uuid.NewV4())
 	other := uuid.Must(uuid.NewV4())
 	tests := []struct {
@@ -61,7 +61,7 @@ func TestAmountToPreserve(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			amount, keep := amountToPreserve(tt.rows, id, tt.editedMonth, tt.editedYear)
+			amount, keep := preserveFutureMonths(tt.rows, id, tt.editedMonth, tt.editedYear)
 			assert.Equal(t, tt.keep, keep)
 			assert.True(t, amount.Equal(tt.amount))
 		})
