@@ -183,10 +183,9 @@ func (x *ListTransactionsCursor) GetMaxCreationTime() *timestamppb.Timestamp {
 }
 
 type ListTransactionsRequest struct {
-	state  protoimpl.MessageState  `protogen:"open.v1"`
-	Cursor *ListTransactionsCursor `protobuf:"bytes,1,opt,name=cursor,proto3,oneof" json:"cursor,omitempty"`
-	// When set, both the page and total_count are scoped to this account.
-	AccountId     *string `protobuf:"bytes,2,opt,name=account_id,json=accountId,proto3,oneof" json:"account_id,omitempty"`
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Cursor        *ListTransactionsCursor `protobuf:"bytes,1,opt,name=cursor,proto3,oneof" json:"cursor,omitempty"`
+	AccountId     *string                 `protobuf:"bytes,2,opt,name=account_id,json=accountId,proto3,oneof" json:"account_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
