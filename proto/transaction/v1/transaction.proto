@@ -68,8 +68,21 @@ message CreateTransactionResponse {
   int32 status = 1;
 }
 
+// Omitted fields are left unchanged. An empty merchant_name clears its label.
+message UpdateTransactionRequest {
+  string id = 1;
+  optional string category_id = 2;
+  optional string amount = 3;
+  optional string transaction_name = 4;
+  optional google.protobuf.Timestamp transaction_date = 5;
+  optional string merchant_name = 6;
+}
+
+message UpdateTransactionResponse {}
+
 service TransactionService {
   rpc ListTransactions(ListTransactionsRequest) returns (ListTransactionsResponse);
   rpc GetTransactionTotals(GetTransactionTotalsRequest) returns (GetTransactionTotalsResponse);
   rpc CreateTransaction(CreateTransactionRequest) returns (CreateTransactionResponse);
+  rpc UpdateTransaction(UpdateTransactionRequest) returns (UpdateTransactionResponse);
 }

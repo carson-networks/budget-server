@@ -62,6 +62,15 @@ type TransactionUpdate struct {
 	TransactionDate time.Time
 }
 
+// TransactionPatch changes only supplied fields in a user edit.
+type TransactionPatch struct {
+	CategoryID      *uuid.UUID
+	Amount          *decimal.Decimal
+	TransactionName *string
+	MerchantName    *string
+	TransactionDate *time.Time
+}
+
 // TransactionFilter specifies filters for listing transactions.
 type TransactionFilter struct {
 	AccountID       *uuid.UUID

@@ -7,12 +7,13 @@
 package v1
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -638,6 +639,127 @@ func (x *CreateTransactionResponse) GetStatus() int32 {
 	return 0
 }
 
+// Omitted fields are left unchanged. An empty merchant_name clears its label.
+type UpdateTransactionRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	CategoryId      *string                `protobuf:"bytes,2,opt,name=category_id,json=categoryId,proto3,oneof" json:"category_id,omitempty"`
+	Amount          *string                `protobuf:"bytes,3,opt,name=amount,proto3,oneof" json:"amount,omitempty"`
+	TransactionName *string                `protobuf:"bytes,4,opt,name=transaction_name,json=transactionName,proto3,oneof" json:"transaction_name,omitempty"`
+	TransactionDate *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=transaction_date,json=transactionDate,proto3,oneof" json:"transaction_date,omitempty"`
+	MerchantName    *string                `protobuf:"bytes,6,opt,name=merchant_name,json=merchantName,proto3,oneof" json:"merchant_name,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *UpdateTransactionRequest) Reset() {
+	*x = UpdateTransactionRequest{}
+	mi := &file_transaction_v1_transaction_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateTransactionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateTransactionRequest) ProtoMessage() {}
+
+func (x *UpdateTransactionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_transaction_v1_transaction_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateTransactionRequest.ProtoReflect.Descriptor instead.
+func (*UpdateTransactionRequest) Descriptor() ([]byte, []int) {
+	return file_transaction_v1_transaction_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *UpdateTransactionRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *UpdateTransactionRequest) GetCategoryId() string {
+	if x != nil && x.CategoryId != nil {
+		return *x.CategoryId
+	}
+	return ""
+}
+
+func (x *UpdateTransactionRequest) GetAmount() string {
+	if x != nil && x.Amount != nil {
+		return *x.Amount
+	}
+	return ""
+}
+
+func (x *UpdateTransactionRequest) GetTransactionName() string {
+	if x != nil && x.TransactionName != nil {
+		return *x.TransactionName
+	}
+	return ""
+}
+
+func (x *UpdateTransactionRequest) GetTransactionDate() *timestamppb.Timestamp {
+	if x != nil {
+		return x.TransactionDate
+	}
+	return nil
+}
+
+func (x *UpdateTransactionRequest) GetMerchantName() string {
+	if x != nil && x.MerchantName != nil {
+		return *x.MerchantName
+	}
+	return ""
+}
+
+type UpdateTransactionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateTransactionResponse) Reset() {
+	*x = UpdateTransactionResponse{}
+	mi := &file_transaction_v1_transaction_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateTransactionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateTransactionResponse) ProtoMessage() {}
+
+func (x *UpdateTransactionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_transaction_v1_transaction_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateTransactionResponse.ProtoReflect.Descriptor instead.
+func (*UpdateTransactionResponse) Descriptor() ([]byte, []int) {
+	return file_transaction_v1_transaction_proto_rawDescGZIP(), []int{11}
+}
+
 var File_transaction_v1_transaction_proto protoreflect.FileDescriptor
 
 const file_transaction_v1_transaction_proto_rawDesc = "" +
@@ -702,11 +824,26 @@ const file_transaction_v1_transaction_proto_rawDesc = "" +
 	"\x10transaction_date\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\x0ftransactionDate\x88\x01\x01B\x13\n" +
 	"\x11_transaction_date\"3\n" +
 	"\x19CreateTransactionResponse\x12\x16\n" +
-	"\x06status\x18\x01 \x01(\x05R\x06status2\xd8\x02\n" +
+	"\x06status\x18\x01 \x01(\x05R\x06status\"\xea\x02\n" +
+	"\x18UpdateTransactionRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12$\n" +
+	"\vcategory_id\x18\x02 \x01(\tH\x00R\n" +
+	"categoryId\x88\x01\x01\x12\x1b\n" +
+	"\x06amount\x18\x03 \x01(\tH\x01R\x06amount\x88\x01\x01\x12.\n" +
+	"\x10transaction_name\x18\x04 \x01(\tH\x02R\x0ftransactionName\x88\x01\x01\x12J\n" +
+	"\x10transaction_date\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampH\x03R\x0ftransactionDate\x88\x01\x01\x12(\n" +
+	"\rmerchant_name\x18\x06 \x01(\tH\x04R\fmerchantName\x88\x01\x01B\x0e\n" +
+	"\f_category_idB\t\n" +
+	"\a_amountB\x13\n" +
+	"\x11_transaction_nameB\x13\n" +
+	"\x11_transaction_dateB\x10\n" +
+	"\x0e_merchant_name\"\x1b\n" +
+	"\x19UpdateTransactionResponse2\xc2\x03\n" +
 	"\x12TransactionService\x12e\n" +
 	"\x10ListTransactions\x12'.transaction.v1.ListTransactionsRequest\x1a(.transaction.v1.ListTransactionsResponse\x12q\n" +
 	"\x14GetTransactionTotals\x12+.transaction.v1.GetTransactionTotalsRequest\x1a,.transaction.v1.GetTransactionTotalsResponse\x12h\n" +
-	"\x11CreateTransaction\x12(.transaction.v1.CreateTransactionRequest\x1a).transaction.v1.CreateTransactionResponseB\xd5\x01\n" +
+	"\x11CreateTransaction\x12(.transaction.v1.CreateTransactionRequest\x1a).transaction.v1.CreateTransactionResponse\x12h\n" +
+	"\x11UpdateTransaction\x12(.transaction.v1.UpdateTransactionRequest\x1a).transaction.v1.UpdateTransactionResponseB\xd5\x01\n" +
 	"\x12com.transaction.v1B\x10TransactionProtoP\x01ZTgithub.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction/v1\xa2\x02\x03TXX\xaa\x02\x0eTransaction.V1\xca\x02\x0eTransaction\\V1\xe2\x02\x1aTransaction\\V1\\GPBMetadata\xea\x02\x0fTransaction::V1b\x06proto3"
 
 var (
@@ -721,7 +858,7 @@ func file_transaction_v1_transaction_proto_rawDescGZIP() []byte {
 	return file_transaction_v1_transaction_proto_rawDescData
 }
 
-var file_transaction_v1_transaction_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_transaction_v1_transaction_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_transaction_v1_transaction_proto_goTypes = []any{
 	(*Transaction)(nil),                  // 0: transaction.v1.Transaction
 	(*ListTransactionsCursor)(nil),       // 1: transaction.v1.ListTransactionsCursor
@@ -733,29 +870,34 @@ var file_transaction_v1_transaction_proto_goTypes = []any{
 	(*GetTransactionTotalsResponse)(nil), // 7: transaction.v1.GetTransactionTotalsResponse
 	(*CreateTransactionRequest)(nil),     // 8: transaction.v1.CreateTransactionRequest
 	(*CreateTransactionResponse)(nil),    // 9: transaction.v1.CreateTransactionResponse
-	(*timestamppb.Timestamp)(nil),        // 10: google.protobuf.Timestamp
+	(*UpdateTransactionRequest)(nil),     // 10: transaction.v1.UpdateTransactionRequest
+	(*UpdateTransactionResponse)(nil),    // 11: transaction.v1.UpdateTransactionResponse
+	(*timestamppb.Timestamp)(nil),        // 12: google.protobuf.Timestamp
 }
 var file_transaction_v1_transaction_proto_depIdxs = []int32{
-	10, // 0: transaction.v1.Transaction.transaction_date:type_name -> google.protobuf.Timestamp
-	10, // 1: transaction.v1.Transaction.created_at:type_name -> google.protobuf.Timestamp
-	10, // 2: transaction.v1.ListTransactionsCursor.max_creation_time:type_name -> google.protobuf.Timestamp
+	12, // 0: transaction.v1.Transaction.transaction_date:type_name -> google.protobuf.Timestamp
+	12, // 1: transaction.v1.Transaction.created_at:type_name -> google.protobuf.Timestamp
+	12, // 2: transaction.v1.ListTransactionsCursor.max_creation_time:type_name -> google.protobuf.Timestamp
 	1,  // 3: transaction.v1.ListTransactionsRequest.cursor:type_name -> transaction.v1.ListTransactionsCursor
 	0,  // 4: transaction.v1.ListTransactionsResponse.transactions:type_name -> transaction.v1.Transaction
 	1,  // 5: transaction.v1.ListTransactionsResponse.next_cursor:type_name -> transaction.v1.ListTransactionsCursor
 	5,  // 6: transaction.v1.TransactionTotalsMonth.by_category:type_name -> transaction.v1.TransactionTotalsCategory
 	6,  // 7: transaction.v1.GetTransactionTotalsResponse.by_month:type_name -> transaction.v1.TransactionTotalsMonth
-	10, // 8: transaction.v1.CreateTransactionRequest.transaction_date:type_name -> google.protobuf.Timestamp
-	2,  // 9: transaction.v1.TransactionService.ListTransactions:input_type -> transaction.v1.ListTransactionsRequest
-	4,  // 10: transaction.v1.TransactionService.GetTransactionTotals:input_type -> transaction.v1.GetTransactionTotalsRequest
-	8,  // 11: transaction.v1.TransactionService.CreateTransaction:input_type -> transaction.v1.CreateTransactionRequest
-	3,  // 12: transaction.v1.TransactionService.ListTransactions:output_type -> transaction.v1.ListTransactionsResponse
-	7,  // 13: transaction.v1.TransactionService.GetTransactionTotals:output_type -> transaction.v1.GetTransactionTotalsResponse
-	9,  // 14: transaction.v1.TransactionService.CreateTransaction:output_type -> transaction.v1.CreateTransactionResponse
-	12, // [12:15] is the sub-list for method output_type
-	9,  // [9:12] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	12, // 8: transaction.v1.CreateTransactionRequest.transaction_date:type_name -> google.protobuf.Timestamp
+	12, // 9: transaction.v1.UpdateTransactionRequest.transaction_date:type_name -> google.protobuf.Timestamp
+	2,  // 10: transaction.v1.TransactionService.ListTransactions:input_type -> transaction.v1.ListTransactionsRequest
+	4,  // 11: transaction.v1.TransactionService.GetTransactionTotals:input_type -> transaction.v1.GetTransactionTotalsRequest
+	8,  // 12: transaction.v1.TransactionService.CreateTransaction:input_type -> transaction.v1.CreateTransactionRequest
+	10, // 13: transaction.v1.TransactionService.UpdateTransaction:input_type -> transaction.v1.UpdateTransactionRequest
+	3,  // 14: transaction.v1.TransactionService.ListTransactions:output_type -> transaction.v1.ListTransactionsResponse
+	7,  // 15: transaction.v1.TransactionService.GetTransactionTotals:output_type -> transaction.v1.GetTransactionTotalsResponse
+	9,  // 16: transaction.v1.TransactionService.CreateTransaction:output_type -> transaction.v1.CreateTransactionResponse
+	11, // 17: transaction.v1.TransactionService.UpdateTransaction:output_type -> transaction.v1.UpdateTransactionResponse
+	14, // [14:18] is the sub-list for method output_type
+	10, // [10:14] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_transaction_v1_transaction_proto_init() }
@@ -767,13 +909,14 @@ func file_transaction_v1_transaction_proto_init() {
 	file_transaction_v1_transaction_proto_msgTypes[2].OneofWrappers = []any{}
 	file_transaction_v1_transaction_proto_msgTypes[3].OneofWrappers = []any{}
 	file_transaction_v1_transaction_proto_msgTypes[8].OneofWrappers = []any{}
+	file_transaction_v1_transaction_proto_msgTypes[10].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_transaction_v1_transaction_proto_rawDesc), len(file_transaction_v1_transaction_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

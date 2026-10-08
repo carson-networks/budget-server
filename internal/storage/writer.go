@@ -19,6 +19,7 @@ type IAccountWriter interface {
 	FindByIDForUpdate(ctx context.Context, id uuid.UUID) (*account.Account, error)
 	Create(ctx context.Context, name string, accountType account.AccountType, accountSubType string, startingBalance decimal.Decimal) (uuid.UUID, error)
 	UpdateBalance(ctx context.Context, id uuid.UUID, balance decimal.Decimal) error
+	AdjustBalance(ctx context.Context, id uuid.UUID, delta decimal.Decimal) error
 	Update(ctx context.Context, id uuid.UUID, update *account.AccountUpdate) error
 	Delete(ctx context.Context, id uuid.UUID) error
 }
@@ -26,8 +27,10 @@ type IAccountWriter interface {
 // ITransactionWriter defines the transaction write operations used by actions.
 type ITransactionWriter interface {
 	FindByID(ctx context.Context, id uuid.UUID) (*transaction.Transaction, error)
+	FindByIDForUpdate(ctx context.Context, id uuid.UUID) (*transaction.Transaction, error)
 	Insert(ctx context.Context, create *transaction.TransactionCreate) (uuid.UUID, error)
 	Update(ctx context.Context, id uuid.UUID, update *transaction.TransactionUpdate) error
+	Patch(ctx context.Context, id uuid.UUID, patch *transaction.TransactionPatch) error
 	Delete(ctx context.Context, id uuid.UUID) (*transaction.Transaction, error)
 }
 
