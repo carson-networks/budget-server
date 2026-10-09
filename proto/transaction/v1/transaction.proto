@@ -23,9 +23,17 @@ message ListTransactionsCursor {
   google.protobuf.Timestamp max_creation_time = 3;
 }
 
+message TransactionMonth {
+  int32 year = 1;
+  int32 month = 2;
+}
+
 message ListTransactionsRequest {
   optional ListTransactionsCursor cursor = 1;
   optional string account_id = 2;
+  optional string category_id = 3;
+  // Matches transactions whose transaction_date falls in this UTC calendar month.
+  optional TransactionMonth month = 4;
 }
 
 message ListTransactionsResponse {

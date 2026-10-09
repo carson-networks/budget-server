@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"testing"
@@ -8,6 +9,10 @@ import (
 
 	"github.com/gofrs/uuid/v5"
 	"github.com/shopspring/decimal"
+	"github.com/stephenafamo/bob"
+	"github.com/stephenafamo/bob/dialect/psql"
+	"github.com/stephenafamo/bob/dialect/psql/dialect"
+	"github.com/stephenafamo/bob/dialect/psql/sm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -141,4 +146,27 @@ func TestPageListResult_OffsetPageMath(t *testing.T) {
 	assert.Equal(t, 75, got.NextCursor.Position)
 	assert.Equal(t, 25, got.NextCursor.Limit)
 	assert.Equal(t, 100, got.TotalCount)
+}
+
+func TestListWhereMods_TransactionDateRange(t *testing.T) {
+	from := time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC)
+	to := time.Date(2025, 4, 1, 0, 0, 0, 0, time.UTC)
+	categoryID := uuid.Must(uuid.NewV4())
+	query := psql.Select(append(
+		[]bob.Mod[*dialect.SelectQuery]{sm.From("transactions")},
+		listWhereMods(&TransactionFilter{
+			CategoryID:          &categoryID,
+			TransactionDateFrom: &from,
+			TransactionDateTo:   &to,
+		})...,
+	)...)
+	sqlStr, args, err := query.Build(context.Background())
+	require.NoError(t, err)
+	assert.Contains(t, sqlStr, `"transactions"."category_id" = $1`)
+	assert.Contains(t, sqlStr, `"transactions"."transaction_date" >= $2`)
+	assert.Contains(t, sqlStr, `"transactions"."transaction_date" < $3`)
+	require.Len(t, args, 3)
+	assert.Equal(t, categoryID, args[0])
+	assert.Equal(t, from, args[1])
+	assert.Equal(t, to, args[2])
 }

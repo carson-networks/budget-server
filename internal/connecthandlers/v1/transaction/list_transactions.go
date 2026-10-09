@@ -78,6 +78,22 @@ func listTransactionsFilter(req *transaction.ListTransactionsRequest) (*storaget
 		}
 		filter.AccountID = &accountID
 	}
+	if req.CategoryId != nil {
+		categoryID, err := uuid.FromString(req.GetCategoryId())
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("category_id must be a valid UUID"))
+		}
+		filter.CategoryID = &categoryID
+	}
+	if m := req.GetMonth(); m != nil {
+		if m.GetMonth() < 1 || m.GetMonth() > 12 {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("month must be between 1 and 12"))
+		}
+		from := time.Date(int(m.GetYear()), time.Month(m.GetMonth()), 1, 0, 0, 0, 0, time.UTC)
+		to := from.AddDate(0, 1, 0)
+		filter.TransactionDateFrom = &from
+		filter.TransactionDateTo = &to
+	}
 	return filter, nil
 }
 
