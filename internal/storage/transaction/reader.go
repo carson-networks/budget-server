@@ -46,6 +46,12 @@ func listWhereMods(filter *TransactionFilter) []bob.Mod[*dialect.SelectQuery] {
 	if filter.MaxCreationTime != nil {
 		whereMods = append(whereMods, bobgen.SelectWhere.Transactions.CreatedAt.LTE(*filter.MaxCreationTime))
 	}
+	if filter.TransactionDateFrom != nil {
+		whereMods = append(whereMods, bobgen.SelectWhere.Transactions.TransactionDate.GTE(*filter.TransactionDateFrom))
+	}
+	if filter.TransactionDateTo != nil {
+		whereMods = append(whereMods, bobgen.SelectWhere.Transactions.TransactionDate.LT(*filter.TransactionDateTo))
+	}
 	switch len(whereMods) {
 	case 0:
 		return nil

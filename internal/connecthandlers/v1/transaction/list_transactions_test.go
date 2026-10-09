@@ -129,3 +129,43 @@ func TestListTransactions_InvalidFilterRejectedBeforeStorage(t *testing.T) {
 		})
 	}
 }
+
+func TestListTransactionsFilter_CategoryAndMonth(t *testing.T) {
+	categoryID := uuid.Must(uuid.NewV4())
+	filter, err := listTransactionsFilter(&transaction.ListTransactionsRequest{
+		CategoryId: proto.String(categoryID.String()),
+		Month:      &transaction.TransactionMonth{Year: 2025, Month: 12},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, filter.CategoryID)
+	assert.Equal(t, categoryID, *filter.CategoryID)
+	require.NotNil(t, filter.TransactionDateFrom)
+	require.NotNil(t, filter.TransactionDateTo)
+	assert.Equal(t, time.Date(2025, 12, 1, 0, 0, 0, 0, time.UTC), *filter.TransactionDateFrom)
+	assert.Equal(t, time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), *filter.TransactionDateTo)
+}
+
+func TestListTransactionsFilter_NoMonthLeavesDatesUnset(t *testing.T) {
+	filter, err := listTransactionsFilter(&transaction.ListTransactionsRequest{})
+	require.NoError(t, err)
+	assert.Nil(t, filter.CategoryID)
+	assert.Nil(t, filter.TransactionDateFrom)
+	assert.Nil(t, filter.TransactionDateTo)
+}
+
+func TestListTransactions_InvalidCategoryOrMonthRejectedBeforeStorage(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		request *transaction.ListTransactionsRequest
+	}{
+		{"malformed category", &transaction.ListTransactionsRequest{CategoryId: proto.String("invalid")}},
+		{"month zero", &transaction.ListTransactionsRequest{Month: &transaction.TransactionMonth{Year: 2025, Month: 0}}},
+		{"month thirteen", &transaction.ListTransactionsRequest{Month: &transaction.TransactionMonth{Year: 2025, Month: 13}}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			response, err := (&Service{}).ListTransactions(context.Background(), connect.NewRequest(test.request))
+			assert.Nil(t, response)
+			assert.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		})
+	}
+}

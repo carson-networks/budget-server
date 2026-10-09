@@ -73,11 +73,14 @@ type TransactionPatch struct {
 
 // TransactionFilter specifies filters for listing transactions.
 type TransactionFilter struct {
-	AccountID       *uuid.UUID
-	CategoryID      *uuid.UUID
-	Limit           int
-	Offset          int
-	MaxCreationTime *time.Time
+	AccountID  *uuid.UUID
+	CategoryID *uuid.UUID
+	// TransactionDateFrom is inclusive and TransactionDateTo is exclusive.
+	TransactionDateFrom *time.Time
+	TransactionDateTo   *time.Time
+	Limit               int
+	Offset              int
+	MaxCreationTime     *time.Time
 }
 
 // TransactionCursor identifies a position in a paginated result set
