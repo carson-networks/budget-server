@@ -9,14 +9,17 @@ tool (
 
 require (
 	connectrpc.com/connect v1.21.0
+	connectrpc.com/connect/v2 v2.0.0
 	github.com/aarondl/opt v0.0.0-20250607033636-982744e1bd65
 	github.com/gofrs/uuid/v5 v5.5.1
 	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/lib/pq v1.12.3
 	github.com/plaid/plaid-go/v47 v47.0.0
+	github.com/plaid/plaid-go/v48 v48.0.0
 	github.com/shopspring/decimal v1.4.0
 	github.com/sirupsen/logrus v1.10.2
 	github.com/stephenafamo/bob v0.50.0
+	github.com/stephenafamo/scan v0.9.0
 	github.com/stretchr/testify v1.12.1
 	google.golang.org/protobuf v1.36.12
 )
@@ -47,7 +50,6 @@ require (
 	github.com/rs/zerolog v1.35.1 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
-	github.com/stephenafamo/scan v0.9.0 // indirect
 	github.com/stretchr/objx v0.5.3 // indirect
 	github.com/vektra/mockery/v3 v3.8.0 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
