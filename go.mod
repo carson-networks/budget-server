@@ -9,11 +9,13 @@ tool (
 
 require (
 	connectrpc.com/connect v1.21.0
+	connectrpc.com/connect/v2 v2.0.0
 	github.com/aarondl/opt v0.0.0-20250607033636-982744e1bd65
 	github.com/gofrs/uuid/v5 v5.5.1
 	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/lib/pq v1.12.3
 	github.com/plaid/plaid-go/v47 v47.0.0
+	github.com/plaid/plaid-go/v48 v48.0.0
 	github.com/shopspring/decimal v1.5.0
 	github.com/sirupsen/logrus v1.10.2
 	github.com/stephenafamo/bob v0.50.0
