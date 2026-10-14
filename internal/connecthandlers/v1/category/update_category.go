@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 
 	category "github.com/carson-networks/budget-server/internal/connecthandlers/gen/category/v1"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
@@ -12,27 +12,27 @@ import (
 )
 
 // UpdateCategory implements category.v1.CategoryService.UpdateCategory.
-func (s *Service) UpdateCategory(ctx context.Context, req *connect.Request[category.UpdateCategoryRequest]) (*connect.Response[category.UpdateCategoryResponse], error) {
-	id, err := uuid.FromString(req.Msg.GetId())
+func (s *Service) UpdateCategory(ctx context.Context, req *category.UpdateCategoryRequest) (*category.UpdateCategoryResponse, error) {
+	id, err := uuid.FromString(req.GetId())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
 	}
 
 	var name *string
-	if req.Msg.Name != nil {
-		name = req.Msg.Name
+	if req.Name != nil {
+		name = req.Name
 	}
 	var parentCategoryID *uuid.UUID
-	if req.Msg.ParentCategoryId != nil && *req.Msg.ParentCategoryId != "" {
-		pid, perr := uuid.FromString(*req.Msg.ParentCategoryId)
+	if req.ParentCategoryId != nil && *req.ParentCategoryId != "" {
+		pid, perr := uuid.FromString(*req.ParentCategoryId)
 		if perr != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, perr)
+			return nil, connect.NewError(connect.CodeInvalidArgument, perr.Error()).WithCause(perr)
 		}
 		parentCategoryID = &pid
 	}
 	var isDisabled *bool
-	if req.Msg.IsDisabled != nil {
-		isDisabled = req.Msg.IsDisabled
+	if req.IsDisabled != nil {
+		isDisabled = req.IsDisabled
 	}
 
 	action := &actions.UpdateCategory{
@@ -45,14 +45,14 @@ func (s *Service) UpdateCategory(ctx context.Context, req *connect.Request[categ
 	if err := s.Operator.Process(ctx, action); err != nil {
 		switch {
 		case errors.Is(err, actions.ErrCategoryNotFound):
-			return nil, connect.NewError(connect.CodeNotFound, err)
+			return nil, connect.NewError(connect.CodeNotFound, err.Error()).WithCause(err)
 		case errors.Is(err, actions.ErrParentCategoryNotFound):
-			return nil, connect.NewError(connect.CodeNotFound, err)
+			return nil, connect.NewError(connect.CodeNotFound, err.Error()).WithCause(err)
 		case errors.Is(err, actions.ErrSpecifiedCategoryParentIsNotParent):
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
 		default:
-			return nil, connect.NewError(connect.CodeInternal, err)
+			return nil, connect.NewError(connect.CodeInternal, err.Error()).WithCause(err)
 		}
 	}
-	return connect.NewResponse(&category.UpdateCategoryResponse{}), nil
+	return &category.UpdateCategoryResponse{}, nil
 }

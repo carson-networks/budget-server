@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"time"
 
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
 	"github.com/sirupsen/logrus"
 
 	account "github.com/carson-networks/budget-server/internal/connecthandlers/gen/account/v1"
@@ -47,17 +49,15 @@ func (c *ConnectServer) Serve() {
 	budgetSvc := &v1Budget.Service{Deps: deps}
 	plaidSvc := &v1Plaid.Service{Deps: deps}
 
+	connectServer := connect.NewServer()
+	account.RegisterAccountServiceHandler(connectServer, accountSvc)
+	transaction.RegisterTransactionServiceHandler(connectServer, transactionSvc)
+	category.RegisterCategoryServiceHandler(connectServer, categorySvc)
+	budget.RegisterBudgetServiceHandler(connectServer, budgetSvc)
+	plaid.RegisterPlaidServiceHandler(connectServer, plaidSvc)
+
 	mux := http.NewServeMux()
-	for _, reg := range []func() (string, http.Handler){
-		func() (string, http.Handler) { return account.NewAccountServiceHandler(accountSvc) },
-		func() (string, http.Handler) { return transaction.NewTransactionServiceHandler(transactionSvc) },
-		func() (string, http.Handler) { return category.NewCategoryServiceHandler(categorySvc) },
-		func() (string, http.Handler) { return budget.NewBudgetServiceHandler(budgetSvc) },
-		func() (string, http.Handler) { return plaid.NewPlaidServiceHandler(plaidSvc) },
-	} {
-		path, h := reg()
-		mux.Handle(path, h)
-	}
+	connecthttp.Mount(mux, connectServer)
 
 	handler := LoggingMiddleware(c.Logger)(CorsMiddleware(mux))
 	server := http.Server{

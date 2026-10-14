@@ -5,220 +5,242 @@
 package v1
 
 import (
-	connect "connectrpc.com/connect"
 	context "context"
-	errors "errors"
-	http "net/http"
-	strings "strings"
-)
+	sync "sync"
 
-// This is a compile-time assertion to ensure that this generated file and the connect package are
-// compatible. If you get a compiler error that this constant is not defined, this code was
-// generated with a version of connect newer than the one compiled into your binary. You can fix the
-// problem by either regenerating this code with an older version of connect or updating the connect
-// version compiled into your binary.
-const _ = connect.IsAtLeastVersion1_13_0
+	connect "connectrpc.com/connect/v2"
+)
 
 const (
 	// AccountServiceName is the fully-qualified name of the AccountService service.
 	AccountServiceName = "account.v1.AccountService"
 )
 
-// These constants are the fully-qualified names of the RPCs defined in this package. They're
-// exposed at runtime as Spec.Procedure and as the final two segments of the HTTP route.
+// These constants are the procedure names of the RPCs defined in this package. They're exposed at
+// runtime as Spec.Procedure and as the final two segments of the HTTP route.
 //
 // Note that these are different from the fully-qualified method names used by
 // google.golang.org/protobuf/reflect/protoreflect. To convert from these constants to
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// AccountServiceListAccountsProcedure is the fully-qualified name of the AccountService's
-	// ListAccounts RPC.
+	// AccountServiceListAccountsProcedure is the procedure name of the AccountService's ListAccounts
+	// RPC.
 	AccountServiceListAccountsProcedure = "/account.v1.AccountService/ListAccounts"
-	// AccountServiceCreateAccountProcedure is the fully-qualified name of the AccountService's
-	// CreateAccount RPC.
+	// AccountServiceCreateAccountProcedure is the procedure name of the AccountService's CreateAccount
+	// RPC.
 	AccountServiceCreateAccountProcedure = "/account.v1.AccountService/CreateAccount"
-	// AccountServiceUpdateAccountProcedure is the fully-qualified name of the AccountService's
-	// UpdateAccount RPC.
+	// AccountServiceUpdateAccountProcedure is the procedure name of the AccountService's UpdateAccount
+	// RPC.
 	AccountServiceUpdateAccountProcedure = "/account.v1.AccountService/UpdateAccount"
-	// AccountServiceDeleteAccountProcedure is the fully-qualified name of the AccountService's
-	// DeleteAccount RPC.
+	// AccountServiceDeleteAccountProcedure is the procedure name of the AccountService's DeleteAccount
+	// RPC.
 	AccountServiceDeleteAccountProcedure = "/account.v1.AccountService/DeleteAccount"
-	// AccountServiceSyncAccountsProcedure is the fully-qualified name of the AccountService's
-	// SyncAccounts RPC.
+	// AccountServiceSyncAccountsProcedure is the procedure name of the AccountService's SyncAccounts
+	// RPC.
 	AccountServiceSyncAccountsProcedure = "/account.v1.AccountService/SyncAccounts"
+)
+
+var (
+	accountServiceListAccountsSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     File_account_v1_account_proto.Services().ByName("AccountService").Methods().ByName("ListAccounts"),
+			Procedure:  AccountServiceListAccountsProcedure,
+		}
+	})
+	accountServiceCreateAccountSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     File_account_v1_account_proto.Services().ByName("AccountService").Methods().ByName("CreateAccount"),
+			Procedure:  AccountServiceCreateAccountProcedure,
+		}
+	})
+	accountServiceUpdateAccountSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     File_account_v1_account_proto.Services().ByName("AccountService").Methods().ByName("UpdateAccount"),
+			Procedure:  AccountServiceUpdateAccountProcedure,
+		}
+	})
+	accountServiceDeleteAccountSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     File_account_v1_account_proto.Services().ByName("AccountService").Methods().ByName("DeleteAccount"),
+			Procedure:  AccountServiceDeleteAccountProcedure,
+		}
+	})
+	accountServiceSyncAccountsSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     File_account_v1_account_proto.Services().ByName("AccountService").Methods().ByName("SyncAccounts"),
+			Procedure:  AccountServiceSyncAccountsProcedure,
+		}
+	})
 )
 
 // AccountServiceClient is a client for the account.v1.AccountService service.
 type AccountServiceClient interface {
-	ListAccounts(context.Context, *connect.Request[ListAccountsRequest]) (*connect.Response[ListAccountsResponse], error)
-	CreateAccount(context.Context, *connect.Request[CreateAccountRequest]) (*connect.Response[CreateAccountResponse], error)
-	UpdateAccount(context.Context, *connect.Request[UpdateAccountRequest]) (*connect.Response[UpdateAccountResponse], error)
-	DeleteAccount(context.Context, *connect.Request[DeleteAccountRequest]) (*connect.Response[DeleteAccountResponse], error)
-	SyncAccounts(context.Context, *connect.Request[SyncAccountsRequest]) (*connect.Response[SyncAccountsResponse], error)
+	ListAccounts(context.Context, *ListAccountsRequest) (*ListAccountsResponse, error)
+	CreateAccount(context.Context, *CreateAccountRequest) (*CreateAccountResponse, error)
+	UpdateAccount(context.Context, *UpdateAccountRequest) (*UpdateAccountResponse, error)
+	DeleteAccount(context.Context, *DeleteAccountRequest) (*DeleteAccountResponse, error)
+	SyncAccounts(context.Context, *SyncAccountsRequest) (*SyncAccountsResponse, error)
 }
 
-// NewAccountServiceClient constructs a client for the account.v1.AccountService service. By
-// default, it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses,
-// and sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the
-// connect.WithGRPC() or connect.WithGRPCWeb() options.
-//
-// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
-// http://api.acme.com or https://acme.com/grpc).
-func NewAccountServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) AccountServiceClient {
-	baseURL = strings.TrimRight(baseURL, "/")
-	accountServiceMethods := File_account_v1_account_proto.Services().ByName("AccountService").Methods()
-	return &accountServiceClient{
-		listAccounts: connect.NewClient[ListAccountsRequest, ListAccountsResponse](
-			httpClient,
-			baseURL+AccountServiceListAccountsProcedure,
-			connect.WithSchema(accountServiceMethods.ByName("ListAccounts")),
-			connect.WithClientOptions(opts...),
-		),
-		createAccount: connect.NewClient[CreateAccountRequest, CreateAccountResponse](
-			httpClient,
-			baseURL+AccountServiceCreateAccountProcedure,
-			connect.WithSchema(accountServiceMethods.ByName("CreateAccount")),
-			connect.WithClientOptions(opts...),
-		),
-		updateAccount: connect.NewClient[UpdateAccountRequest, UpdateAccountResponse](
-			httpClient,
-			baseURL+AccountServiceUpdateAccountProcedure,
-			connect.WithSchema(accountServiceMethods.ByName("UpdateAccount")),
-			connect.WithClientOptions(opts...),
-		),
-		deleteAccount: connect.NewClient[DeleteAccountRequest, DeleteAccountResponse](
-			httpClient,
-			baseURL+AccountServiceDeleteAccountProcedure,
-			connect.WithSchema(accountServiceMethods.ByName("DeleteAccount")),
-			connect.WithClientOptions(opts...),
-		),
-		syncAccounts: connect.NewClient[SyncAccountsRequest, SyncAccountsResponse](
-			httpClient,
-			baseURL+AccountServiceSyncAccountsProcedure,
-			connect.WithSchema(accountServiceMethods.ByName("SyncAccounts")),
-			connect.WithClientOptions(opts...),
-		),
-	}
-}
-
-// accountServiceClient implements AccountServiceClient.
-type accountServiceClient struct {
-	listAccounts  *connect.Client[ListAccountsRequest, ListAccountsResponse]
-	createAccount *connect.Client[CreateAccountRequest, CreateAccountResponse]
-	updateAccount *connect.Client[UpdateAccountRequest, UpdateAccountResponse]
-	deleteAccount *connect.Client[DeleteAccountRequest, DeleteAccountResponse]
-	syncAccounts  *connect.Client[SyncAccountsRequest, SyncAccountsResponse]
-}
-
-// ListAccounts calls account.v1.AccountService.ListAccounts.
-func (c *accountServiceClient) ListAccounts(ctx context.Context, req *connect.Request[ListAccountsRequest]) (*connect.Response[ListAccountsResponse], error) {
-	return c.listAccounts.CallUnary(ctx, req)
-}
-
-// CreateAccount calls account.v1.AccountService.CreateAccount.
-func (c *accountServiceClient) CreateAccount(ctx context.Context, req *connect.Request[CreateAccountRequest]) (*connect.Response[CreateAccountResponse], error) {
-	return c.createAccount.CallUnary(ctx, req)
-}
-
-// UpdateAccount calls account.v1.AccountService.UpdateAccount.
-func (c *accountServiceClient) UpdateAccount(ctx context.Context, req *connect.Request[UpdateAccountRequest]) (*connect.Response[UpdateAccountResponse], error) {
-	return c.updateAccount.CallUnary(ctx, req)
-}
-
-// DeleteAccount calls account.v1.AccountService.DeleteAccount.
-func (c *accountServiceClient) DeleteAccount(ctx context.Context, req *connect.Request[DeleteAccountRequest]) (*connect.Response[DeleteAccountResponse], error) {
-	return c.deleteAccount.CallUnary(ctx, req)
-}
-
-// SyncAccounts calls account.v1.AccountService.SyncAccounts.
-func (c *accountServiceClient) SyncAccounts(ctx context.Context, req *connect.Request[SyncAccountsRequest]) (*connect.Response[SyncAccountsResponse], error) {
-	return c.syncAccounts.CallUnary(ctx, req)
+// NewAccountServiceClient constructs a client for the account.v1.AccountService service. Multiple
+// service clients may share a single connect.Client.
+func NewAccountServiceClient(client *connect.Client) AccountServiceClient {
+	return &accountServiceClient{client: client}
 }
 
 // AccountServiceHandler is an implementation of the account.v1.AccountService service.
 type AccountServiceHandler interface {
-	ListAccounts(context.Context, *connect.Request[ListAccountsRequest]) (*connect.Response[ListAccountsResponse], error)
-	CreateAccount(context.Context, *connect.Request[CreateAccountRequest]) (*connect.Response[CreateAccountResponse], error)
-	UpdateAccount(context.Context, *connect.Request[UpdateAccountRequest]) (*connect.Response[UpdateAccountResponse], error)
-	DeleteAccount(context.Context, *connect.Request[DeleteAccountRequest]) (*connect.Response[DeleteAccountResponse], error)
-	SyncAccounts(context.Context, *connect.Request[SyncAccountsRequest]) (*connect.Response[SyncAccountsResponse], error)
+	ListAccounts(context.Context, *ListAccountsRequest) (*ListAccountsResponse, error)
+	CreateAccount(context.Context, *CreateAccountRequest) (*CreateAccountResponse, error)
+	UpdateAccount(context.Context, *UpdateAccountRequest) (*UpdateAccountResponse, error)
+	DeleteAccount(context.Context, *DeleteAccountRequest) (*DeleteAccountResponse, error)
+	SyncAccounts(context.Context, *SyncAccountsRequest) (*SyncAccountsResponse, error)
 }
 
-// NewAccountServiceHandler builds an HTTP handler from the service implementation. It returns the
-// path on which to mount the handler and the handler itself.
-//
-// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
-// and JSON codecs. They also support gzip compression.
-func NewAccountServiceHandler(svc AccountServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	accountServiceMethods := File_account_v1_account_proto.Services().ByName("AccountService").Methods()
-	accountServiceListAccountsHandler := connect.NewUnaryHandler(
-		AccountServiceListAccountsProcedure,
-		svc.ListAccounts,
-		connect.WithSchema(accountServiceMethods.ByName("ListAccounts")),
-		connect.WithHandlerOptions(opts...),
+// RegisterAccountServiceHandler registers svc as the account.v1.AccountService implementation on
+// server.
+func RegisterAccountServiceHandler(server *connect.Server, svc AccountServiceHandler) {
+	adapter := accountServiceHandler{svc: svc}
+	server.Register(
+		connect.Method{Spec: accountServiceListAccountsSpec(), Handler: adapter.listAccounts},
+		connect.Method{Spec: accountServiceCreateAccountSpec(), Handler: adapter.createAccount},
+		connect.Method{Spec: accountServiceUpdateAccountSpec(), Handler: adapter.updateAccount},
+		connect.Method{Spec: accountServiceDeleteAccountSpec(), Handler: adapter.deleteAccount},
+		connect.Method{Spec: accountServiceSyncAccountsSpec(), Handler: adapter.syncAccounts},
 	)
-	accountServiceCreateAccountHandler := connect.NewUnaryHandler(
-		AccountServiceCreateAccountProcedure,
-		svc.CreateAccount,
-		connect.WithSchema(accountServiceMethods.ByName("CreateAccount")),
-		connect.WithHandlerOptions(opts...),
-	)
-	accountServiceUpdateAccountHandler := connect.NewUnaryHandler(
-		AccountServiceUpdateAccountProcedure,
-		svc.UpdateAccount,
-		connect.WithSchema(accountServiceMethods.ByName("UpdateAccount")),
-		connect.WithHandlerOptions(opts...),
-	)
-	accountServiceDeleteAccountHandler := connect.NewUnaryHandler(
-		AccountServiceDeleteAccountProcedure,
-		svc.DeleteAccount,
-		connect.WithSchema(accountServiceMethods.ByName("DeleteAccount")),
-		connect.WithHandlerOptions(opts...),
-	)
-	accountServiceSyncAccountsHandler := connect.NewUnaryHandler(
-		AccountServiceSyncAccountsProcedure,
-		svc.SyncAccounts,
-		connect.WithSchema(accountServiceMethods.ByName("SyncAccounts")),
-		connect.WithHandlerOptions(opts...),
-	)
-	return "/account.v1.AccountService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case AccountServiceListAccountsProcedure:
-			accountServiceListAccountsHandler.ServeHTTP(w, r)
-		case AccountServiceCreateAccountProcedure:
-			accountServiceCreateAccountHandler.ServeHTTP(w, r)
-		case AccountServiceUpdateAccountProcedure:
-			accountServiceUpdateAccountHandler.ServeHTTP(w, r)
-		case AccountServiceDeleteAccountProcedure:
-			accountServiceDeleteAccountHandler.ServeHTTP(w, r)
-		case AccountServiceSyncAccountsProcedure:
-			accountServiceSyncAccountsHandler.ServeHTTP(w, r)
-		default:
-			http.NotFound(w, r)
-		}
-	})
 }
 
 // UnimplementedAccountServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedAccountServiceHandler struct{}
 
-func (UnimplementedAccountServiceHandler) ListAccounts(context.Context, *connect.Request[ListAccountsRequest]) (*connect.Response[ListAccountsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("account.v1.AccountService.ListAccounts is not implemented"))
+func (UnimplementedAccountServiceHandler) ListAccounts(context.Context, *ListAccountsRequest) (*ListAccountsResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "account.v1.AccountService.ListAccounts is not implemented")
 }
 
-func (UnimplementedAccountServiceHandler) CreateAccount(context.Context, *connect.Request[CreateAccountRequest]) (*connect.Response[CreateAccountResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("account.v1.AccountService.CreateAccount is not implemented"))
+func (UnimplementedAccountServiceHandler) CreateAccount(context.Context, *CreateAccountRequest) (*CreateAccountResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "account.v1.AccountService.CreateAccount is not implemented")
 }
 
-func (UnimplementedAccountServiceHandler) UpdateAccount(context.Context, *connect.Request[UpdateAccountRequest]) (*connect.Response[UpdateAccountResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("account.v1.AccountService.UpdateAccount is not implemented"))
+func (UnimplementedAccountServiceHandler) UpdateAccount(context.Context, *UpdateAccountRequest) (*UpdateAccountResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "account.v1.AccountService.UpdateAccount is not implemented")
 }
 
-func (UnimplementedAccountServiceHandler) DeleteAccount(context.Context, *connect.Request[DeleteAccountRequest]) (*connect.Response[DeleteAccountResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("account.v1.AccountService.DeleteAccount is not implemented"))
+func (UnimplementedAccountServiceHandler) DeleteAccount(context.Context, *DeleteAccountRequest) (*DeleteAccountResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "account.v1.AccountService.DeleteAccount is not implemented")
 }
 
-func (UnimplementedAccountServiceHandler) SyncAccounts(context.Context, *connect.Request[SyncAccountsRequest]) (*connect.Response[SyncAccountsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("account.v1.AccountService.SyncAccounts is not implemented"))
+func (UnimplementedAccountServiceHandler) SyncAccounts(context.Context, *SyncAccountsRequest) (*SyncAccountsResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "account.v1.AccountService.SyncAccounts is not implemented")
+}
+
+type accountServiceClient struct {
+	client *connect.Client
+}
+
+func (c *accountServiceClient) ListAccounts(ctx context.Context, req *ListAccountsRequest) (*ListAccountsResponse, error) {
+	var res ListAccountsResponse
+	if err := c.client.CallUnary(ctx, accountServiceListAccountsSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *accountServiceClient) CreateAccount(ctx context.Context, req *CreateAccountRequest) (*CreateAccountResponse, error) {
+	var res CreateAccountResponse
+	if err := c.client.CallUnary(ctx, accountServiceCreateAccountSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *accountServiceClient) UpdateAccount(ctx context.Context, req *UpdateAccountRequest) (*UpdateAccountResponse, error) {
+	var res UpdateAccountResponse
+	if err := c.client.CallUnary(ctx, accountServiceUpdateAccountSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *accountServiceClient) DeleteAccount(ctx context.Context, req *DeleteAccountRequest) (*DeleteAccountResponse, error) {
+	var res DeleteAccountResponse
+	if err := c.client.CallUnary(ctx, accountServiceDeleteAccountSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *accountServiceClient) SyncAccounts(ctx context.Context, req *SyncAccountsRequest) (*SyncAccountsResponse, error) {
+	var res SyncAccountsResponse
+	if err := c.client.CallUnary(ctx, accountServiceSyncAccountsSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+type accountServiceHandler struct{ svc AccountServiceHandler }
+
+func (h accountServiceHandler) listAccounts(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req ListAccountsRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ListAccounts(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h accountServiceHandler) createAccount(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req CreateAccountRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.CreateAccount(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h accountServiceHandler) updateAccount(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req UpdateAccountRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.UpdateAccount(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h accountServiceHandler) deleteAccount(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req DeleteAccountRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.DeleteAccount(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h accountServiceHandler) syncAccounts(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req SyncAccountsRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SyncAccounts(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
 }

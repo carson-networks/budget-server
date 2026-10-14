@@ -2,9 +2,8 @@ package v1Category
 
 import (
 	"context"
-	"errors"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	category "github.com/carson-networks/budget-server/internal/connecthandlers/gen/category/v1"
@@ -13,13 +12,13 @@ import (
 )
 
 // ListCategories implements category.v1.CategoryService.ListCategories.
-func (s *Service) ListCategories(ctx context.Context, req *connect.Request[category.ListCategoriesRequest]) (*connect.Response[category.ListCategoriesResponse], error) {
+func (s *Service) ListCategories(ctx context.Context, req *category.ListCategoriesRequest) (*category.ListCategoriesResponse, error) {
 	logData := logging.GetLogData(ctx)
 	limit := 20
 	offset := 0
-	if c := req.Msg.GetCursor(); c != nil {
+	if c := req.GetCursor(); c != nil {
 		if c.GetPosition() < 0 {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cursor position must be non-negative"))
+			return nil, connect.NewError(connect.CodeInvalidArgument, "cursor position must be non-negative")
 		}
 		offset = int(c.GetPosition())
 		if c.GetLimit() > 0 {
@@ -40,7 +39,7 @@ func (s *Service) ListCategories(ctx context.Context, req *connect.Request[categ
 		stopTimer()
 	}
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInternal, err.Error()).WithCause(err)
 	}
 
 	categories := result.Categories
@@ -75,5 +74,5 @@ func (s *Service) ListCategories(ctx context.Context, req *connect.Request[categ
 			Limit:    int32(result.NextCursor.Limit),
 		}
 	}
-	return connect.NewResponse(out), nil
+	return out, nil
 }

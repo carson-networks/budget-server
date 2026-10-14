@@ -6,191 +6,204 @@ package v1
 
 import (
 	context "context"
-	errors "errors"
-	http "net/http"
-	strings "strings"
+	sync "sync"
 
-	connect "connectrpc.com/connect"
+	connect "connectrpc.com/connect/v2"
 )
-
-// This is a compile-time assertion to ensure that this generated file and the connect package are
-// compatible. If you get a compiler error that this constant is not defined, this code was
-// generated with a version of connect newer than the one compiled into your binary. You can fix the
-// problem by either regenerating this code with an older version of connect or updating the connect
-// version compiled into your binary.
-const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// TransactionServiceName is the fully-qualified name of the TransactionService service.
 	TransactionServiceName = "transaction.v1.TransactionService"
 )
 
-// These constants are the fully-qualified names of the RPCs defined in this package. They're
-// exposed at runtime as Spec.Procedure and as the final two segments of the HTTP route.
+// These constants are the procedure names of the RPCs defined in this package. They're exposed at
+// runtime as Spec.Procedure and as the final two segments of the HTTP route.
 //
 // Note that these are different from the fully-qualified method names used by
 // google.golang.org/protobuf/reflect/protoreflect. To convert from these constants to
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// TransactionServiceListTransactionsProcedure is the fully-qualified name of the
-	// TransactionService's ListTransactions RPC.
+	// TransactionServiceListTransactionsProcedure is the procedure name of the TransactionService's
+	// ListTransactions RPC.
 	TransactionServiceListTransactionsProcedure = "/transaction.v1.TransactionService/ListTransactions"
-	// TransactionServiceGetTransactionTotalsProcedure is the fully-qualified name of the
-	// TransactionService's GetTransactionTotals RPC.
+	// TransactionServiceGetTransactionTotalsProcedure is the procedure name of the TransactionService's
+	// GetTransactionTotals RPC.
 	TransactionServiceGetTransactionTotalsProcedure = "/transaction.v1.TransactionService/GetTransactionTotals"
-	// TransactionServiceCreateTransactionProcedure is the fully-qualified name of the
-	// TransactionService's CreateTransaction RPC.
+	// TransactionServiceCreateTransactionProcedure is the procedure name of the TransactionService's
+	// CreateTransaction RPC.
 	TransactionServiceCreateTransactionProcedure = "/transaction.v1.TransactionService/CreateTransaction"
-	// TransactionServiceUpdateTransactionProcedure is the fully-qualified name of the
-	// TransactionService's UpdateTransaction RPC.
+	// TransactionServiceUpdateTransactionProcedure is the procedure name of the TransactionService's
+	// UpdateTransaction RPC.
 	TransactionServiceUpdateTransactionProcedure = "/transaction.v1.TransactionService/UpdateTransaction"
+)
+
+var (
+	transactionServiceListTransactionsSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     File_transaction_v1_transaction_proto.Services().ByName("TransactionService").Methods().ByName("ListTransactions"),
+			Procedure:  TransactionServiceListTransactionsProcedure,
+		}
+	})
+	transactionServiceGetTransactionTotalsSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     File_transaction_v1_transaction_proto.Services().ByName("TransactionService").Methods().ByName("GetTransactionTotals"),
+			Procedure:  TransactionServiceGetTransactionTotalsProcedure,
+		}
+	})
+	transactionServiceCreateTransactionSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     File_transaction_v1_transaction_proto.Services().ByName("TransactionService").Methods().ByName("CreateTransaction"),
+			Procedure:  TransactionServiceCreateTransactionProcedure,
+		}
+	})
+	transactionServiceUpdateTransactionSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     File_transaction_v1_transaction_proto.Services().ByName("TransactionService").Methods().ByName("UpdateTransaction"),
+			Procedure:  TransactionServiceUpdateTransactionProcedure,
+		}
+	})
 )
 
 // TransactionServiceClient is a client for the transaction.v1.TransactionService service.
 type TransactionServiceClient interface {
-	ListTransactions(context.Context, *connect.Request[ListTransactionsRequest]) (*connect.Response[ListTransactionsResponse], error)
-	GetTransactionTotals(context.Context, *connect.Request[GetTransactionTotalsRequest]) (*connect.Response[GetTransactionTotalsResponse], error)
-	CreateTransaction(context.Context, *connect.Request[CreateTransactionRequest]) (*connect.Response[CreateTransactionResponse], error)
-	UpdateTransaction(context.Context, *connect.Request[UpdateTransactionRequest]) (*connect.Response[UpdateTransactionResponse], error)
+	ListTransactions(context.Context, *ListTransactionsRequest) (*ListTransactionsResponse, error)
+	GetTransactionTotals(context.Context, *GetTransactionTotalsRequest) (*GetTransactionTotalsResponse, error)
+	CreateTransaction(context.Context, *CreateTransactionRequest) (*CreateTransactionResponse, error)
+	UpdateTransaction(context.Context, *UpdateTransactionRequest) (*UpdateTransactionResponse, error)
 }
 
 // NewTransactionServiceClient constructs a client for the transaction.v1.TransactionService
-// service. By default, it uses the Connect protocol with the binary Protobuf Codec, asks for
-// gzipped responses, and sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply
-// the connect.WithGRPC() or connect.WithGRPCWeb() options.
-//
-// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
-// http://api.acme.com or https://acme.com/grpc).
-func NewTransactionServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) TransactionServiceClient {
-	baseURL = strings.TrimRight(baseURL, "/")
-	transactionServiceMethods := File_transaction_v1_transaction_proto.Services().ByName("TransactionService").Methods()
-	return &transactionServiceClient{
-		listTransactions: connect.NewClient[ListTransactionsRequest, ListTransactionsResponse](
-			httpClient,
-			baseURL+TransactionServiceListTransactionsProcedure,
-			connect.WithSchema(transactionServiceMethods.ByName("ListTransactions")),
-			connect.WithClientOptions(opts...),
-		),
-		getTransactionTotals: connect.NewClient[GetTransactionTotalsRequest, GetTransactionTotalsResponse](
-			httpClient,
-			baseURL+TransactionServiceGetTransactionTotalsProcedure,
-			connect.WithSchema(transactionServiceMethods.ByName("GetTransactionTotals")),
-			connect.WithClientOptions(opts...),
-		),
-		createTransaction: connect.NewClient[CreateTransactionRequest, CreateTransactionResponse](
-			httpClient,
-			baseURL+TransactionServiceCreateTransactionProcedure,
-			connect.WithSchema(transactionServiceMethods.ByName("CreateTransaction")),
-			connect.WithClientOptions(opts...),
-		),
-		updateTransaction: connect.NewClient[UpdateTransactionRequest, UpdateTransactionResponse](
-			httpClient,
-			baseURL+TransactionServiceUpdateTransactionProcedure,
-			connect.WithSchema(transactionServiceMethods.ByName("UpdateTransaction")),
-			connect.WithClientOptions(opts...),
-		),
-	}
-}
-
-// transactionServiceClient implements TransactionServiceClient.
-type transactionServiceClient struct {
-	listTransactions     *connect.Client[ListTransactionsRequest, ListTransactionsResponse]
-	getTransactionTotals *connect.Client[GetTransactionTotalsRequest, GetTransactionTotalsResponse]
-	createTransaction    *connect.Client[CreateTransactionRequest, CreateTransactionResponse]
-	updateTransaction    *connect.Client[UpdateTransactionRequest, UpdateTransactionResponse]
-}
-
-// ListTransactions calls transaction.v1.TransactionService.ListTransactions.
-func (c *transactionServiceClient) ListTransactions(ctx context.Context, req *connect.Request[ListTransactionsRequest]) (*connect.Response[ListTransactionsResponse], error) {
-	return c.listTransactions.CallUnary(ctx, req)
-}
-
-// GetTransactionTotals calls transaction.v1.TransactionService.GetTransactionTotals.
-func (c *transactionServiceClient) GetTransactionTotals(ctx context.Context, req *connect.Request[GetTransactionTotalsRequest]) (*connect.Response[GetTransactionTotalsResponse], error) {
-	return c.getTransactionTotals.CallUnary(ctx, req)
-}
-
-// CreateTransaction calls transaction.v1.TransactionService.CreateTransaction.
-func (c *transactionServiceClient) CreateTransaction(ctx context.Context, req *connect.Request[CreateTransactionRequest]) (*connect.Response[CreateTransactionResponse], error) {
-	return c.createTransaction.CallUnary(ctx, req)
-}
-
-// UpdateTransaction calls transaction.v1.TransactionService.UpdateTransaction.
-func (c *transactionServiceClient) UpdateTransaction(ctx context.Context, req *connect.Request[UpdateTransactionRequest]) (*connect.Response[UpdateTransactionResponse], error) {
-	return c.updateTransaction.CallUnary(ctx, req)
+// service. Multiple service clients may share a single connect.Client.
+func NewTransactionServiceClient(client *connect.Client) TransactionServiceClient {
+	return &transactionServiceClient{client: client}
 }
 
 // TransactionServiceHandler is an implementation of the transaction.v1.TransactionService service.
 type TransactionServiceHandler interface {
-	ListTransactions(context.Context, *connect.Request[ListTransactionsRequest]) (*connect.Response[ListTransactionsResponse], error)
-	GetTransactionTotals(context.Context, *connect.Request[GetTransactionTotalsRequest]) (*connect.Response[GetTransactionTotalsResponse], error)
-	CreateTransaction(context.Context, *connect.Request[CreateTransactionRequest]) (*connect.Response[CreateTransactionResponse], error)
-	UpdateTransaction(context.Context, *connect.Request[UpdateTransactionRequest]) (*connect.Response[UpdateTransactionResponse], error)
+	ListTransactions(context.Context, *ListTransactionsRequest) (*ListTransactionsResponse, error)
+	GetTransactionTotals(context.Context, *GetTransactionTotalsRequest) (*GetTransactionTotalsResponse, error)
+	CreateTransaction(context.Context, *CreateTransactionRequest) (*CreateTransactionResponse, error)
+	UpdateTransaction(context.Context, *UpdateTransactionRequest) (*UpdateTransactionResponse, error)
 }
 
-// NewTransactionServiceHandler builds an HTTP handler from the service implementation. It returns
-// the path on which to mount the handler and the handler itself.
-//
-// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
-// and JSON codecs. They also support gzip compression.
-func NewTransactionServiceHandler(svc TransactionServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	transactionServiceMethods := File_transaction_v1_transaction_proto.Services().ByName("TransactionService").Methods()
-	transactionServiceListTransactionsHandler := connect.NewUnaryHandler(
-		TransactionServiceListTransactionsProcedure,
-		svc.ListTransactions,
-		connect.WithSchema(transactionServiceMethods.ByName("ListTransactions")),
-		connect.WithHandlerOptions(opts...),
+// RegisterTransactionServiceHandler registers svc as the transaction.v1.TransactionService
+// implementation on server.
+func RegisterTransactionServiceHandler(server *connect.Server, svc TransactionServiceHandler) {
+	adapter := transactionServiceHandler{svc: svc}
+	server.Register(
+		connect.Method{Spec: transactionServiceListTransactionsSpec(), Handler: adapter.listTransactions},
+		connect.Method{Spec: transactionServiceGetTransactionTotalsSpec(), Handler: adapter.getTransactionTotals},
+		connect.Method{Spec: transactionServiceCreateTransactionSpec(), Handler: adapter.createTransaction},
+		connect.Method{Spec: transactionServiceUpdateTransactionSpec(), Handler: adapter.updateTransaction},
 	)
-	transactionServiceGetTransactionTotalsHandler := connect.NewUnaryHandler(
-		TransactionServiceGetTransactionTotalsProcedure,
-		svc.GetTransactionTotals,
-		connect.WithSchema(transactionServiceMethods.ByName("GetTransactionTotals")),
-		connect.WithHandlerOptions(opts...),
-	)
-	transactionServiceCreateTransactionHandler := connect.NewUnaryHandler(
-		TransactionServiceCreateTransactionProcedure,
-		svc.CreateTransaction,
-		connect.WithSchema(transactionServiceMethods.ByName("CreateTransaction")),
-		connect.WithHandlerOptions(opts...),
-	)
-	transactionServiceUpdateTransactionHandler := connect.NewUnaryHandler(
-		TransactionServiceUpdateTransactionProcedure,
-		svc.UpdateTransaction,
-		connect.WithSchema(transactionServiceMethods.ByName("UpdateTransaction")),
-		connect.WithHandlerOptions(opts...),
-	)
-	return "/transaction.v1.TransactionService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case TransactionServiceListTransactionsProcedure:
-			transactionServiceListTransactionsHandler.ServeHTTP(w, r)
-		case TransactionServiceGetTransactionTotalsProcedure:
-			transactionServiceGetTransactionTotalsHandler.ServeHTTP(w, r)
-		case TransactionServiceCreateTransactionProcedure:
-			transactionServiceCreateTransactionHandler.ServeHTTP(w, r)
-		case TransactionServiceUpdateTransactionProcedure:
-			transactionServiceUpdateTransactionHandler.ServeHTTP(w, r)
-		default:
-			http.NotFound(w, r)
-		}
-	})
 }
 
 // UnimplementedTransactionServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedTransactionServiceHandler struct{}
 
-func (UnimplementedTransactionServiceHandler) ListTransactions(context.Context, *connect.Request[ListTransactionsRequest]) (*connect.Response[ListTransactionsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("transaction.v1.TransactionService.ListTransactions is not implemented"))
+func (UnimplementedTransactionServiceHandler) ListTransactions(context.Context, *ListTransactionsRequest) (*ListTransactionsResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "transaction.v1.TransactionService.ListTransactions is not implemented")
 }
 
-func (UnimplementedTransactionServiceHandler) GetTransactionTotals(context.Context, *connect.Request[GetTransactionTotalsRequest]) (*connect.Response[GetTransactionTotalsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("transaction.v1.TransactionService.GetTransactionTotals is not implemented"))
+func (UnimplementedTransactionServiceHandler) GetTransactionTotals(context.Context, *GetTransactionTotalsRequest) (*GetTransactionTotalsResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "transaction.v1.TransactionService.GetTransactionTotals is not implemented")
 }
 
-func (UnimplementedTransactionServiceHandler) CreateTransaction(context.Context, *connect.Request[CreateTransactionRequest]) (*connect.Response[CreateTransactionResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("transaction.v1.TransactionService.CreateTransaction is not implemented"))
+func (UnimplementedTransactionServiceHandler) CreateTransaction(context.Context, *CreateTransactionRequest) (*CreateTransactionResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "transaction.v1.TransactionService.CreateTransaction is not implemented")
 }
 
-func (UnimplementedTransactionServiceHandler) UpdateTransaction(context.Context, *connect.Request[UpdateTransactionRequest]) (*connect.Response[UpdateTransactionResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("transaction.v1.TransactionService.UpdateTransaction is not implemented"))
+func (UnimplementedTransactionServiceHandler) UpdateTransaction(context.Context, *UpdateTransactionRequest) (*UpdateTransactionResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "transaction.v1.TransactionService.UpdateTransaction is not implemented")
+}
+
+type transactionServiceClient struct {
+	client *connect.Client
+}
+
+func (c *transactionServiceClient) ListTransactions(ctx context.Context, req *ListTransactionsRequest) (*ListTransactionsResponse, error) {
+	var res ListTransactionsResponse
+	if err := c.client.CallUnary(ctx, transactionServiceListTransactionsSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *transactionServiceClient) GetTransactionTotals(ctx context.Context, req *GetTransactionTotalsRequest) (*GetTransactionTotalsResponse, error) {
+	var res GetTransactionTotalsResponse
+	if err := c.client.CallUnary(ctx, transactionServiceGetTransactionTotalsSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *transactionServiceClient) CreateTransaction(ctx context.Context, req *CreateTransactionRequest) (*CreateTransactionResponse, error) {
+	var res CreateTransactionResponse
+	if err := c.client.CallUnary(ctx, transactionServiceCreateTransactionSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *transactionServiceClient) UpdateTransaction(ctx context.Context, req *UpdateTransactionRequest) (*UpdateTransactionResponse, error) {
+	var res UpdateTransactionResponse
+	if err := c.client.CallUnary(ctx, transactionServiceUpdateTransactionSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+type transactionServiceHandler struct{ svc TransactionServiceHandler }
+
+func (h transactionServiceHandler) listTransactions(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req ListTransactionsRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ListTransactions(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h transactionServiceHandler) getTransactionTotals(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req GetTransactionTotalsRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.GetTransactionTotals(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h transactionServiceHandler) createTransaction(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req CreateTransactionRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.CreateTransaction(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h transactionServiceHandler) updateTransaction(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req UpdateTransactionRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.UpdateTransaction(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
 }

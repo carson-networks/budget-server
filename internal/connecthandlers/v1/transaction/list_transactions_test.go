@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 	transaction "github.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction/v1"
 	"github.com/gofrs/uuid/v5"
 	"github.com/shopspring/decimal"
@@ -123,7 +123,7 @@ func TestListTransactions_InvalidFilterRejectedBeforeStorage(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			// No storage dependency is needed: validation must run before accessing it.
-			response, err := (&Service{}).ListTransactions(context.Background(), connect.NewRequest(test.request))
+			response, err := (&Service{}).ListTransactions(context.Background(), test.request)
 			assert.Nil(t, response)
 			assert.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 		})
@@ -163,7 +163,7 @@ func TestListTransactions_InvalidCategoryOrMonthRejectedBeforeStorage(t *testing
 		{"month thirteen", &transaction.ListTransactionsRequest{Month: &transaction.TransactionMonth{Year: 2025, Month: 13}}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			response, err := (&Service{}).ListTransactions(context.Background(), connect.NewRequest(test.request))
+			response, err := (&Service{}).ListTransactions(context.Background(), test.request)
 			assert.Nil(t, response)
 			assert.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 		})

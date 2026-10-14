@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	plaidlib "github.com/plaid/plaid-go/v47/plaid"
+	plaidlib "github.com/plaid/plaid-go/v48/plaid"
 )
 
 type Client struct {
