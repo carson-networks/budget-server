@@ -21,6 +21,7 @@ type UpdateTransaction struct {
 	TransactionName *string
 	MerchantName    *string
 	TransactionDate *time.Time
+	NeedsReview     *bool
 }
 
 func (u *UpdateTransaction) Perform(ctx context.Context, writer *storage.Writer) error {
@@ -48,7 +49,7 @@ func (u *UpdateTransaction) Perform(ctx context.Context, writer *storage.Writer)
 	}
 	if err := writer.Transaction.Patch(ctx, u.ID, &transaction.TransactionPatch{
 		CategoryID: u.CategoryID, Amount: u.Amount, TransactionName: u.TransactionName,
-		MerchantName: u.MerchantName, TransactionDate: u.TransactionDate,
+		MerchantName: u.MerchantName, TransactionDate: u.TransactionDate, NeedsReview: u.NeedsReview,
 	}); err != nil {
 		return err
 	}

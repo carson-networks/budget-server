@@ -38,6 +38,7 @@ type Transaction struct {
 	TransactionDate time.Time           `db:"transaction_date" `
 	CreatedAt       time.Time           `db:"created_at" `
 	MerchantName    null.Val[string]    `db:"merchant_name" `
+	NeedsReview     bool                `db:"needs_review" `
 
 	R transactionR `db:"-" `
 
@@ -74,7 +75,7 @@ type transactionRLoaded struct {
 
 func buildTransactionColumns(tableName string) transactionColumns {
 	columnsExpr := expr.NewColumnsExpr(
-		"id", "account_id", "category_id", "amount", "transaction_name", "transaction_date", "created_at", "merchant_name",
+		"id", "account_id", "category_id", "amount", "transaction_name", "transaction_date", "created_at", "merchant_name", "needs_review",
 	)
 
 	if tableName != "" {
@@ -92,6 +93,7 @@ func buildTransactionColumns(tableName string) transactionColumns {
 		TransactionDate: buildTransactionColumn(tableName, "transaction_date"),
 		CreatedAt:       buildTransactionColumn(tableName, "created_at"),
 		MerchantName:    buildTransactionColumn(tableName, "merchant_name"),
+		NeedsReview:     buildTransactionColumn(tableName, "needs_review"),
 	}
 }
 
@@ -106,6 +108,7 @@ type transactionColumns struct {
 	TransactionDate transactionColumn
 	CreatedAt       transactionColumn
 	MerchantName    transactionColumn
+	NeedsReview     transactionColumn
 }
 
 // Alias returns the current table alias for the columns set.
@@ -159,10 +162,11 @@ type TransactionSetter struct {
 	TransactionDate omit.Val[time.Time]       `db:"transaction_date" `
 	CreatedAt       omit.Val[time.Time]       `db:"created_at" `
 	MerchantName    omitnull.Val[string]      `db:"merchant_name" `
+	NeedsReview     omit.Val[bool]            `db:"needs_review" `
 }
 
 func (s TransactionSetter) SetColumns() []string {
-	vals := make([]string, 0, 8)
+	vals := make([]string, 0, 9)
 	if s.ID.IsValue() {
 		vals = append(vals, "id")
 	}
@@ -186,6 +190,9 @@ func (s TransactionSetter) SetColumns() []string {
 	}
 	if s.MerchantName.IsValue() || s.MerchantName.IsNull() {
 		vals = append(vals, "merchant_name")
+	}
+	if s.NeedsReview.IsValue() {
+		vals = append(vals, "needs_review")
 	}
 	return vals
 }
@@ -214,6 +221,9 @@ func (s TransactionSetter) Overwrite(t *Transaction) {
 	}
 	if s.MerchantName.IsValue() || s.MerchantName.IsNull() {
 		t.MerchantName = s.MerchantName.MustGetNull()
+	}
+	if s.NeedsReview.IsValue() {
+		t.NeedsReview = s.NeedsReview.MustGet()
 	}
 }
 
@@ -263,6 +273,11 @@ func (s *TransactionSetter) Apply(q *dialect.InsertQuery) {
 				return psql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
 			}
 			return psql.Arg(s.MerchantName.MustGetNull()).WriteSQL(ctx, w, d, start)
+		}), bob.ExpressionFunc(func(ctx context.Context, w io.StringWriter, d bob.Dialect, start int) ([]any, error) {
+			if s.NeedsReview.IsUnset() {
+				return psql.Raw("DEFAULT").WriteSQL(ctx, w, d, start)
+			}
+			return psql.Arg(s.NeedsReview.MustGet()).WriteSQL(ctx, w, d, start)
 		}))
 }
 
@@ -271,7 +286,7 @@ func (s TransactionSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 }
 
 func (s TransactionSetter) Expressions(prefix ...string) []bob.Expression {
-	exprs := make([]bob.Expression, 0, 8)
+	exprs := make([]bob.Expression, 0, 9)
 
 	if s.ID.IsValue() {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
@@ -329,6 +344,13 @@ func (s TransactionSetter) Expressions(prefix ...string) []bob.Expression {
 		}})
 	}
 
+	if s.NeedsReview.IsValue() {
+		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
+			psql.Quote(append(prefix, "needs_review")...),
+			psql.Arg(s.NeedsReview),
+		}})
+	}
+
 	return exprs
 }
 
@@ -339,7 +361,7 @@ func transactionScanMapper(ctx context.Context, cols []string) (scan.BeforeFunc,
 		idx int
 		dst func(o *Transaction) any
 	}
-	targets := make([]target, 0, 8)
+	targets := make([]target, 0, 9)
 	for i, col := range cols {
 		switch col {
 		case "id":
@@ -358,6 +380,8 @@ func transactionScanMapper(ctx context.Context, cols []string) (scan.BeforeFunc,
 			targets = append(targets, target{i, func(o *Transaction) any { return &o.CreatedAt }})
 		case "merchant_name":
 			targets = append(targets, target{i, func(o *Transaction) any { return &o.MerchantName }})
+		case "needs_review":
+			targets = append(targets, target{i, func(o *Transaction) any { return &o.NeedsReview }})
 		}
 	}
 
@@ -896,6 +920,7 @@ type transactionWhere[Q psql.Filterable] struct {
 	TransactionDate psql.WhereMod[Q, time.Time]
 	CreatedAt       psql.WhereMod[Q, time.Time]
 	MerchantName    psql.WhereNullMod[Q, string]
+	NeedsReview     psql.WhereMod[Q, bool]
 	R               transactionWhereR[Q]
 }
 
@@ -914,6 +939,7 @@ func buildTransactionWhere[Q psql.Filterable](cols transactionColumns) transacti
 		TransactionDate: psql.Where[Q, time.Time](cols.TransactionDate.Expression),
 		CreatedAt:       psql.Where[Q, time.Time](cols.CreatedAt.Expression),
 		MerchantName:    psql.WhereNull[Q, string](cols.MerchantName.Expression),
+		NeedsReview:     psql.Where[Q, bool](cols.NeedsReview.Expression),
 		R:               transactionWhereR[Q]{cols: cols},
 	}
 }
@@ -979,6 +1005,7 @@ type transactionPreloadBuf struct {
 	TransactionDate null.Val[time.Time]
 	CreatedAt       null.Val[time.Time]
 	MerchantName    null.Val[string]
+	NeedsReview     null.Val[bool]
 }
 
 // transactionScanMapperNullable maps the preloaded transaction
@@ -993,7 +1020,7 @@ func transactionScanMapperNullable(prefix string) scan.Mapper[*Transaction] {
 			idx int
 			dst func(b *transactionPreloadBuf) any
 		}
-		targets := make([]target, 0, 8)
+		targets := make([]target, 0, 9)
 		for i, col := range cols {
 			name, ok := strings.CutPrefix(col, prefix)
 			if !ok {
@@ -1016,6 +1043,8 @@ func transactionScanMapperNullable(prefix string) scan.Mapper[*Transaction] {
 				targets = append(targets, target{i, func(b *transactionPreloadBuf) any { return &b.CreatedAt }})
 			case "merchant_name":
 				targets = append(targets, target{i, func(b *transactionPreloadBuf) any { return &b.MerchantName }})
+			case "needs_review":
+				targets = append(targets, target{i, func(b *transactionPreloadBuf) any { return &b.NeedsReview }})
 			}
 		}
 
@@ -1045,7 +1074,8 @@ func transactionScanMapperNullable(prefix string) scan.Mapper[*Transaction] {
 					!(buf.TransactionName.IsValue()) &&
 					!(buf.TransactionDate.IsValue()) &&
 					!(buf.CreatedAt.IsValue()) &&
-					!(buf.MerchantName.IsValue()) {
+					!(buf.MerchantName.IsValue()) &&
+					!(buf.NeedsReview.IsValue()) {
 					return nil, nil
 				}
 
@@ -1070,6 +1100,9 @@ func transactionScanMapperNullable(prefix string) scan.Mapper[*Transaction] {
 					o.CreatedAt = buf.CreatedAt.MustGet()
 				}
 				o.MerchantName = buf.MerchantName
+				if buf.NeedsReview.IsValue() {
+					o.NeedsReview = buf.NeedsReview.MustGet()
+				}
 				return o, nil
 			}
 	}

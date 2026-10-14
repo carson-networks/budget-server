@@ -80,6 +80,18 @@ func TestUpdateTransaction_OptionalFields(t *testing.T) {
 		},
 
 		{
+			name: "needs review only",
+			request: &transaction.UpdateTransactionRequest{
+				Id:          id.String(),
+				NeedsReview: new(false),
+			},
+			action: &actions.UpdateTransaction{
+				ID:          id,
+				NeedsReview: new(false),
+			},
+		},
+
+		{
 			name: "date only",
 			request: &transaction.UpdateTransactionRequest{
 				Id:              id.String(),
@@ -100,6 +112,7 @@ func TestUpdateTransaction_OptionalFields(t *testing.T) {
 				TransactionName: new("Updated"),
 				MerchantName:    new("Merchant"),
 				TransactionDate: timestamppb.New(date),
+				NeedsReview:     new(true),
 			},
 			action: &actions.UpdateTransaction{
 				ID:              id,
@@ -108,6 +121,7 @@ func TestUpdateTransaction_OptionalFields(t *testing.T) {
 				TransactionName: new("Updated"),
 				MerchantName:    new("Merchant"),
 				TransactionDate: new(date),
+				NeedsReview:     new(true),
 			},
 		},
 	} {

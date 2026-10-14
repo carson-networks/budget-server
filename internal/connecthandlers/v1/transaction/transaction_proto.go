@@ -15,6 +15,7 @@ func transactionToProto(tx *storagetransaction.Transaction) *transaction.Transac
 		TransactionName: tx.TransactionName,
 		TransactionDate: timestamppb.New(tx.TransactionDate),
 		CreatedAt:       timestamppb.New(tx.CreatedAt),
+		NeedsReview:     tx.NeedsReview,
 	}
 	if tx.CategoryID != nil {
 		cid := tx.CategoryID.String()

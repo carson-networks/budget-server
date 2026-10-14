@@ -15,6 +15,7 @@ message Transaction {
   google.protobuf.Timestamp transaction_date = 6;
   google.protobuf.Timestamp created_at = 7;
   optional string merchant_name = 8;
+  bool needs_review = 9;
 }
 
 message ListTransactionsCursor {
@@ -34,6 +35,8 @@ message ListTransactionsRequest {
   optional string category_id = 3;
   // Matches transactions whose transaction_date falls in this UTC calendar month.
   optional TransactionMonth month = 4;
+  // When true, only transactions flagged for review are returned; when false, only unflagged ones.
+  optional bool needs_review = 5;
 }
 
 message ListTransactionsResponse {
@@ -84,6 +87,7 @@ message UpdateTransactionRequest {
   optional string transaction_name = 4;
   optional google.protobuf.Timestamp transaction_date = 5;
   optional string merchant_name = 6;
+  optional bool needs_review = 7;
 }
 
 message UpdateTransactionResponse {}

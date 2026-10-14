@@ -29,8 +29,10 @@ func TestTransactionToProto_IncludesMerchantName(t *testing.T) {
 		MerchantName:    &merchant,
 		TransactionDate: date,
 		CreatedAt:       created,
+		NeedsReview:     true,
 	})
 
+	assert.True(t, got.NeedsReview)
 	require.NotNil(t, got.MerchantName)
 	assert.Equal(t, merchant, *got.MerchantName)
 	assert.Equal(t, "STARBUCKS STORE 123", got.TransactionName)
@@ -53,4 +55,17 @@ func TestTransactionToProto_NilMerchantName(t *testing.T) {
 
 	assert.Nil(t, got.MerchantName)
 	assert.Equal(t, "ACH TRANSFER", got.TransactionName)
+}
+
+func TestTransactionToProto_DefaultsToNoReview(t *testing.T) {
+	got := transactionToProto(&storagetransaction.Transaction{
+		ID:              uuid.Must(uuid.NewV4()),
+		AccountID:       uuid.Must(uuid.NewV4()),
+		Amount:          decimal.NewFromInt(1),
+		TransactionName: "Coffee",
+		TransactionDate: time.Now().UTC(),
+		CreatedAt:       time.Now().UTC(),
+	})
+
+	assert.False(t, got.NeedsReview)
 }

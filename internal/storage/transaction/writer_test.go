@@ -30,3 +30,10 @@ func TestTransactionPatchSetter_ZeroAmountAndEmptyLabelsAreExplicitUpdates(t *te
 	assert.Equal(t, "", setter.MerchantName.MustGet())
 	assert.Equal(t, date, setter.TransactionDate.MustGet())
 }
+
+func TestTransactionPatchSetter_FalseNeedsReviewIsExplicitUpdate(t *testing.T) {
+	needsReview := false
+	setter := transactionPatchSetter(&TransactionPatch{NeedsReview: &needsReview})
+	assert.Equal(t, []string{"needs_review"}, setter.SetColumns())
+	assert.False(t, setter.NeedsReview.MustGet())
+}

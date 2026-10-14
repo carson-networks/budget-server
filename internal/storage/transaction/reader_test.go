@@ -41,6 +41,8 @@ func (f fakeScanner) Scan(dest ...any) error {
 			} else {
 				*p = sql.NullString{String: f.vals[i].(string), Valid: true}
 			}
+		case *bool:
+			*p = f.vals[i].(bool)
 		case *int64:
 			*p = f.vals[i].(int64)
 		default:
@@ -63,6 +65,7 @@ func TestScanListRow_ReadsTotalCountFromSQLColumn(t *testing.T) {
 		created,
 		created,
 		nil,
+		true,
 		int64(42),
 	}}
 
@@ -73,6 +76,7 @@ func TestScanListRow_ReadsTotalCountFromSQLColumn(t *testing.T) {
 	assert.Equal(t, "Coffee", tx.TransactionName)
 	assert.Nil(t, tx.CategoryID)
 	assert.Nil(t, tx.MerchantName)
+	assert.True(t, tx.NeedsReview)
 	assert.Equal(t, int64(42), totalCount)
 }
 
@@ -169,4 +173,24 @@ func TestListWhereMods_TransactionDateRange(t *testing.T) {
 	assert.Equal(t, categoryID, args[0])
 	assert.Equal(t, from, args[1])
 	assert.Equal(t, to, args[2])
+}
+
+func TestListWhereMods_NeedsReview(t *testing.T) {
+	for _, needsReview := range []bool{true, false} {
+		t.Run(fmt.Sprint(needsReview), func(t *testing.T) {
+			query := psql.Select(append(
+				[]bob.Mod[*dialect.SelectQuery]{sm.From("transactions")},
+				listWhereMods(&TransactionFilter{NeedsReview: &needsReview})...,
+			)...)
+			sqlStr, args, err := query.Build(context.Background())
+			require.NoError(t, err)
+			assert.Contains(t, sqlStr, `"transactions"."needs_review" = $1`)
+			require.Len(t, args, 1)
+			assert.Equal(t, needsReview, args[0])
+		})
+	}
+}
+
+func TestListWhereMods_NeedsReviewUnsetAddsNoCondition(t *testing.T) {
+	assert.Empty(t, listWhereMods(&TransactionFilter{}))
 }

@@ -169,3 +169,18 @@ func TestListTransactions_InvalidCategoryOrMonthRejectedBeforeStorage(t *testing
 		})
 	}
 }
+
+func TestListTransactionsFilter_NeedsReview(t *testing.T) {
+	for _, needsReview := range []bool{true, false} {
+		filter, err := listTransactionsFilter(&transaction.ListTransactionsRequest{NeedsReview: proto.Bool(needsReview)})
+		require.NoError(t, err)
+		require.NotNil(t, filter.NeedsReview)
+		assert.Equal(t, needsReview, *filter.NeedsReview)
+	}
+}
+
+func TestListTransactionsFilter_NeedsReviewUnsetLeavesFilterNil(t *testing.T) {
+	filter, err := listTransactionsFilter(&transaction.ListTransactionsRequest{})
+	require.NoError(t, err)
+	assert.Nil(t, filter.NeedsReview)
+}

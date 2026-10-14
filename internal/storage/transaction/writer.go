@@ -58,6 +58,9 @@ func transactionPatchSetter(patch *TransactionPatch) bobgen.TransactionSetter {
 	if patch.TransactionDate != nil {
 		setter.TransactionDate = omit.From(*patch.TransactionDate)
 	}
+	if patch.NeedsReview != nil {
+		setter.NeedsReview = omit.From(*patch.NeedsReview)
+	}
 	return setter
 }
 
@@ -109,6 +112,7 @@ func (w *Writer) Insert(ctx context.Context, create *TransactionCreate) (uuid.UU
 		Amount:          omit.From(create.Amount),
 		TransactionName: omit.From(create.TransactionName),
 		MerchantName:    omitnull.FromPtr(create.MerchantName),
+		NeedsReview:     omit.From(create.NeedsReview),
 	}
 	if create.ID != nil {
 		setter.ID = omit.From(*create.ID)

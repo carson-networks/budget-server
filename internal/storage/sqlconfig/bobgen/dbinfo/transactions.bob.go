@@ -87,6 +87,15 @@ var Transactions = Table[
 			Generated: false,
 			AutoIncr:  false,
 		},
+		NeedsReview: column{
+			Name:      "needs_review",
+			DBType:    "boolean",
+			Default:   "false",
+			Comment:   "",
+			Nullable:  false,
+			Generated: false,
+			AutoIncr:  false,
+		},
 	},
 	Indexes: transactionIndexes{
 		TransactionsPkey: index{
@@ -162,11 +171,12 @@ type transactionColumns struct {
 	TransactionDate column
 	CreatedAt       column
 	MerchantName    column
+	NeedsReview     column
 }
 
 func (c transactionColumns) AsSlice() []column {
 	return []column{
-		c.ID, c.AccountID, c.CategoryID, c.Amount, c.TransactionName, c.TransactionDate, c.CreatedAt, c.MerchantName,
+		c.ID, c.AccountID, c.CategoryID, c.Amount, c.TransactionName, c.TransactionDate, c.CreatedAt, c.MerchantName, c.NeedsReview,
 	}
 }
 
