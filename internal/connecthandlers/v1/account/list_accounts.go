@@ -2,9 +2,8 @@ package v1Account
 
 import (
 	"context"
-	"errors"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	account "github.com/carson-networks/budget-server/internal/connecthandlers/gen/account/v1"
@@ -13,13 +12,13 @@ import (
 )
 
 // ListAccounts implements account.v1.AccountService.ListAccounts.
-func (s *Service) ListAccounts(ctx context.Context, req *connect.Request[account.ListAccountsRequest]) (*connect.Response[account.ListAccountsResponse], error) {
+func (s *Service) ListAccounts(ctx context.Context, req *account.ListAccountsRequest) (*account.ListAccountsResponse, error) {
 	logData := logging.GetLogData(ctx)
 	limit := 20
 	offset := 0
-	if c := req.Msg.GetCursor(); c != nil {
+	if c := req.GetCursor(); c != nil {
 		if c.GetPosition() < 0 {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cursor position must be non-negative"))
+			return nil, connect.NewError(connect.CodeInvalidArgument, "cursor position must be non-negative")
 		}
 		offset = int(c.GetPosition())
 		if c.GetLimit() > 0 {
@@ -40,7 +39,7 @@ func (s *Service) ListAccounts(ctx context.Context, req *connect.Request[account
 		stopTimer()
 	}
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInternal, err.Error()).WithCause(err)
 	}
 
 	accounts := result.Accounts
@@ -71,5 +70,5 @@ func (s *Service) ListAccounts(ctx context.Context, req *connect.Request[account
 			Limit:    int32(result.NextCursor.Limit),
 		}
 	}
-	return connect.NewResponse(out), nil
+	return out, nil
 }

@@ -2,37 +2,36 @@ package v1Plaid
 
 import (
 	"context"
-	"errors"
 	"net/http"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 
 	plaid "github.com/carson-networks/budget-server/internal/connecthandlers/gen/plaid/v1"
-	"github.com/carson-networks/budget-server/internal/connecthandlers/v1/account"
+	v1Account "github.com/carson-networks/budget-server/internal/connecthandlers/v1/account"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
 	"github.com/shopspring/decimal"
 )
 
 // ExchangeToken implements plaid.v1.PlaidService.ExchangeToken.
-func (s *Service) ExchangeToken(ctx context.Context, req *connect.Request[plaid.ExchangeTokenRequest]) (*connect.Response[plaid.ExchangeTokenResponse], error) {
-	if len(req.Msg.GetAccounts()) == 0 {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("at least one account must be selected"))
+func (s *Service) ExchangeToken(ctx context.Context, req *plaid.ExchangeTokenRequest) (*plaid.ExchangeTokenResponse, error) {
+	if len(req.GetAccounts()) == 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, "at least one account must be selected")
 	}
 
-	accessToken, plaidItemID, err := s.PlaidClient.ExchangePublicToken(ctx, req.Msg.GetPublicToken())
+	accessToken, plaidItemID, err := s.PlaidClient.ExchangePublicToken(ctx, req.GetPublicToken())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInternal, err.Error()).WithCause(err)
 	}
 
-	plaidAccounts := make([]actions.PlaidAccountToLink, len(req.Msg.GetAccounts()))
-	for i, a := range req.Msg.GetAccounts() {
+	plaidAccounts := make([]actions.PlaidAccountToLink, len(req.GetAccounts()))
+	for i, a := range req.GetAccounts() {
 		bal, derr := decimal.NewFromString(a.GetBalance())
 		if derr != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, derr)
+			return nil, connect.NewError(connect.CodeInvalidArgument, derr.Error()).WithCause(derr)
 		}
 		accType, terr := v1Account.FromConnectAccountType(a.GetType())
 		if terr != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, terr)
+			return nil, connect.NewError(connect.CodeInvalidArgument, terr.Error()).WithCause(terr)
 		}
 		plaidAccounts[i] = actions.PlaidAccountToLink{
 			PlaidAccountID: a.GetPlaidAccountId(),
@@ -46,18 +45,18 @@ func (s *Service) ExchangeToken(ctx context.Context, req *connect.Request[plaid.
 	action := &actions.LinkPlaidItem{
 		AccessToken:     accessToken,
 		PlaidItemID:     plaidItemID,
-		InstitutionID:   req.Msg.GetInstitutionId(),
-		InstitutionName: req.Msg.GetInstitutionName(),
+		InstitutionID:   req.GetInstitutionId(),
+		InstitutionName: req.GetInstitutionName(),
 		Accounts:        plaidAccounts,
 	}
 
 	if err := s.Operator.Process(ctx, action); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInternal, err.Error()).WithCause(err)
 	}
 
 	if err := s.Orchestrator.Sync(ctx, action.CreatedAccountIDs); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInternal, err.Error()).WithCause(err)
 	}
 
-	return connect.NewResponse(&plaid.ExchangeTokenResponse{Status: http.StatusCreated}), nil
+	return &plaid.ExchangeTokenResponse{Status: http.StatusCreated}, nil
 }

@@ -6,162 +6,167 @@ package v1
 
 import (
 	context "context"
-	errors "errors"
-	http "net/http"
-	strings "strings"
+	sync "sync"
 
-	connect "connectrpc.com/connect"
+	connect "connectrpc.com/connect/v2"
 )
-
-// This is a compile-time assertion to ensure that this generated file and the connect package are
-// compatible. If you get a compiler error that this constant is not defined, this code was
-// generated with a version of connect newer than the one compiled into your binary. You can fix the
-// problem by either regenerating this code with an older version of connect or updating the connect
-// version compiled into your binary.
-const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// CategoryServiceName is the fully-qualified name of the CategoryService service.
 	CategoryServiceName = "category.v1.CategoryService"
 )
 
-// These constants are the fully-qualified names of the RPCs defined in this package. They're
-// exposed at runtime as Spec.Procedure and as the final two segments of the HTTP route.
+// These constants are the procedure names of the RPCs defined in this package. They're exposed at
+// runtime as Spec.Procedure and as the final two segments of the HTTP route.
 //
 // Note that these are different from the fully-qualified method names used by
 // google.golang.org/protobuf/reflect/protoreflect. To convert from these constants to
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// CategoryServiceListCategoriesProcedure is the fully-qualified name of the CategoryService's
+	// CategoryServiceListCategoriesProcedure is the procedure name of the CategoryService's
 	// ListCategories RPC.
 	CategoryServiceListCategoriesProcedure = "/category.v1.CategoryService/ListCategories"
-	// CategoryServiceCreateCategoryProcedure is the fully-qualified name of the CategoryService's
+	// CategoryServiceCreateCategoryProcedure is the procedure name of the CategoryService's
 	// CreateCategory RPC.
 	CategoryServiceCreateCategoryProcedure = "/category.v1.CategoryService/CreateCategory"
-	// CategoryServiceUpdateCategoryProcedure is the fully-qualified name of the CategoryService's
+	// CategoryServiceUpdateCategoryProcedure is the procedure name of the CategoryService's
 	// UpdateCategory RPC.
 	CategoryServiceUpdateCategoryProcedure = "/category.v1.CategoryService/UpdateCategory"
 )
 
+var (
+	categoryServiceListCategoriesSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     File_category_v1_category_proto.Services().ByName("CategoryService").Methods().ByName("ListCategories"),
+			Procedure:  CategoryServiceListCategoriesProcedure,
+		}
+	})
+	categoryServiceCreateCategorySpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     File_category_v1_category_proto.Services().ByName("CategoryService").Methods().ByName("CreateCategory"),
+			Procedure:  CategoryServiceCreateCategoryProcedure,
+		}
+	})
+	categoryServiceUpdateCategorySpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     File_category_v1_category_proto.Services().ByName("CategoryService").Methods().ByName("UpdateCategory"),
+			Procedure:  CategoryServiceUpdateCategoryProcedure,
+		}
+	})
+)
+
 // CategoryServiceClient is a client for the category.v1.CategoryService service.
 type CategoryServiceClient interface {
-	ListCategories(context.Context, *connect.Request[ListCategoriesRequest]) (*connect.Response[ListCategoriesResponse], error)
-	CreateCategory(context.Context, *connect.Request[CreateCategoryRequest]) (*connect.Response[CreateCategoryResponse], error)
-	UpdateCategory(context.Context, *connect.Request[UpdateCategoryRequest]) (*connect.Response[UpdateCategoryResponse], error)
+	ListCategories(context.Context, *ListCategoriesRequest) (*ListCategoriesResponse, error)
+	CreateCategory(context.Context, *CreateCategoryRequest) (*CreateCategoryResponse, error)
+	UpdateCategory(context.Context, *UpdateCategoryRequest) (*UpdateCategoryResponse, error)
 }
 
-// NewCategoryServiceClient constructs a client for the category.v1.CategoryService service. By
-// default, it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses,
-// and sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the
-// connect.WithGRPC() or connect.WithGRPCWeb() options.
-//
-// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
-// http://api.acme.com or https://acme.com/grpc).
-func NewCategoryServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) CategoryServiceClient {
-	baseURL = strings.TrimRight(baseURL, "/")
-	categoryServiceMethods := File_category_v1_category_proto.Services().ByName("CategoryService").Methods()
-	return &categoryServiceClient{
-		listCategories: connect.NewClient[ListCategoriesRequest, ListCategoriesResponse](
-			httpClient,
-			baseURL+CategoryServiceListCategoriesProcedure,
-			connect.WithSchema(categoryServiceMethods.ByName("ListCategories")),
-			connect.WithClientOptions(opts...),
-		),
-		createCategory: connect.NewClient[CreateCategoryRequest, CreateCategoryResponse](
-			httpClient,
-			baseURL+CategoryServiceCreateCategoryProcedure,
-			connect.WithSchema(categoryServiceMethods.ByName("CreateCategory")),
-			connect.WithClientOptions(opts...),
-		),
-		updateCategory: connect.NewClient[UpdateCategoryRequest, UpdateCategoryResponse](
-			httpClient,
-			baseURL+CategoryServiceUpdateCategoryProcedure,
-			connect.WithSchema(categoryServiceMethods.ByName("UpdateCategory")),
-			connect.WithClientOptions(opts...),
-		),
-	}
-}
-
-// categoryServiceClient implements CategoryServiceClient.
-type categoryServiceClient struct {
-	listCategories *connect.Client[ListCategoriesRequest, ListCategoriesResponse]
-	createCategory *connect.Client[CreateCategoryRequest, CreateCategoryResponse]
-	updateCategory *connect.Client[UpdateCategoryRequest, UpdateCategoryResponse]
-}
-
-// ListCategories calls category.v1.CategoryService.ListCategories.
-func (c *categoryServiceClient) ListCategories(ctx context.Context, req *connect.Request[ListCategoriesRequest]) (*connect.Response[ListCategoriesResponse], error) {
-	return c.listCategories.CallUnary(ctx, req)
-}
-
-// CreateCategory calls category.v1.CategoryService.CreateCategory.
-func (c *categoryServiceClient) CreateCategory(ctx context.Context, req *connect.Request[CreateCategoryRequest]) (*connect.Response[CreateCategoryResponse], error) {
-	return c.createCategory.CallUnary(ctx, req)
-}
-
-// UpdateCategory calls category.v1.CategoryService.UpdateCategory.
-func (c *categoryServiceClient) UpdateCategory(ctx context.Context, req *connect.Request[UpdateCategoryRequest]) (*connect.Response[UpdateCategoryResponse], error) {
-	return c.updateCategory.CallUnary(ctx, req)
+// NewCategoryServiceClient constructs a client for the category.v1.CategoryService service.
+// Multiple service clients may share a single connect.Client.
+func NewCategoryServiceClient(client *connect.Client) CategoryServiceClient {
+	return &categoryServiceClient{client: client}
 }
 
 // CategoryServiceHandler is an implementation of the category.v1.CategoryService service.
 type CategoryServiceHandler interface {
-	ListCategories(context.Context, *connect.Request[ListCategoriesRequest]) (*connect.Response[ListCategoriesResponse], error)
-	CreateCategory(context.Context, *connect.Request[CreateCategoryRequest]) (*connect.Response[CreateCategoryResponse], error)
-	UpdateCategory(context.Context, *connect.Request[UpdateCategoryRequest]) (*connect.Response[UpdateCategoryResponse], error)
+	ListCategories(context.Context, *ListCategoriesRequest) (*ListCategoriesResponse, error)
+	CreateCategory(context.Context, *CreateCategoryRequest) (*CreateCategoryResponse, error)
+	UpdateCategory(context.Context, *UpdateCategoryRequest) (*UpdateCategoryResponse, error)
 }
 
-// NewCategoryServiceHandler builds an HTTP handler from the service implementation. It returns the
-// path on which to mount the handler and the handler itself.
-//
-// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
-// and JSON codecs. They also support gzip compression.
-func NewCategoryServiceHandler(svc CategoryServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	categoryServiceMethods := File_category_v1_category_proto.Services().ByName("CategoryService").Methods()
-	categoryServiceListCategoriesHandler := connect.NewUnaryHandler(
-		CategoryServiceListCategoriesProcedure,
-		svc.ListCategories,
-		connect.WithSchema(categoryServiceMethods.ByName("ListCategories")),
-		connect.WithHandlerOptions(opts...),
+// RegisterCategoryServiceHandler registers svc as the category.v1.CategoryService implementation on
+// server.
+func RegisterCategoryServiceHandler(server *connect.Server, svc CategoryServiceHandler) {
+	adapter := categoryServiceHandler{svc: svc}
+	server.Register(
+		connect.Method{Spec: categoryServiceListCategoriesSpec(), Handler: adapter.listCategories},
+		connect.Method{Spec: categoryServiceCreateCategorySpec(), Handler: adapter.createCategory},
+		connect.Method{Spec: categoryServiceUpdateCategorySpec(), Handler: adapter.updateCategory},
 	)
-	categoryServiceCreateCategoryHandler := connect.NewUnaryHandler(
-		CategoryServiceCreateCategoryProcedure,
-		svc.CreateCategory,
-		connect.WithSchema(categoryServiceMethods.ByName("CreateCategory")),
-		connect.WithHandlerOptions(opts...),
-	)
-	categoryServiceUpdateCategoryHandler := connect.NewUnaryHandler(
-		CategoryServiceUpdateCategoryProcedure,
-		svc.UpdateCategory,
-		connect.WithSchema(categoryServiceMethods.ByName("UpdateCategory")),
-		connect.WithHandlerOptions(opts...),
-	)
-	return "/category.v1.CategoryService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case CategoryServiceListCategoriesProcedure:
-			categoryServiceListCategoriesHandler.ServeHTTP(w, r)
-		case CategoryServiceCreateCategoryProcedure:
-			categoryServiceCreateCategoryHandler.ServeHTTP(w, r)
-		case CategoryServiceUpdateCategoryProcedure:
-			categoryServiceUpdateCategoryHandler.ServeHTTP(w, r)
-		default:
-			http.NotFound(w, r)
-		}
-	})
 }
 
 // UnimplementedCategoryServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedCategoryServiceHandler struct{}
 
-func (UnimplementedCategoryServiceHandler) ListCategories(context.Context, *connect.Request[ListCategoriesRequest]) (*connect.Response[ListCategoriesResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("category.v1.CategoryService.ListCategories is not implemented"))
+func (UnimplementedCategoryServiceHandler) ListCategories(context.Context, *ListCategoriesRequest) (*ListCategoriesResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "category.v1.CategoryService.ListCategories is not implemented")
 }
 
-func (UnimplementedCategoryServiceHandler) CreateCategory(context.Context, *connect.Request[CreateCategoryRequest]) (*connect.Response[CreateCategoryResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("category.v1.CategoryService.CreateCategory is not implemented"))
+func (UnimplementedCategoryServiceHandler) CreateCategory(context.Context, *CreateCategoryRequest) (*CreateCategoryResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "category.v1.CategoryService.CreateCategory is not implemented")
 }
 
-func (UnimplementedCategoryServiceHandler) UpdateCategory(context.Context, *connect.Request[UpdateCategoryRequest]) (*connect.Response[UpdateCategoryResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("category.v1.CategoryService.UpdateCategory is not implemented"))
+func (UnimplementedCategoryServiceHandler) UpdateCategory(context.Context, *UpdateCategoryRequest) (*UpdateCategoryResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "category.v1.CategoryService.UpdateCategory is not implemented")
+}
+
+type categoryServiceClient struct {
+	client *connect.Client
+}
+
+func (c *categoryServiceClient) ListCategories(ctx context.Context, req *ListCategoriesRequest) (*ListCategoriesResponse, error) {
+	var res ListCategoriesResponse
+	if err := c.client.CallUnary(ctx, categoryServiceListCategoriesSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *categoryServiceClient) CreateCategory(ctx context.Context, req *CreateCategoryRequest) (*CreateCategoryResponse, error) {
+	var res CreateCategoryResponse
+	if err := c.client.CallUnary(ctx, categoryServiceCreateCategorySpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *categoryServiceClient) UpdateCategory(ctx context.Context, req *UpdateCategoryRequest) (*UpdateCategoryResponse, error) {
+	var res UpdateCategoryResponse
+	if err := c.client.CallUnary(ctx, categoryServiceUpdateCategorySpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+type categoryServiceHandler struct{ svc CategoryServiceHandler }
+
+func (h categoryServiceHandler) listCategories(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req ListCategoriesRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ListCategories(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h categoryServiceHandler) createCategory(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req CreateCategoryRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.CreateCategory(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h categoryServiceHandler) updateCategory(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req UpdateCategoryRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.UpdateCategory(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
 }

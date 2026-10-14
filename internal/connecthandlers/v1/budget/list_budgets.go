@@ -2,9 +2,8 @@ package v1Budget
 
 import (
 	"context"
-	"errors"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 
 	budget "github.com/carson-networks/budget-server/internal/connecthandlers/gen/budget/v1"
 	"github.com/carson-networks/budget-server/internal/logging"
@@ -12,12 +11,12 @@ import (
 )
 
 // ListBudgets implements budget.v1.BudgetService.ListBudgets.
-func (s *Service) ListBudgets(ctx context.Context, req *connect.Request[budget.ListBudgetsRequest]) (*connect.Response[budget.ListBudgetsResponse], error) {
+func (s *Service) ListBudgets(ctx context.Context, req *budget.ListBudgetsRequest) (*budget.ListBudgetsResponse, error) {
 	logData := logging.GetLogData(ctx)
-	sm, sy := int(req.Msg.GetStartMonth()), int(req.Msg.GetStartYear())
-	em, ey := int(req.Msg.GetEndMonth()), int(req.Msg.GetEndYear())
+	sm, sy := int(req.GetStartMonth()), int(req.GetStartYear())
+	em, ey := int(req.GetEndMonth()), int(req.GetEndYear())
 	if ey < sy || (ey == sy && em < sm) {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("end date must be >= start date"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, "end date must be >= start date")
 	}
 
 	var stopTimer func()
@@ -29,7 +28,7 @@ func (s *Service) ListBudgets(ctx context.Context, req *connect.Request[budget.L
 		stopTimer()
 	}
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInternal, err.Error()).WithCause(err)
 	}
 	if budgets == nil {
 		budgets = []*storagebudget.Budget{}
@@ -49,5 +48,5 @@ func (s *Service) ListBudgets(ctx context.Context, req *connect.Request[budget.L
 			Amount:     b.Amount.String(),
 		}
 	}
-	return connect.NewResponse(out), nil
+	return out, nil
 }

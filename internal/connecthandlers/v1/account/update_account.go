@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 
 	account "github.com/carson-networks/budget-server/internal/connecthandlers/gen/account/v1"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
@@ -13,25 +13,25 @@ import (
 )
 
 // UpdateAccount implements account.v1.AccountService.UpdateAccount.
-func (s *Service) UpdateAccount(ctx context.Context, req *connect.Request[account.UpdateAccountRequest]) (*connect.Response[account.UpdateAccountResponse], error) {
-	id, err := uuid.FromString(req.Msg.GetId())
+func (s *Service) UpdateAccount(ctx context.Context, req *account.UpdateAccountRequest) (*account.UpdateAccountResponse, error) {
+	id, err := uuid.FromString(req.GetId())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
 	}
 
 	var name *string
-	if req.Msg.Name != nil {
-		name = req.Msg.Name
+	if req.Name != nil {
+		name = req.Name
 	}
 	var subType *string
-	if req.Msg.SubType != nil {
-		subType = req.Msg.SubType
+	if req.SubType != nil {
+		subType = req.SubType
 	}
 	var startingBalance *decimal.Decimal
-	if req.Msg.StartingBalance != nil {
-		parsed, perr := decimal.NewFromString(*req.Msg.StartingBalance)
+	if req.StartingBalance != nil {
+		parsed, perr := decimal.NewFromString(*req.StartingBalance)
 		if perr != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, perr)
+			return nil, connect.NewError(connect.CodeInvalidArgument, perr.Error()).WithCause(perr)
 		}
 		startingBalance = &parsed
 	}
@@ -46,10 +46,10 @@ func (s *Service) UpdateAccount(ctx context.Context, req *connect.Request[accoun
 	if err := s.Operator.Process(ctx, action); err != nil {
 		switch {
 		case errors.Is(err, actions.ErrAccountNotFound):
-			return nil, connect.NewError(connect.CodeNotFound, err)
+			return nil, connect.NewError(connect.CodeNotFound, err.Error()).WithCause(err)
 		default:
-			return nil, connect.NewError(connect.CodeInternal, err)
+			return nil, connect.NewError(connect.CodeInternal, err.Error()).WithCause(err)
 		}
 	}
-	return connect.NewResponse(&account.UpdateAccountResponse{}), nil
+	return &account.UpdateAccountResponse{}, nil
 }

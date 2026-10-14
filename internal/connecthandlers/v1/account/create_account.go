@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 
 	account "github.com/carson-networks/budget-server/internal/connecthandlers/gen/account/v1"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
@@ -12,23 +12,23 @@ import (
 )
 
 // CreateAccount implements account.v1.AccountService.CreateAccount.
-func (s *Service) CreateAccount(ctx context.Context, req *connect.Request[account.CreateAccountRequest]) (*connect.Response[account.CreateAccountResponse], error) {
-	accType, err := FromConnectAccountType(req.Msg.GetType())
+func (s *Service) CreateAccount(ctx context.Context, req *account.CreateAccountRequest) (*account.CreateAccountResponse, error) {
+	accType, err := FromConnectAccountType(req.GetType())
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		return nil, connect.NewError(connect.CodeInvalidArgument, err.Error()).WithCause(err)
 	}
-	startingBalance, err := decimal.NewFromString(req.Msg.GetStartingBalance())
+	startingBalance, err := decimal.NewFromString(req.GetStartingBalance())
 	if err != nil {
 		startingBalance = decimal.Zero
 	}
 	action := &actions.CreateAccount{
-		Name:            req.Msg.GetName(),
+		Name:            req.GetName(),
 		Type:            accType,
-		SubType:         req.Msg.GetSubType(),
+		SubType:         req.GetSubType(),
 		StartingBalance: startingBalance,
 	}
 	if err := s.Operator.Process(ctx, action); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInternal, err.Error()).WithCause(err)
 	}
-	return connect.NewResponse(&account.CreateAccountResponse{Status: http.StatusCreated}), nil
+	return &account.CreateAccountResponse{Status: http.StatusCreated}, nil
 }

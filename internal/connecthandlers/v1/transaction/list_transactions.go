@@ -2,10 +2,9 @@ package v1Transaction
 
 import (
 	"context"
-	"errors"
 	"time"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
 	"github.com/gofrs/uuid/v5"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -15,9 +14,9 @@ import (
 )
 
 // ListTransactions implements transaction.v1.TransactionService.ListTransactions.
-func (s *Service) ListTransactions(ctx context.Context, req *connect.Request[transaction.ListTransactionsRequest]) (*connect.Response[transaction.ListTransactionsResponse], error) {
+func (s *Service) ListTransactions(ctx context.Context, req *transaction.ListTransactionsRequest) (*transaction.ListTransactionsResponse, error) {
 	logData := logging.GetLogData(ctx)
-	filter, err := listTransactionsFilter(req.Msg)
+	filter, err := listTransactionsFilter(req)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +30,7 @@ func (s *Service) ListTransactions(ctx context.Context, req *connect.Request[tra
 		stopTimer()
 	}
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
+		return nil, connect.NewError(connect.CodeInternal, err.Error()).WithCause(err)
 	}
 
 	transactions := result.Transactions
@@ -43,7 +42,7 @@ func (s *Service) ListTransactions(ctx context.Context, req *connect.Request[tra
 	}
 
 	out := listTransactionsResponse(result, transactions)
-	return connect.NewResponse(out), nil
+	return out, nil
 }
 
 func listTransactionsFilter(req *transaction.ListTransactionsRequest) (*storagetransaction.TransactionFilter, error) {
@@ -53,7 +52,7 @@ func listTransactionsFilter(req *transaction.ListTransactionsRequest) (*storaget
 
 	if c := req.GetCursor(); c != nil {
 		if c.GetPosition() < 0 {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cursor position must be non-negative"))
+			return nil, connect.NewError(connect.CodeInvalidArgument, "cursor position must be non-negative")
 		}
 		offset = int(c.GetPosition())
 		if c.GetLimit() > 0 {
@@ -74,20 +73,20 @@ func listTransactionsFilter(req *transaction.ListTransactionsRequest) (*storaget
 	if req.AccountId != nil {
 		accountID, err := uuid.FromString(req.GetAccountId())
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("account_id must be a valid UUID"))
+			return nil, connect.NewError(connect.CodeInvalidArgument, "account_id must be a valid UUID")
 		}
 		filter.AccountID = &accountID
 	}
 	if req.CategoryId != nil {
 		categoryID, err := uuid.FromString(req.GetCategoryId())
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("category_id must be a valid UUID"))
+			return nil, connect.NewError(connect.CodeInvalidArgument, "category_id must be a valid UUID")
 		}
 		filter.CategoryID = &categoryID
 	}
 	if m := req.GetMonth(); m != nil {
 		if m.GetMonth() < 1 || m.GetMonth() > 12 {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("month must be between 1 and 12"))
+			return nil, connect.NewError(connect.CodeInvalidArgument, "month must be between 1 and 12")
 		}
 		from := time.Date(int(m.GetYear()), time.Month(m.GetMonth()), 1, 0, 0, 0, 0, time.UTC)
 		to := from.AddDate(0, 1, 0)

@@ -6,132 +6,128 @@ package v1
 
 import (
 	context "context"
-	errors "errors"
-	http "net/http"
-	strings "strings"
+	sync "sync"
 
-	connect "connectrpc.com/connect"
+	connect "connectrpc.com/connect/v2"
 )
-
-// This is a compile-time assertion to ensure that this generated file and the connect package are
-// compatible. If you get a compiler error that this constant is not defined, this code was
-// generated with a version of connect newer than the one compiled into your binary. You can fix the
-// problem by either regenerating this code with an older version of connect or updating the connect
-// version compiled into your binary.
-const _ = connect.IsAtLeastVersion1_13_0
 
 const (
 	// BudgetServiceName is the fully-qualified name of the BudgetService service.
 	BudgetServiceName = "budget.v1.BudgetService"
 )
 
-// These constants are the fully-qualified names of the RPCs defined in this package. They're
-// exposed at runtime as Spec.Procedure and as the final two segments of the HTTP route.
+// These constants are the procedure names of the RPCs defined in this package. They're exposed at
+// runtime as Spec.Procedure and as the final two segments of the HTTP route.
 //
 // Note that these are different from the fully-qualified method names used by
 // google.golang.org/protobuf/reflect/protoreflect. To convert from these constants to
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// BudgetServiceListBudgetsProcedure is the fully-qualified name of the BudgetService's ListBudgets
-	// RPC.
+	// BudgetServiceListBudgetsProcedure is the procedure name of the BudgetService's ListBudgets RPC.
 	BudgetServiceListBudgetsProcedure = "/budget.v1.BudgetService/ListBudgets"
-	// BudgetServiceSetBudgetProcedure is the fully-qualified name of the BudgetService's SetBudget RPC.
+	// BudgetServiceSetBudgetProcedure is the procedure name of the BudgetService's SetBudget RPC.
 	BudgetServiceSetBudgetProcedure = "/budget.v1.BudgetService/SetBudget"
+)
+
+var (
+	budgetServiceListBudgetsSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     File_budget_v1_budget_proto.Services().ByName("BudgetService").Methods().ByName("ListBudgets"),
+			Procedure:  BudgetServiceListBudgetsProcedure,
+		}
+	})
+	budgetServiceSetBudgetSpec = sync.OnceValue(func() connect.Spec {
+		return connect.Spec{
+			StreamType: connect.StreamTypeUnary,
+			Schema:     File_budget_v1_budget_proto.Services().ByName("BudgetService").Methods().ByName("SetBudget"),
+			Procedure:  BudgetServiceSetBudgetProcedure,
+		}
+	})
 )
 
 // BudgetServiceClient is a client for the budget.v1.BudgetService service.
 type BudgetServiceClient interface {
-	ListBudgets(context.Context, *connect.Request[ListBudgetsRequest]) (*connect.Response[ListBudgetsResponse], error)
-	SetBudget(context.Context, *connect.Request[SetBudgetRequest]) (*connect.Response[SetBudgetResponse], error)
+	ListBudgets(context.Context, *ListBudgetsRequest) (*ListBudgetsResponse, error)
+	SetBudget(context.Context, *SetBudgetRequest) (*SetBudgetResponse, error)
 }
 
-// NewBudgetServiceClient constructs a client for the budget.v1.BudgetService service. By default,
-// it uses the Connect protocol with the binary Protobuf Codec, asks for gzipped responses, and
-// sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply the connect.WithGRPC()
-// or connect.WithGRPCWeb() options.
-//
-// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
-// http://api.acme.com or https://acme.com/grpc).
-func NewBudgetServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) BudgetServiceClient {
-	baseURL = strings.TrimRight(baseURL, "/")
-	budgetServiceMethods := File_budget_v1_budget_proto.Services().ByName("BudgetService").Methods()
-	return &budgetServiceClient{
-		listBudgets: connect.NewClient[ListBudgetsRequest, ListBudgetsResponse](
-			httpClient,
-			baseURL+BudgetServiceListBudgetsProcedure,
-			connect.WithSchema(budgetServiceMethods.ByName("ListBudgets")),
-			connect.WithClientOptions(opts...),
-		),
-		setBudget: connect.NewClient[SetBudgetRequest, SetBudgetResponse](
-			httpClient,
-			baseURL+BudgetServiceSetBudgetProcedure,
-			connect.WithSchema(budgetServiceMethods.ByName("SetBudget")),
-			connect.WithClientOptions(opts...),
-		),
-	}
-}
-
-// budgetServiceClient implements BudgetServiceClient.
-type budgetServiceClient struct {
-	listBudgets *connect.Client[ListBudgetsRequest, ListBudgetsResponse]
-	setBudget   *connect.Client[SetBudgetRequest, SetBudgetResponse]
-}
-
-// ListBudgets calls budget.v1.BudgetService.ListBudgets.
-func (c *budgetServiceClient) ListBudgets(ctx context.Context, req *connect.Request[ListBudgetsRequest]) (*connect.Response[ListBudgetsResponse], error) {
-	return c.listBudgets.CallUnary(ctx, req)
-}
-
-// SetBudget calls budget.v1.BudgetService.SetBudget.
-func (c *budgetServiceClient) SetBudget(ctx context.Context, req *connect.Request[SetBudgetRequest]) (*connect.Response[SetBudgetResponse], error) {
-	return c.setBudget.CallUnary(ctx, req)
+// NewBudgetServiceClient constructs a client for the budget.v1.BudgetService service. Multiple
+// service clients may share a single connect.Client.
+func NewBudgetServiceClient(client *connect.Client) BudgetServiceClient {
+	return &budgetServiceClient{client: client}
 }
 
 // BudgetServiceHandler is an implementation of the budget.v1.BudgetService service.
 type BudgetServiceHandler interface {
-	ListBudgets(context.Context, *connect.Request[ListBudgetsRequest]) (*connect.Response[ListBudgetsResponse], error)
-	SetBudget(context.Context, *connect.Request[SetBudgetRequest]) (*connect.Response[SetBudgetResponse], error)
+	ListBudgets(context.Context, *ListBudgetsRequest) (*ListBudgetsResponse, error)
+	SetBudget(context.Context, *SetBudgetRequest) (*SetBudgetResponse, error)
 }
 
-// NewBudgetServiceHandler builds an HTTP handler from the service implementation. It returns the
-// path on which to mount the handler and the handler itself.
-//
-// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
-// and JSON codecs. They also support gzip compression.
-func NewBudgetServiceHandler(svc BudgetServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	budgetServiceMethods := File_budget_v1_budget_proto.Services().ByName("BudgetService").Methods()
-	budgetServiceListBudgetsHandler := connect.NewUnaryHandler(
-		BudgetServiceListBudgetsProcedure,
-		svc.ListBudgets,
-		connect.WithSchema(budgetServiceMethods.ByName("ListBudgets")),
-		connect.WithHandlerOptions(opts...),
+// RegisterBudgetServiceHandler registers svc as the budget.v1.BudgetService implementation on
+// server.
+func RegisterBudgetServiceHandler(server *connect.Server, svc BudgetServiceHandler) {
+	adapter := budgetServiceHandler{svc: svc}
+	server.Register(
+		connect.Method{Spec: budgetServiceListBudgetsSpec(), Handler: adapter.listBudgets},
+		connect.Method{Spec: budgetServiceSetBudgetSpec(), Handler: adapter.setBudget},
 	)
-	budgetServiceSetBudgetHandler := connect.NewUnaryHandler(
-		BudgetServiceSetBudgetProcedure,
-		svc.SetBudget,
-		connect.WithSchema(budgetServiceMethods.ByName("SetBudget")),
-		connect.WithHandlerOptions(opts...),
-	)
-	return "/budget.v1.BudgetService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case BudgetServiceListBudgetsProcedure:
-			budgetServiceListBudgetsHandler.ServeHTTP(w, r)
-		case BudgetServiceSetBudgetProcedure:
-			budgetServiceSetBudgetHandler.ServeHTTP(w, r)
-		default:
-			http.NotFound(w, r)
-		}
-	})
 }
 
 // UnimplementedBudgetServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedBudgetServiceHandler struct{}
 
-func (UnimplementedBudgetServiceHandler) ListBudgets(context.Context, *connect.Request[ListBudgetsRequest]) (*connect.Response[ListBudgetsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("budget.v1.BudgetService.ListBudgets is not implemented"))
+func (UnimplementedBudgetServiceHandler) ListBudgets(context.Context, *ListBudgetsRequest) (*ListBudgetsResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "budget.v1.BudgetService.ListBudgets is not implemented")
 }
 
-func (UnimplementedBudgetServiceHandler) SetBudget(context.Context, *connect.Request[SetBudgetRequest]) (*connect.Response[SetBudgetResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("budget.v1.BudgetService.SetBudget is not implemented"))
+func (UnimplementedBudgetServiceHandler) SetBudget(context.Context, *SetBudgetRequest) (*SetBudgetResponse, error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, "budget.v1.BudgetService.SetBudget is not implemented")
+}
+
+type budgetServiceClient struct {
+	client *connect.Client
+}
+
+func (c *budgetServiceClient) ListBudgets(ctx context.Context, req *ListBudgetsRequest) (*ListBudgetsResponse, error) {
+	var res ListBudgetsResponse
+	if err := c.client.CallUnary(ctx, budgetServiceListBudgetsSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (c *budgetServiceClient) SetBudget(ctx context.Context, req *SetBudgetRequest) (*SetBudgetResponse, error) {
+	var res SetBudgetResponse
+	if err := c.client.CallUnary(ctx, budgetServiceSetBudgetSpec(), req, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+type budgetServiceHandler struct{ svc BudgetServiceHandler }
+
+func (h budgetServiceHandler) listBudgets(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req ListBudgetsRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.ListBudgets(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
+}
+
+func (h budgetServiceHandler) setBudget(ctx context.Context, _ connect.Spec, stream connect.ServerStream) error {
+	var req SetBudgetRequest
+	if err := stream.Receive(&req); err != nil {
+		return err
+	}
+	res, err := h.svc.SetBudget(ctx, &req)
+	if err != nil {
+		return err
+	}
+	return stream.Send(res)
 }

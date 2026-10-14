@@ -3,11 +3,13 @@ package v1Transaction
 import (
 	"context"
 	"errors"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"connectrpc.com/connect"
+	"connectrpc.com/connect/v2"
+	"connectrpc.com/connect/v2/connecthttp"
 	transaction "github.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction/v1"
 	"github.com/carson-networks/budget-server/internal/operator"
 	"github.com/carson-networks/budget-server/internal/operator/actions"
@@ -114,7 +116,7 @@ func TestUpdateTransaction_OptionalFields(t *testing.T) {
 			processor.EXPECT().Process(mock.Anything, test.action).Return(nil).Once()
 			service := &Service{Operator: processor}
 
-			response, err := service.UpdateTransaction(context.Background(), connect.NewRequest(test.request))
+			response, err := service.UpdateTransaction(context.Background(), test.request)
 
 			require.NoError(t, err)
 			require.NotNil(t, response)
@@ -218,7 +220,7 @@ func TestUpdateTransaction_RejectsInvalidInputBeforeProcessing(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			service := &Service{Operator: operator.NewMockIProcessor(t)}
 
-			_, err := service.UpdateTransaction(context.Background(), connect.NewRequest(test.request))
+			_, err := service.UpdateTransaction(context.Background(), test.request)
 
 			require.Error(t, err)
 			assert.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
@@ -266,10 +268,10 @@ func TestUpdateTransaction_MapsActionErrors(t *testing.T) {
 			processor.EXPECT().Process(mock.Anything, mock.Anything).Return(test.err).Once()
 			service := &Service{Operator: processor}
 
-			_, err := service.UpdateTransaction(context.Background(), connect.NewRequest(&transaction.UpdateTransactionRequest{
+			_, err := service.UpdateTransaction(context.Background(), &transaction.UpdateTransactionRequest{
 				Id:              uuid.Must(uuid.NewV4()).String(),
 				TransactionName: new("Updated"),
-			}))
+			})
 
 			require.Error(t, err)
 			assert.Equal(t, test.code, connect.CodeOf(err))
@@ -286,15 +288,18 @@ func TestUpdateTransaction_RPCPreservesFieldPresence(t *testing.T) {
 	}).Return(nil).Once()
 	service := &Service{Operator: processor}
 
-	_, handler := transaction.NewTransactionServiceHandler(service)
-	server := httptest.NewServer(handler)
+	connectServer := connect.NewServer()
+	transaction.RegisterTransactionServiceHandler(connectServer, service)
+	mux := http.NewServeMux()
+	connecthttp.Mount(mux, connectServer)
+	server := httptest.NewServer(mux)
 	defer server.Close()
-	client := transaction.NewTransactionServiceClient(server.Client(), server.URL)
+	client := transaction.NewTransactionServiceClient(connect.NewClient(connecthttp.NewTransport(server.Client(), server.URL)))
 
-	_, err := client.UpdateTransaction(context.Background(), connect.NewRequest(&transaction.UpdateTransactionRequest{
+	_, err := client.UpdateTransaction(context.Background(), &transaction.UpdateTransactionRequest{
 		Id:         id.String(),
 		CategoryId: new(categoryID.String()),
-	}))
+	})
 
 	require.NoError(t, err)
 }
