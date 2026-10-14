@@ -33,6 +33,7 @@ func (a *PlaidAddTransaction) Perform(ctx context.Context, writer *storage.Write
 		TransactionName: a.Name,
 		MerchantName:    a.MerchantName,
 		TransactionDate: a.Date,
+		NeedsReview:     true,
 	})
 	if err != nil {
 		return fmt.Errorf("inserting transaction: %w", err)

@@ -43,6 +43,7 @@ func TestPlaidAddTransaction_Perform_Success(t *testing.T) {
 			TransactionName: a.Name,
 			MerchantName:    a.MerchantName,
 			TransactionDate: a.Date,
+			NeedsReview:     true,
 		}).
 		Return(a.TransactionID, nil)
 
@@ -111,6 +112,7 @@ func TestPlaidAddTransaction_Perform_NilMerchantName(t *testing.T) {
 			TransactionName: a.Name,
 			MerchantName:    nil,
 			TransactionDate: a.Date,
+			NeedsReview:     true,
 		}).
 		Return(a.TransactionID, nil)
 
