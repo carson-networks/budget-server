@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -37,6 +38,20 @@ func TestUpdateTransaction_CategoryOnly(t *testing.T) {
 	cat.EXPECT().GetByID(mock.Anything, categoryID).Return(validCategoryForTransaction(categoryID), nil).Once()
 	tx.EXPECT().Patch(mock.Anything, existing.ID, &transaction.TransactionPatch{CategoryID: &categoryID}).Return(nil).Once()
 	require.NoError(t, (&UpdateTransaction{ID: existing.ID, CategoryID: &categoryID}).Perform(context.Background(), writer))
+}
+
+func TestUpdateTransaction_NeedsReviewOnly(t *testing.T) {
+	for _, needsReview := range []bool{true, false} {
+		t.Run(fmt.Sprint(needsReview), func(t *testing.T) {
+			existing := existingTransactionForUpdate()
+			writer := storage.NewWriterForTest()
+			tx := storage.NewMockITransactionWriter(t)
+			writer.Transaction = tx
+			tx.EXPECT().FindByIDForUpdate(mock.Anything, existing.ID).Return(existing, nil).Once()
+			tx.EXPECT().Patch(mock.Anything, existing.ID, &transaction.TransactionPatch{NeedsReview: &needsReview}).Return(nil).Once()
+			require.NoError(t, (&UpdateTransaction{ID: existing.ID, NeedsReview: &needsReview}).Perform(context.Background(), writer))
+		})
+	}
 }
 
 func TestUpdateTransaction_AmountBalanceDelta(t *testing.T) {

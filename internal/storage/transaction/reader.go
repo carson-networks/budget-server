@@ -43,6 +43,9 @@ func listWhereMods(filter *TransactionFilter) []bob.Mod[*dialect.SelectQuery] {
 	if filter.CategoryID != nil {
 		whereMods = append(whereMods, bobgen.SelectWhere.Transactions.CategoryID.EQ(*filter.CategoryID))
 	}
+	if filter.NeedsReview != nil {
+		whereMods = append(whereMods, bobgen.SelectWhere.Transactions.NeedsReview.EQ(*filter.NeedsReview))
+	}
 	if filter.MaxCreationTime != nil {
 		whereMods = append(whereMods, bobgen.SelectWhere.Transactions.CreatedAt.LTE(*filter.MaxCreationTime))
 	}
@@ -102,11 +105,12 @@ func scanListRow(scanner interface {
 		transactionDate time.Time
 		createdAt       time.Time
 		merchantName    sql.NullString
+		needsReview     bool
 		totalCount      int64
 	)
 	if err := scanner.Scan(
 		&id, &accountID, &categoryID, &amount, &transactionName,
-		&transactionDate, &createdAt, &merchantName, &totalCount,
+		&transactionDate, &createdAt, &merchantName, &needsReview, &totalCount,
 	); err != nil {
 		return nil, 0, err
 	}
@@ -117,6 +121,7 @@ func scanListRow(scanner interface {
 		TransactionName: transactionName,
 		TransactionDate: transactionDate,
 		CreatedAt:       createdAt,
+		NeedsReview:     needsReview,
 	}
 	if categoryID.Valid {
 		tx.CategoryID = &categoryID.UUID
@@ -153,6 +158,7 @@ func (r *Reader) List(ctx context.Context, filter *TransactionFilter) (*Transact
 			cols.TransactionDate,
 			cols.CreatedAt,
 			cols.MerchantName,
+			cols.NeedsReview,
 			psql.Raw("COUNT(*) OVER()"),
 		),
 		sm.From(bobgen.Transactions.NameAsExpr()),

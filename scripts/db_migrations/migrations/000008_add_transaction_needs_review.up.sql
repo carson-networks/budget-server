@@ -1,0 +1,2 @@
+ALTER TABLE transactions
+    ADD COLUMN needs_review BOOLEAN NOT NULL DEFAULT FALSE;

@@ -59,6 +59,7 @@ func (t *CreateTransaction) Perform(ctx context.Context, writer *storage.Writer)
 		Amount:          t.Amount,
 		TransactionName: t.TransactionName,
 		TransactionDate: t.TransactionDate,
+		NeedsReview:     true,
 	}
 	_, err = writer.Transaction.Insert(ctx, storageCreate)
 	if err != nil {

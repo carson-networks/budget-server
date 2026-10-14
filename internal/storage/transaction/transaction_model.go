@@ -27,6 +27,7 @@ func bobTransactionToTransaction(row *bobgen.Transaction) *Transaction {
 		MerchantName:    merchantName,
 		TransactionDate: row.TransactionDate,
 		CreatedAt:       row.CreatedAt,
+		NeedsReview:     row.NeedsReview,
 	}
 }
 
@@ -40,6 +41,7 @@ type Transaction struct {
 	MerchantName    *string // nil when unknown / not provided by Plaid
 	TransactionDate time.Time
 	CreatedAt       time.Time
+	NeedsReview     bool
 }
 
 // TransactionCreate is the input for creating a new transaction.
@@ -51,6 +53,7 @@ type TransactionCreate struct {
 	TransactionName string
 	MerchantName    *string   // nil inserts NULL
 	TransactionDate time.Time // defaults to now if zero
+	NeedsReview     bool
 }
 
 // TransactionUpdate is the input for updating an existing transaction's mutable fields.
@@ -69,12 +72,14 @@ type TransactionPatch struct {
 	TransactionName *string
 	MerchantName    *string
 	TransactionDate *time.Time
+	NeedsReview     *bool
 }
 
 // TransactionFilter specifies filters for listing transactions.
 type TransactionFilter struct {
-	AccountID  *uuid.UUID
-	CategoryID *uuid.UUID
+	AccountID   *uuid.UUID
+	CategoryID  *uuid.UUID
+	NeedsReview *bool
 	// TransactionDateFrom is inclusive and TransactionDateTo is exclusive.
 	TransactionDateFrom *time.Time
 	TransactionDateTo   *time.Time

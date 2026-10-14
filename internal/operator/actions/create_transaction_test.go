@@ -59,6 +59,7 @@ func TestCreateTransaction_Perform_Success(t *testing.T) {
 			Amount:          amount,
 			TransactionName: "Groceries",
 			TransactionDate: txnDate,
+			NeedsReview:     true,
 		}).
 		Return(txnID, nil)
 

@@ -33,6 +33,7 @@ type Transaction struct {
 	TransactionDate *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=transaction_date,json=transactionDate,proto3" json:"transaction_date,omitempty"`
 	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	MerchantName    *string                `protobuf:"bytes,8,opt,name=merchant_name,json=merchantName,proto3,oneof" json:"merchant_name,omitempty"`
+	NeedsReview     bool                   `protobuf:"varint,9,opt,name=needs_review,json=needsReview,proto3" json:"needs_review,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -121,6 +122,13 @@ func (x *Transaction) GetMerchantName() string {
 		return *x.MerchantName
 	}
 	return ""
+}
+
+func (x *Transaction) GetNeedsReview() bool {
+	if x != nil {
+		return x.NeedsReview
+	}
+	return false
 }
 
 type ListTransactionsCursor struct {
@@ -241,7 +249,9 @@ type ListTransactionsRequest struct {
 	AccountId  *string                 `protobuf:"bytes,2,opt,name=account_id,json=accountId,proto3,oneof" json:"account_id,omitempty"`
 	CategoryId *string                 `protobuf:"bytes,3,opt,name=category_id,json=categoryId,proto3,oneof" json:"category_id,omitempty"`
 	// Matches transactions whose transaction_date falls in this UTC calendar month.
-	Month         *TransactionMonth `protobuf:"bytes,4,opt,name=month,proto3,oneof" json:"month,omitempty"`
+	Month *TransactionMonth `protobuf:"bytes,4,opt,name=month,proto3,oneof" json:"month,omitempty"`
+	// When true, only transactions flagged for review are returned; when false, only unflagged ones.
+	NeedsReview   *bool `protobuf:"varint,5,opt,name=needs_review,json=needsReview,proto3,oneof" json:"needs_review,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -302,6 +312,13 @@ func (x *ListTransactionsRequest) GetMonth() *TransactionMonth {
 		return x.Month
 	}
 	return nil
+}
+
+func (x *ListTransactionsRequest) GetNeedsReview() bool {
+	if x != nil && x.NeedsReview != nil {
+		return *x.NeedsReview
+	}
+	return false
 }
 
 type ListTransactionsResponse struct {
@@ -717,6 +734,7 @@ type UpdateTransactionRequest struct {
 	TransactionName *string                `protobuf:"bytes,4,opt,name=transaction_name,json=transactionName,proto3,oneof" json:"transaction_name,omitempty"`
 	TransactionDate *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=transaction_date,json=transactionDate,proto3,oneof" json:"transaction_date,omitempty"`
 	MerchantName    *string                `protobuf:"bytes,6,opt,name=merchant_name,json=merchantName,proto3,oneof" json:"merchant_name,omitempty"`
+	NeedsReview     *bool                  `protobuf:"varint,7,opt,name=needs_review,json=needsReview,proto3,oneof" json:"needs_review,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -793,6 +811,13 @@ func (x *UpdateTransactionRequest) GetMerchantName() string {
 	return ""
 }
 
+func (x *UpdateTransactionRequest) GetNeedsReview() bool {
+	if x != nil && x.NeedsReview != nil {
+		return *x.NeedsReview
+	}
+	return false
+}
+
 type UpdateTransactionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -833,7 +858,7 @@ var File_transaction_v1_transaction_proto protoreflect.FileDescriptor
 
 const file_transaction_v1_transaction_proto_rawDesc = "" +
 	"\n" +
-	" transaction/v1/transaction.proto\x12\x0etransaction.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf3\x02\n" +
+	" transaction/v1/transaction.proto\x12\x0etransaction.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x96\x03\n" +
 	"\vTransaction\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
@@ -845,7 +870,8 @@ const file_transaction_v1_transaction_proto_rawDesc = "" +
 	"\x10transaction_date\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\x0ftransactionDate\x129\n" +
 	"\n" +
 	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12(\n" +
-	"\rmerchant_name\x18\b \x01(\tH\x01R\fmerchantName\x88\x01\x01B\x0e\n" +
+	"\rmerchant_name\x18\b \x01(\tH\x01R\fmerchantName\x88\x01\x01\x12!\n" +
+	"\fneeds_review\x18\t \x01(\bR\vneedsReviewB\x0e\n" +
 	"\f_category_idB\x10\n" +
 	"\x0e_merchant_name\"\x92\x01\n" +
 	"\x16ListTransactionsCursor\x12\x1a\n" +
@@ -854,18 +880,20 @@ const file_transaction_v1_transaction_proto_rawDesc = "" +
 	"\x11max_creation_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\x0fmaxCreationTime\"<\n" +
 	"\x10TransactionMonth\x12\x12\n" +
 	"\x04year\x18\x01 \x01(\x05R\x04year\x12\x14\n" +
-	"\x05month\x18\x02 \x01(\x05R\x05month\"\x99\x02\n" +
+	"\x05month\x18\x02 \x01(\x05R\x05month\"\xd2\x02\n" +
 	"\x17ListTransactionsRequest\x12C\n" +
 	"\x06cursor\x18\x01 \x01(\v2&.transaction.v1.ListTransactionsCursorH\x00R\x06cursor\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"account_id\x18\x02 \x01(\tH\x01R\taccountId\x88\x01\x01\x12$\n" +
 	"\vcategory_id\x18\x03 \x01(\tH\x02R\n" +
 	"categoryId\x88\x01\x01\x12;\n" +
-	"\x05month\x18\x04 \x01(\v2 .transaction.v1.TransactionMonthH\x03R\x05month\x88\x01\x01B\t\n" +
+	"\x05month\x18\x04 \x01(\v2 .transaction.v1.TransactionMonthH\x03R\x05month\x88\x01\x01\x12&\n" +
+	"\fneeds_review\x18\x05 \x01(\bH\x04R\vneedsReview\x88\x01\x01B\t\n" +
 	"\a_cursorB\r\n" +
 	"\v_account_idB\x0e\n" +
 	"\f_category_idB\b\n" +
-	"\x06_month\"\xda\x01\n" +
+	"\x06_monthB\x0f\n" +
+	"\r_needs_review\"\xda\x01\n" +
 	"\x18ListTransactionsResponse\x12?\n" +
 	"\ftransactions\x18\x01 \x03(\v2\x1b.transaction.v1.TransactionR\ftransactions\x12L\n" +
 	"\vnext_cursor\x18\x02 \x01(\v2&.transaction.v1.ListTransactionsCursorH\x00R\n" +
@@ -901,7 +929,7 @@ const file_transaction_v1_transaction_proto_rawDesc = "" +
 	"\x10transaction_date\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampH\x00R\x0ftransactionDate\x88\x01\x01B\x13\n" +
 	"\x11_transaction_date\"3\n" +
 	"\x19CreateTransactionResponse\x12\x16\n" +
-	"\x06status\x18\x01 \x01(\x05R\x06status\"\xea\x02\n" +
+	"\x06status\x18\x01 \x01(\x05R\x06status\"\xa3\x03\n" +
 	"\x18UpdateTransactionRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12$\n" +
 	"\vcategory_id\x18\x02 \x01(\tH\x00R\n" +
@@ -909,18 +937,21 @@ const file_transaction_v1_transaction_proto_rawDesc = "" +
 	"\x06amount\x18\x03 \x01(\tH\x01R\x06amount\x88\x01\x01\x12.\n" +
 	"\x10transaction_name\x18\x04 \x01(\tH\x02R\x0ftransactionName\x88\x01\x01\x12J\n" +
 	"\x10transaction_date\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampH\x03R\x0ftransactionDate\x88\x01\x01\x12(\n" +
-	"\rmerchant_name\x18\x06 \x01(\tH\x04R\fmerchantName\x88\x01\x01B\x0e\n" +
+	"\rmerchant_name\x18\x06 \x01(\tH\x04R\fmerchantName\x88\x01\x01\x12&\n" +
+	"\fneeds_review\x18\a \x01(\bH\x05R\vneedsReview\x88\x01\x01B\x0e\n" +
 	"\f_category_idB\t\n" +
 	"\a_amountB\x13\n" +
 	"\x11_transaction_nameB\x13\n" +
 	"\x11_transaction_dateB\x10\n" +
-	"\x0e_merchant_name\"\x1b\n" +
+	"\x0e_merchant_nameB\x0f\n" +
+	"\r_needs_review\"\x1b\n" +
 	"\x19UpdateTransactionResponse2\xc2\x03\n" +
 	"\x12TransactionService\x12e\n" +
 	"\x10ListTransactions\x12'.transaction.v1.ListTransactionsRequest\x1a(.transaction.v1.ListTransactionsResponse\x12q\n" +
 	"\x14GetTransactionTotals\x12+.transaction.v1.GetTransactionTotalsRequest\x1a,.transaction.v1.GetTransactionTotalsResponse\x12h\n" +
 	"\x11CreateTransaction\x12(.transaction.v1.CreateTransactionRequest\x1a).transaction.v1.CreateTransactionResponse\x12h\n" +
-	"\x11UpdateTransaction\x12(.transaction.v1.UpdateTransactionRequest\x1a).transaction.v1.UpdateTransactionResponseBVZTgithub.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction/v1b\x06proto3"
+	"\x11UpdateTransaction\x12(.transaction.v1.UpdateTransactionRequest\x1a).transaction.v1.UpdateTransactionResponseB\xd5\x01\n" +
+	"\x12com.transaction.v1B\x10TransactionProtoP\x01ZTgithub.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction/v1\xa2\x02\x03TXX\xaa\x02\x0eTransaction.V1\xca\x02\x0eTransaction\\V1\xe2\x02\x1aTransaction\\V1\\GPBMetadata\xea\x02\x0fTransaction::V1b\x06proto3"
 
 var (
 	file_transaction_v1_transaction_proto_rawDescOnce sync.Once

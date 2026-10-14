@@ -84,6 +84,10 @@ func listTransactionsFilter(req *transaction.ListTransactionsRequest) (*storaget
 		}
 		filter.CategoryID = &categoryID
 	}
+	if req.NeedsReview != nil {
+		needsReview := req.GetNeedsReview()
+		filter.NeedsReview = &needsReview
+	}
 	if m := req.GetMonth(); m != nil {
 		if m.GetMonth() < 1 || m.GetMonth() > 12 {
 			return nil, connect.NewError(connect.CodeInvalidArgument, "month must be between 1 and 12")

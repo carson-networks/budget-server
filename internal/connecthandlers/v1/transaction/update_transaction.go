@@ -16,11 +16,11 @@ func (s *Service) UpdateTransaction(ctx context.Context, req *transaction.Update
 	if err != nil || id == uuid.Nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, "invalid transaction id")
 	}
-	if req.CategoryId == nil && req.Amount == nil && req.TransactionName == nil && req.TransactionDate == nil && req.MerchantName == nil {
+	if req.CategoryId == nil && req.Amount == nil && req.TransactionName == nil && req.TransactionDate == nil && req.MerchantName == nil && req.NeedsReview == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, "at least one field must be supplied")
 	}
 	action := &actions.UpdateTransaction{
-		ID: id, TransactionName: req.TransactionName, MerchantName: req.MerchantName,
+		ID: id, TransactionName: req.TransactionName, MerchantName: req.MerchantName, NeedsReview: req.NeedsReview,
 	}
 	if req.CategoryId != nil {
 		categoryID, err := uuid.FromString(*req.CategoryId)
