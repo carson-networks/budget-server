@@ -8,7 +8,7 @@ tool (
 )
 
 require (
-	connectrpc.com/connect/v2 v2.0.0
+	connectrpc.com/connect/v2 v2.0.1
 	github.com/aarondl/opt v0.0.0-20250607033636-982744e1bd65
 	github.com/gofrs/uuid/v5 v5.5.1
 	github.com/golang-migrate/migrate/v4 v4.20.1
