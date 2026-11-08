@@ -1,13 +1,15 @@
-name: Publish Docker image
+name: Build Docker image
 
 on:
   push:
+    branches:
+      - '**'
     tags:
       - '*'
 
 jobs:
-  push_to_registry:
-    name: Push Docker image to GHCR
+  build_image:
+    name: Build and push Docker image to GHCR
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -18,10 +20,9 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v6.0.2
 
-      - name: Set up Go
-        uses: actions/setup-go@v6.3.0
+      - name: Set up tools
+        uses: jdx/mise-action@v5.2.7
         with:
-          go-version-file: .tool-versions
           cache: false
 
       - name: Log in to GitHub Container Registry
@@ -37,8 +38,10 @@ jobs:
         with:
           images: ghcr.io/carson-networks/budget-server
           tags: |
+            type=sha
+            type=ref,event=branch
             type=ref,event=tag
-            type=raw,value=latest-release
+            type=raw,value=latest-release,enable=${{ startsWith(github.ref, 'refs/tags/') }}
 
       - run: go mod vendor
 

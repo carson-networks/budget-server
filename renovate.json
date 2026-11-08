@@ -8,8 +8,8 @@
       "groupName": "go"
     },
     {
-      "description": "Group Go toolchain / asdf updates",
-      "matchManagers": ["asdf"],
+      "description": "Group Go toolchain / mise updates",
+      "matchManagers": ["mise"],
       "groupName": "go"
     },
     {
