@@ -3,6 +3,9 @@ name: Run Tests
 on:
   push:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Run all Go tests
