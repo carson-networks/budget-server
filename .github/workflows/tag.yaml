@@ -18,10 +18,9 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v6.0.2
 
-      - name: Set up Go
-        uses: actions/setup-go@v6.3.0
+      - name: Set up tools
+        uses: jdx/mise-action@v5.2.7
         with:
-          go-version-file: .tool-versions
           cache: false
 
       - name: Log in to GitHub Container Registry
