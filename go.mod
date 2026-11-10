@@ -8,13 +8,13 @@ tool (
 )
 
 require (
-	connectrpc.com/connect/v2 v2.0.0
+	connectrpc.com/connect/v2 v2.0.2
 	github.com/aarondl/opt v0.0.0-20250607033636-982744e1bd65
 	github.com/gofrs/uuid/v5 v5.5.1
 	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/lib/pq v1.12.3
 	github.com/plaid/plaid-go/v50 v50.0.0
-	github.com/shopspring/decimal v1.5.0
+	github.com/shopspring/decimal v1.6.0
 	github.com/sirupsen/logrus v1.10.2
 	github.com/stephenafamo/bob v0.50.0
 	github.com/stephenafamo/scan v0.9.0
@@ -50,7 +50,7 @@ require (
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/stretchr/objx v0.5.3 // indirect
-	github.com/vektra/mockery/v3 v3.8.1 // indirect
+	github.com/vektra/mockery/v3 v3.9.1 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
