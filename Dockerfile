@@ -1,19 +1,16 @@
-FROM golang:1.27-alpine as build
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS build
+ARG TARGETOS TARGETARCH
 
 WORKDIR /app
 COPY . .
-RUN go build -mod=vendor -o /budget-server
-
-FROM golang:1.27-alpine as build-sql
-
-WORKDIR /build
-COPY . .
-RUN go build -mod=vendor -o budget-db-migration scripts/db_migrations/main.go
+ENV CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH
+RUN go build -mod=vendor -o /budget-server \
+    && go build -mod=vendor -o /budget-db-migration scripts/db_migrations/main.go
 
 FROM alpine
 
 COPY --from=build /budget-server /budget-server
-COPY --from=build-sql /build/scripts/db_migrations/migrations /migrations
-COPY --from=build-sql /build/budget-db-migration /budget-db-migration
+COPY --from=build /app/scripts/db_migrations/migrations /migrations
+COPY --from=build /budget-db-migration /budget-db-migration
 
 CMD /budget-db-migration && /budget-server
