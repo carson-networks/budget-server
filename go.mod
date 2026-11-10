@@ -13,7 +13,7 @@ require (
 	github.com/gofrs/uuid/v5 v5.5.1
 	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/lib/pq v1.12.3
-	github.com/plaid/plaid-go/v48 v48.0.0
+	github.com/plaid/plaid-go/v50 v50.0.0
 	github.com/shopspring/decimal v1.5.0
 	github.com/sirupsen/logrus v1.10.2
 	github.com/stephenafamo/bob v0.50.0
@@ -28,6 +28,7 @@ require (
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jedib0t/go-pretty/v6 v6.7.8 // indirect
@@ -56,7 +57,6 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/exp v0.0.0-20260212183809-81e46e3db34a // indirect
 	golang.org/x/mod v0.42.0 // indirect
-	golang.org/x/oauth2 v0.37.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/telemetry v0.0.0-20261009151841-97e8ea77aa2a // indirect

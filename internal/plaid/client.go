@@ -4,56 +4,54 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"time"
 
-	plaidlib "github.com/plaid/plaid-go/v48/plaid"
+	plaidlib "github.com/plaid/plaid-go/v50"
+	plaidclient "github.com/plaid/plaid-go/v50/client"
+	"github.com/plaid/plaid-go/v50/core"
+	"github.com/plaid/plaid-go/v50/option"
 )
 
 type Client struct {
-	api *plaidlib.PlaidApiService
+	api *plaidclient.Client
 }
 
 func NewClient(clientID, secret, env string) *Client {
-	cfg := plaidlib.NewConfiguration()
-	cfg.AddDefaultHeader("PLAID-CLIENT-ID", clientID)
-	cfg.AddDefaultHeader("PLAID-SECRET", secret)
-
-	switch env {
-	case "production":
-		cfg.UseEnvironment(plaidlib.Production)
-	default:
-		cfg.UseEnvironment(plaidlib.Sandbox)
+	baseURL := plaidlib.Environments.Sandbox
+	if env == "production" {
+		baseURL = plaidlib.Environments.Production
 	}
 
-	apiClient := plaidlib.NewAPIClient(cfg)
-	return &Client{api: apiClient.PlaidApi}
+	api := plaidclient.NewClient(
+		option.WithClientID(plaidlib.String(clientID)),
+		option.WithSecret(secret),
+		option.WithBaseURL(baseURL),
+	)
+	return &Client{api: api}
 }
 
 func (c *Client) CreateLinkToken(ctx context.Context) (string, time.Time, error) {
-	request := plaidlib.NewLinkTokenCreateRequest(
-		"Budget",
-		"en",
-		[]plaidlib.CountryCode{plaidlib.COUNTRYCODE_US},
-	)
-	user := plaidlib.NewLinkTokenCreateRequestUser("budget-user")
-	request.SetUser(*user)
-	request.SetProducts([]plaidlib.Products{plaidlib.PRODUCTS_TRANSACTIONS})
-
-	resp, httpResp, err := c.api.LinkTokenCreate(ctx).LinkTokenCreateRequest(*request).Execute()
+	resp, err := c.api.Link.CreateToken(ctx, &plaidlib.LinkTokenCreateRequest{
+		ClientName:   "Budget",
+		Language:     "en",
+		CountryCodes: []plaidlib.CountryCode{plaidlib.CountryCodeUs},
+		User:         &plaidlib.LinkTokenCreateRequestUser{ClientUserID: "budget-user"},
+		Products:     []plaidlib.Products{plaidlib.ProductsTransactions},
+	})
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf("plaid link token create: %w", plaidError(err, httpResp))
+		return "", time.Time{}, fmt.Errorf("plaid link token create: %w", plaidError(err))
 	}
 	return resp.LinkToken, resp.Expiration, nil
 }
 
 func (c *Client) ExchangePublicToken(ctx context.Context, publicToken string) (accessToken, plaidItemID string, err error) {
-	request := plaidlib.NewItemPublicTokenExchangeRequest(publicToken)
-	resp, httpResp, exchErr := c.api.ItemPublicTokenExchange(ctx).ItemPublicTokenExchangeRequest(*request).Execute()
+	resp, exchErr := c.api.Item.ExchangePublicToken(ctx, &plaidlib.ItemPublicTokenExchangeRequest{
+		PublicToken: publicToken,
+	})
 	if exchErr != nil {
-		return "", "", fmt.Errorf("plaid token exchange: %w", plaidError(exchErr, httpResp))
+		return "", "", fmt.Errorf("plaid token exchange: %w", plaidError(exchErr))
 	}
-	return resp.AccessToken, resp.ItemId, nil
+	return resp.AccessToken, resp.ItemID, nil
 }
 
 type SyncTransaction struct {
@@ -68,22 +66,21 @@ type SyncTransaction struct {
 
 // merchantNameFromPlaid returns a copy of Plaid's merchant_name when set to a non-null value.
 func merchantNameFromPlaid(t plaidlib.Transaction) *string {
-	v, ok := t.GetMerchantNameOk()
-	if !ok || v == nil {
+	if t.MerchantName == nil {
 		return nil
 	}
-	s := *v
+	s := *t.MerchantName
 	return &s
 }
 
 func mapPlaidTransaction(t plaidlib.Transaction) SyncTransaction {
 	return SyncTransaction{
-		PlaidTransactionID: t.TransactionId,
-		PlaidAccountID:     t.AccountId,
+		PlaidTransactionID: t.TransactionID,
+		PlaidAccountID:     t.AccountID,
 		Amount:             t.Amount,
 		Name:               t.Name,
 		MerchantName:       merchantNameFromPlaid(t),
-		Date:               t.Date,
+		Date:               t.Date.Format(time.DateOnly),
 		Pending:            t.Pending,
 	}
 }
@@ -98,15 +95,18 @@ type SyncResult struct {
 
 // Pass an empty string for cursor on the first call to fetch all history.
 func (c *Client) SyncTransactions(ctx context.Context, accessToken, cursor string) (*SyncResult, error) {
-	request := plaidlib.NewTransactionsSyncRequest(accessToken)
-	if cursor != "" {
-		request.SetCursor(cursor)
+	count := 500
+	request := &plaidlib.TransactionsSyncRequest{
+		AccessToken: accessToken,
+		Count:       &count,
 	}
-	request.SetCount(500)
+	if cursor != "" {
+		request.Cursor = &cursor
+	}
 
-	resp, httpResp, err := c.api.TransactionsSync(ctx).TransactionsSyncRequest(*request).Execute()
+	resp, err := c.api.Transactions.Sync(ctx, request)
 	if err != nil {
-		return nil, fmt.Errorf("plaid transactions sync: %w", plaidError(err, httpResp))
+		return nil, fmt.Errorf("plaid transactions sync: %w", plaidError(err))
 	}
 
 	result := &SyncResult{
@@ -115,15 +115,15 @@ func (c *Client) SyncTransactions(ctx context.Context, accessToken, cursor strin
 	}
 
 	for _, t := range resp.Added {
-		result.Added = append(result.Added, mapPlaidTransaction(t))
+		result.Added = append(result.Added, mapPlaidTransaction(*t))
 	}
 
 	for _, t := range resp.Modified {
-		result.Modified = append(result.Modified, mapPlaidTransaction(t))
+		result.Modified = append(result.Modified, mapPlaidTransaction(*t))
 	}
 
 	for _, r := range resp.Removed {
-		result.Removed = append(result.Removed, r.TransactionId)
+		result.Removed = append(result.Removed, r.TransactionID)
 	}
 
 	return result, nil
@@ -138,23 +138,22 @@ type AccountBalance struct {
 }
 
 func (c *Client) GetAccountBalances(ctx context.Context, accessToken string) ([]AccountBalance, error) {
-	request := plaidlib.NewAccountsGetRequest(accessToken)
-	resp, httpResp, err := c.api.AccountsGet(ctx).AccountsGetRequest(*request).Execute()
+	resp, err := c.api.Accounts.Get(ctx, &plaidlib.AccountsGetRequest{AccessToken: accessToken})
 	if err != nil {
-		return nil, fmt.Errorf("plaid accounts get: %w", plaidError(err, httpResp))
+		return nil, fmt.Errorf("plaid accounts get: %w", plaidError(err))
 	}
 
 	balances := make([]AccountBalance, 0, len(resp.Accounts))
 	for _, a := range resp.Accounts {
 		b := AccountBalance{
-			PlaidAccountID: a.AccountId,
+			PlaidAccountID: a.AccountID,
 		}
-		if current, ok := a.Balances.GetCurrentOk(); ok && current != nil {
-			b.CurrentBalance = *current
+		if a.Balances != nil && a.Balances.Current != nil {
+			b.CurrentBalance = *a.Balances.Current
 			b.HasCurrentBalance = true
 		}
-		if available, ok := a.Balances.GetAvailableOk(); ok && available != nil {
-			b.AvailableBalance = *available
+		if a.Balances != nil && a.Balances.Available != nil {
+			b.AvailableBalance = *a.Balances.Available
 			b.HasAvailableBalance = true
 		}
 		balances = append(balances, b)
@@ -162,18 +161,20 @@ func (c *Client) GetAccountBalances(ctx context.Context, accessToken string) ([]
 	return balances, nil
 }
 
-func plaidError(err error, httpResp *http.Response) error {
-	var plaidErr plaidlib.GenericOpenAPIError
-	ok := errors.As(err, &plaidErr)
-	if !ok {
+func plaidError(err error) error {
+	var plaidErr interface{ GetBody() *plaidlib.PlaidError }
+	if !errors.As(err, &plaidErr) {
 		return err
 	}
-	if body := plaidErr.Body(); len(body) > 0 {
-		status := 0
-		if httpResp != nil {
-			status = httpResp.StatusCode
-		}
-		return fmt.Errorf("%s (status %d): %s", plaidErr.Error(), status, string(body))
+	body := plaidErr.GetBody()
+	if body == nil {
+		return err
 	}
-	return err
+
+	status := 0
+	var apiErr *core.APIError
+	if errors.As(err, &apiErr) {
+		status = apiErr.StatusCode
+	}
+	return fmt.Errorf("%w (status %d): type=%s code=%s message=%s", err, status, body.ErrorType, body.ErrorCode, body.ErrorMessage)
 }
