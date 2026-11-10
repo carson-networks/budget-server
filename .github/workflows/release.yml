@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: Tag and release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create tags and GitHub Releases
+      pull-requests: read # list merged PRs for the changelog
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+
+      - name: Create release
+        id: releaser
+        uses: carson-networks/releaser@v1.0.7
+        with:
+          github_token: ${{ secrets.RELEASE_PAT }}
+          default_bump: minor
+
+      - name: Write job summary
+        if: steps.releaser.outputs.tag_name != ''
+        run: |
+          echo "## Released ${{ steps.releaser.outputs.tag_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[${{ steps.releaser.outputs.release_url }}](${{ steps.releaser.outputs.release_url }})" >> $GITHUB_STEP_SUMMARY
