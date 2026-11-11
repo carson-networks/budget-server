@@ -59,7 +59,7 @@ func (c *ConnectServer) Serve() {
 	mux := http.NewServeMux()
 	connecthttp.Mount(mux, connectServer)
 
-	handler := LoggingMiddleware(c.Logger)(CorsMiddleware(mux))
+	handler := LoggingMiddleware(c.Logger)(mux)
 	server := http.Server{
 		Addr:              ":" + c.Port,
 		Handler:           handler,
