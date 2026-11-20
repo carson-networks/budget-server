@@ -8,7 +8,7 @@ services:
       interval: 20s
       timeout: 5s
       retries: 5
-    image: postgres:18
+    image: postgres:19
     profiles:
       - serve-local
       - serve
