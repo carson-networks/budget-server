@@ -1,0 +1,117 @@
+syntax = "proto3";
+
+package financekit.v1;
+
+import "account/v1/account.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/carson-networks/budget-server/internal/connecthandlers/gen/financekit/v1";
+
+service FinanceKitService {
+  // Checks the key. Returns who the key is and what the server supports.
+  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse);
+  // FinanceKit-type accounts only, with their links and owners.
+  rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse);
+  // Creates a budget account for a Wallet account, or takes over an existing link.
+  rpc LinkAccount(LinkAccountRequest) returns (LinkAccountResponse);
+  // Removes this key's link. The budget account and its transactions are kept.
+  rpc UnlinkAccount(UnlinkAccountRequest) returns (UnlinkAccountResponse);
+  // One atomic, idempotent batch of changes for one account.
+  rpc PushChanges(PushChangesRequest) returns (PushChangesResponse);
+  // Called at launch and whenever APNs rotates the token. Implemented in phase 10.
+  rpc RegisterPushToken(RegisterPushTokenRequest) returns (RegisterPushTokenResponse);
+}
+
+message GetStatusRequest {}
+message GetStatusResponse {
+  string key_name = 1;
+  string server_version = 2;
+  bool push_enabled = 3; // server has APNs configured (phase 10)
+}
+
+message LinkedAccount {
+  account.v1.Account account = 1;
+  repeated string financekit_account_ids = 2;
+  string owner_key_name = 3;
+  bool owned_by_caller = 4;
+}
+message ListAccountsRequest {}
+message ListAccountsResponse {
+  repeated LinkedAccount accounts = 1;
+}
+
+message LinkAccountRequest {
+  string financekit_account_id = 1;
+  oneof target {
+    NewAccount new_account = 2;
+    string existing_account_id = 3; // must be FinanceKit-type
+  }
+  bool take_over = 4; // required when another key owns the account
+}
+message NewAccount {
+  string name = 1;
+  account.v1.AccountType type = 2;
+  string sub_type = 3;
+  string currency_code = 4;
+  string institution_name = 5;
+}
+message LinkAccountResponse {
+  string account_id = 1;
+}
+
+message UnlinkAccountRequest {
+  string financekit_account_id = 1;
+}
+message UnlinkAccountResponse {}
+
+enum TransactionStatus {
+  TRANSACTION_STATUS_UNSPECIFIED = 0;
+  TRANSACTION_STATUS_AUTHORIZED = 1;
+  TRANSACTION_STATUS_PENDING = 2;
+  TRANSACTION_STATUS_BOOKED = 3;
+  TRANSACTION_STATUS_REJECTED = 4;
+}
+
+message WalletTransaction {
+  string id = 1; // FinanceKit Transaction.id; the idempotency key
+  string amount = 2; // decimal string, always positive
+  bool is_credit = 3;
+  string description = 4;
+  optional string merchant_name = 5;
+  optional int32 merchant_category_code = 6;
+  google.protobuf.Timestamp transaction_date = 7;
+  optional google.protobuf.Timestamp posted_date = 8;
+  TransactionStatus status = 9;
+}
+
+message WalletBalance {
+  string amount = 1; // decimal string, already signed for budget
+  google.protobuf.Timestamp as_of = 2;
+}
+
+message PushChangesRequest {
+  string financekit_account_id = 1;
+  repeated WalletTransaction upserted_transactions = 2;
+  repeated string deleted_transaction_ids = 3;
+  optional WalletBalance balance = 4;
+  optional string credit_limit = 5;
+  bool full_resync = 6; // this batch is part of a full resync
+  bool resync_complete = 7; // last batch of that resync
+}
+message PushChangesResponse {
+  int32 inserted = 1;
+  int32 updated = 2;
+  int32 deleted = 3;
+  int32 unchanged = 4;
+}
+
+enum PushEnvironment {
+  PUSH_ENVIRONMENT_UNSPECIFIED = 0;
+  PUSH_ENVIRONMENT_SANDBOX = 1;
+  PUSH_ENVIRONMENT_PRODUCTION = 2;
+}
+message RegisterPushTokenRequest {
+  string token = 1; // hex device token; empty clears it
+  PushEnvironment environment = 2;
+}
+message RegisterPushTokenResponse {}

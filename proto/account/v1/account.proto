@@ -12,6 +12,13 @@ enum AccountType {
   ACCOUNT_TYPE_CREDIT_CARDS = 2;
 }
 
+enum AccountIntegration {
+  ACCOUNT_INTEGRATION_UNSPECIFIED = 0;
+  ACCOUNT_INTEGRATION_MANUAL = 1;
+  ACCOUNT_INTEGRATION_PLAID = 2;
+  ACCOUNT_INTEGRATION_FINANCEKIT = 3;
+}
+
 message Account {
   string id = 1;
   string name = 2;
@@ -20,6 +27,9 @@ message Account {
   string balance = 5;
   string starting_balance = 6;
   google.protobuf.Timestamp created_at = 7;
+  AccountIntegration integration = 8;
+  optional google.protobuf.Timestamp last_synced_at = 9;
+  optional string credit_limit = 10;
 }
 
 message ListAccountsCursor {

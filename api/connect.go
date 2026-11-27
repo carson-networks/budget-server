@@ -11,14 +11,16 @@ import (
 	account "github.com/carson-networks/budget-server/internal/connecthandlers/gen/account/v1"
 	budget "github.com/carson-networks/budget-server/internal/connecthandlers/gen/budget/v1"
 	category "github.com/carson-networks/budget-server/internal/connecthandlers/gen/category/v1"
+	financekit "github.com/carson-networks/budget-server/internal/connecthandlers/gen/financekit/v1"
 	plaid "github.com/carson-networks/budget-server/internal/connecthandlers/gen/plaid/v1"
 	transaction "github.com/carson-networks/budget-server/internal/connecthandlers/gen/transaction/v1"
 	"github.com/carson-networks/budget-server/internal/connecthandlers/v1"
-	"github.com/carson-networks/budget-server/internal/connecthandlers/v1/account"
-	"github.com/carson-networks/budget-server/internal/connecthandlers/v1/budget"
-	"github.com/carson-networks/budget-server/internal/connecthandlers/v1/category"
-	"github.com/carson-networks/budget-server/internal/connecthandlers/v1/plaid"
-	"github.com/carson-networks/budget-server/internal/connecthandlers/v1/transaction"
+	v1Account "github.com/carson-networks/budget-server/internal/connecthandlers/v1/account"
+	v1Budget "github.com/carson-networks/budget-server/internal/connecthandlers/v1/budget"
+	v1Category "github.com/carson-networks/budget-server/internal/connecthandlers/v1/category"
+	v1FinanceKit "github.com/carson-networks/budget-server/internal/connecthandlers/v1/financekit"
+	v1Plaid "github.com/carson-networks/budget-server/internal/connecthandlers/v1/plaid"
+	v1Transaction "github.com/carson-networks/budget-server/internal/connecthandlers/v1/transaction"
 	"github.com/carson-networks/budget-server/internal/operator"
 	plaidclient "github.com/carson-networks/budget-server/internal/plaid"
 	"github.com/carson-networks/budget-server/internal/storage"
@@ -48,6 +50,7 @@ func (c *ConnectServer) Serve() {
 	categorySvc := &v1Category.Service{Deps: deps}
 	budgetSvc := &v1Budget.Service{Deps: deps}
 	plaidSvc := &v1Plaid.Service{Deps: deps}
+	financeKitSvc := &v1FinanceKit.Service{Deps: deps}
 
 	connectServer := connect.NewServer()
 	account.RegisterAccountServiceHandler(connectServer, accountSvc)
@@ -55,6 +58,7 @@ func (c *ConnectServer) Serve() {
 	category.RegisterCategoryServiceHandler(connectServer, categorySvc)
 	budget.RegisterBudgetServiceHandler(connectServer, budgetSvc)
 	plaid.RegisterPlaidServiceHandler(connectServer, plaidSvc)
+	financekit.RegisterFinanceKitServiceHandler(connectServer, financeKitSvc)
 
 	mux := http.NewServeMux()
 	connecthttp.Mount(mux, connectServer)
