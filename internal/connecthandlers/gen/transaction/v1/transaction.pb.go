@@ -34,6 +34,7 @@ type Transaction struct {
 	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	MerchantName    *string                `protobuf:"bytes,8,opt,name=merchant_name,json=merchantName,proto3,oneof" json:"merchant_name,omitempty"`
 	NeedsReview     bool                   `protobuf:"varint,9,opt,name=needs_review,json=needsReview,proto3" json:"needs_review,omitempty"`
+	Pending         bool                   `protobuf:"varint,10,opt,name=pending,proto3" json:"pending,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -127,6 +128,13 @@ func (x *Transaction) GetMerchantName() string {
 func (x *Transaction) GetNeedsReview() bool {
 	if x != nil {
 		return x.NeedsReview
+	}
+	return false
+}
+
+func (x *Transaction) GetPending() bool {
+	if x != nil {
+		return x.Pending
 	}
 	return false
 }
@@ -858,7 +866,7 @@ var File_transaction_v1_transaction_proto protoreflect.FileDescriptor
 
 const file_transaction_v1_transaction_proto_rawDesc = "" +
 	"\n" +
-	" transaction/v1/transaction.proto\x12\x0etransaction.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x96\x03\n" +
+	" transaction/v1/transaction.proto\x12\x0etransaction.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xb0\x03\n" +
 	"\vTransaction\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1d\n" +
 	"\n" +
@@ -871,7 +879,9 @@ const file_transaction_v1_transaction_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12(\n" +
 	"\rmerchant_name\x18\b \x01(\tH\x01R\fmerchantName\x88\x01\x01\x12!\n" +
-	"\fneeds_review\x18\t \x01(\bR\vneedsReviewB\x0e\n" +
+	"\fneeds_review\x18\t \x01(\bR\vneedsReview\x12\x18\n" +
+	"\apending\x18\n" +
+	" \x01(\bR\apendingB\x0e\n" +
 	"\f_category_idB\x10\n" +
 	"\x0e_merchant_name\"\x92\x01\n" +
 	"\x16ListTransactionsCursor\x12\x1a\n" +

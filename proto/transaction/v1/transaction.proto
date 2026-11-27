@@ -16,6 +16,7 @@ message Transaction {
   google.protobuf.Timestamp created_at = 7;
   optional string merchant_name = 8;
   bool needs_review = 9;
+  bool pending = 10;
 }
 
 message ListTransactionsCursor {

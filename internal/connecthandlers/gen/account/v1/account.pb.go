@@ -7,12 +7,13 @@
 package v1
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -71,6 +72,58 @@ func (AccountType) EnumDescriptor() ([]byte, []int) {
 	return file_account_v1_account_proto_rawDescGZIP(), []int{0}
 }
 
+type AccountIntegration int32
+
+const (
+	AccountIntegration_ACCOUNT_INTEGRATION_UNSPECIFIED AccountIntegration = 0
+	AccountIntegration_ACCOUNT_INTEGRATION_MANUAL      AccountIntegration = 1
+	AccountIntegration_ACCOUNT_INTEGRATION_PLAID       AccountIntegration = 2
+	AccountIntegration_ACCOUNT_INTEGRATION_FINANCEKIT  AccountIntegration = 3
+)
+
+// Enum value maps for AccountIntegration.
+var (
+	AccountIntegration_name = map[int32]string{
+		0: "ACCOUNT_INTEGRATION_UNSPECIFIED",
+		1: "ACCOUNT_INTEGRATION_MANUAL",
+		2: "ACCOUNT_INTEGRATION_PLAID",
+		3: "ACCOUNT_INTEGRATION_FINANCEKIT",
+	}
+	AccountIntegration_value = map[string]int32{
+		"ACCOUNT_INTEGRATION_UNSPECIFIED": 0,
+		"ACCOUNT_INTEGRATION_MANUAL":      1,
+		"ACCOUNT_INTEGRATION_PLAID":       2,
+		"ACCOUNT_INTEGRATION_FINANCEKIT":  3,
+	}
+)
+
+func (x AccountIntegration) Enum() *AccountIntegration {
+	p := new(AccountIntegration)
+	*p = x
+	return p
+}
+
+func (x AccountIntegration) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AccountIntegration) Descriptor() protoreflect.EnumDescriptor {
+	return file_account_v1_account_proto_enumTypes[1].Descriptor()
+}
+
+func (AccountIntegration) Type() protoreflect.EnumType {
+	return &file_account_v1_account_proto_enumTypes[1]
+}
+
+func (x AccountIntegration) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AccountIntegration.Descriptor instead.
+func (AccountIntegration) EnumDescriptor() ([]byte, []int) {
+	return file_account_v1_account_proto_rawDescGZIP(), []int{1}
+}
+
 type Account struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Id              string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -80,6 +133,9 @@ type Account struct {
 	Balance         string                 `protobuf:"bytes,5,opt,name=balance,proto3" json:"balance,omitempty"`
 	StartingBalance string                 `protobuf:"bytes,6,opt,name=starting_balance,json=startingBalance,proto3" json:"starting_balance,omitempty"`
 	CreatedAt       *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	Integration     AccountIntegration     `protobuf:"varint,8,opt,name=integration,proto3,enum=account.v1.AccountIntegration" json:"integration,omitempty"`
+	LastSyncedAt    *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=last_synced_at,json=lastSyncedAt,proto3,oneof" json:"last_synced_at,omitempty"`
+	CreditLimit     *string                `protobuf:"bytes,10,opt,name=credit_limit,json=creditLimit,proto3,oneof" json:"credit_limit,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -161,6 +217,27 @@ func (x *Account) GetCreatedAt() *timestamppb.Timestamp {
 		return x.CreatedAt
 	}
 	return nil
+}
+
+func (x *Account) GetIntegration() AccountIntegration {
+	if x != nil {
+		return x.Integration
+	}
+	return AccountIntegration_ACCOUNT_INTEGRATION_UNSPECIFIED
+}
+
+func (x *Account) GetLastSyncedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastSyncedAt
+	}
+	return nil
+}
+
+func (x *Account) GetCreditLimit() string {
+	if x != nil && x.CreditLimit != nil {
+		return *x.CreditLimit
+	}
+	return ""
 }
 
 type ListAccountsCursor struct {
@@ -692,7 +769,7 @@ var File_account_v1_account_proto protoreflect.FileDescriptor
 const file_account_v1_account_proto_rawDesc = "" +
 	"\n" +
 	"\x18account/v1/account.proto\x12\n" +
-	"account.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf5\x01\n" +
+	"account.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xca\x03\n" +
 	"\aAccount\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12+\n" +
@@ -701,7 +778,13 @@ const file_account_v1_account_proto_rawDesc = "" +
 	"\abalance\x18\x05 \x01(\tR\abalance\x12)\n" +
 	"\x10starting_balance\x18\x06 \x01(\tR\x0fstartingBalance\x129\n" +
 	"\n" +
-	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"F\n" +
+	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12@\n" +
+	"\vintegration\x18\b \x01(\x0e2\x1e.account.v1.AccountIntegrationR\vintegration\x12E\n" +
+	"\x0elast_synced_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampH\x00R\flastSyncedAt\x88\x01\x01\x12&\n" +
+	"\fcredit_limit\x18\n" +
+	" \x01(\tH\x01R\vcreditLimit\x88\x01\x01B\x11\n" +
+	"\x0f_last_synced_atB\x0f\n" +
+	"\r_credit_limit\"F\n" +
 	"\x12ListAccountsCursor\x12\x1a\n" +
 	"\bposition\x18\x01 \x01(\x05R\bposition\x12\x14\n" +
 	"\x05limit\x18\x02 \x01(\x05R\x05limit\"]\n" +
@@ -739,7 +822,12 @@ const file_account_v1_account_proto_rawDesc = "" +
 	"\vAccountType\x12\x1c\n" +
 	"\x18ACCOUNT_TYPE_UNSPECIFIED\x10\x00\x12\x15\n" +
 	"\x11ACCOUNT_TYPE_CASH\x10\x01\x12\x1d\n" +
-	"\x19ACCOUNT_TYPE_CREDIT_CARDS\x10\x022\xb8\x03\n" +
+	"\x19ACCOUNT_TYPE_CREDIT_CARDS\x10\x02*\x9c\x01\n" +
+	"\x12AccountIntegration\x12#\n" +
+	"\x1fACCOUNT_INTEGRATION_UNSPECIFIED\x10\x00\x12\x1e\n" +
+	"\x1aACCOUNT_INTEGRATION_MANUAL\x10\x01\x12\x1d\n" +
+	"\x19ACCOUNT_INTEGRATION_PLAID\x10\x02\x12\"\n" +
+	"\x1eACCOUNT_INTEGRATION_FINANCEKIT\x10\x032\xb8\x03\n" +
 	"\x0eAccountService\x12Q\n" +
 	"\fListAccounts\x12\x1f.account.v1.ListAccountsRequest\x1a .account.v1.ListAccountsResponse\x12T\n" +
 	"\rCreateAccount\x12 .account.v1.CreateAccountRequest\x1a!.account.v1.CreateAccountResponse\x12T\n" +
@@ -762,46 +850,49 @@ func file_account_v1_account_proto_rawDescGZIP() []byte {
 	return file_account_v1_account_proto_rawDescData
 }
 
-var file_account_v1_account_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_account_v1_account_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_account_v1_account_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_account_v1_account_proto_goTypes = []any{
 	(AccountType)(0),              // 0: account.v1.AccountType
-	(*Account)(nil),               // 1: account.v1.Account
-	(*ListAccountsCursor)(nil),    // 2: account.v1.ListAccountsCursor
-	(*ListAccountsRequest)(nil),   // 3: account.v1.ListAccountsRequest
-	(*ListAccountsResponse)(nil),  // 4: account.v1.ListAccountsResponse
-	(*CreateAccountRequest)(nil),  // 5: account.v1.CreateAccountRequest
-	(*CreateAccountResponse)(nil), // 6: account.v1.CreateAccountResponse
-	(*UpdateAccountRequest)(nil),  // 7: account.v1.UpdateAccountRequest
-	(*UpdateAccountResponse)(nil), // 8: account.v1.UpdateAccountResponse
-	(*DeleteAccountRequest)(nil),  // 9: account.v1.DeleteAccountRequest
-	(*DeleteAccountResponse)(nil), // 10: account.v1.DeleteAccountResponse
-	(*SyncAccountsRequest)(nil),   // 11: account.v1.SyncAccountsRequest
-	(*SyncAccountsResponse)(nil),  // 12: account.v1.SyncAccountsResponse
-	(*timestamppb.Timestamp)(nil), // 13: google.protobuf.Timestamp
+	(AccountIntegration)(0),       // 1: account.v1.AccountIntegration
+	(*Account)(nil),               // 2: account.v1.Account
+	(*ListAccountsCursor)(nil),    // 3: account.v1.ListAccountsCursor
+	(*ListAccountsRequest)(nil),   // 4: account.v1.ListAccountsRequest
+	(*ListAccountsResponse)(nil),  // 5: account.v1.ListAccountsResponse
+	(*CreateAccountRequest)(nil),  // 6: account.v1.CreateAccountRequest
+	(*CreateAccountResponse)(nil), // 7: account.v1.CreateAccountResponse
+	(*UpdateAccountRequest)(nil),  // 8: account.v1.UpdateAccountRequest
+	(*UpdateAccountResponse)(nil), // 9: account.v1.UpdateAccountResponse
+	(*DeleteAccountRequest)(nil),  // 10: account.v1.DeleteAccountRequest
+	(*DeleteAccountResponse)(nil), // 11: account.v1.DeleteAccountResponse
+	(*SyncAccountsRequest)(nil),   // 12: account.v1.SyncAccountsRequest
+	(*SyncAccountsResponse)(nil),  // 13: account.v1.SyncAccountsResponse
+	(*timestamppb.Timestamp)(nil), // 14: google.protobuf.Timestamp
 }
 var file_account_v1_account_proto_depIdxs = []int32{
 	0,  // 0: account.v1.Account.type:type_name -> account.v1.AccountType
-	13, // 1: account.v1.Account.created_at:type_name -> google.protobuf.Timestamp
-	2,  // 2: account.v1.ListAccountsRequest.cursor:type_name -> account.v1.ListAccountsCursor
-	1,  // 3: account.v1.ListAccountsResponse.accounts:type_name -> account.v1.Account
-	2,  // 4: account.v1.ListAccountsResponse.next_cursor:type_name -> account.v1.ListAccountsCursor
-	0,  // 5: account.v1.CreateAccountRequest.type:type_name -> account.v1.AccountType
-	3,  // 6: account.v1.AccountService.ListAccounts:input_type -> account.v1.ListAccountsRequest
-	5,  // 7: account.v1.AccountService.CreateAccount:input_type -> account.v1.CreateAccountRequest
-	7,  // 8: account.v1.AccountService.UpdateAccount:input_type -> account.v1.UpdateAccountRequest
-	9,  // 9: account.v1.AccountService.DeleteAccount:input_type -> account.v1.DeleteAccountRequest
-	11, // 10: account.v1.AccountService.SyncAccounts:input_type -> account.v1.SyncAccountsRequest
-	4,  // 11: account.v1.AccountService.ListAccounts:output_type -> account.v1.ListAccountsResponse
-	6,  // 12: account.v1.AccountService.CreateAccount:output_type -> account.v1.CreateAccountResponse
-	8,  // 13: account.v1.AccountService.UpdateAccount:output_type -> account.v1.UpdateAccountResponse
-	10, // 14: account.v1.AccountService.DeleteAccount:output_type -> account.v1.DeleteAccountResponse
-	12, // 15: account.v1.AccountService.SyncAccounts:output_type -> account.v1.SyncAccountsResponse
-	11, // [11:16] is the sub-list for method output_type
-	6,  // [6:11] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	14, // 1: account.v1.Account.created_at:type_name -> google.protobuf.Timestamp
+	1,  // 2: account.v1.Account.integration:type_name -> account.v1.AccountIntegration
+	14, // 3: account.v1.Account.last_synced_at:type_name -> google.protobuf.Timestamp
+	3,  // 4: account.v1.ListAccountsRequest.cursor:type_name -> account.v1.ListAccountsCursor
+	2,  // 5: account.v1.ListAccountsResponse.accounts:type_name -> account.v1.Account
+	3,  // 6: account.v1.ListAccountsResponse.next_cursor:type_name -> account.v1.ListAccountsCursor
+	0,  // 7: account.v1.CreateAccountRequest.type:type_name -> account.v1.AccountType
+	4,  // 8: account.v1.AccountService.ListAccounts:input_type -> account.v1.ListAccountsRequest
+	6,  // 9: account.v1.AccountService.CreateAccount:input_type -> account.v1.CreateAccountRequest
+	8,  // 10: account.v1.AccountService.UpdateAccount:input_type -> account.v1.UpdateAccountRequest
+	10, // 11: account.v1.AccountService.DeleteAccount:input_type -> account.v1.DeleteAccountRequest
+	12, // 12: account.v1.AccountService.SyncAccounts:input_type -> account.v1.SyncAccountsRequest
+	5,  // 13: account.v1.AccountService.ListAccounts:output_type -> account.v1.ListAccountsResponse
+	7,  // 14: account.v1.AccountService.CreateAccount:output_type -> account.v1.CreateAccountResponse
+	9,  // 15: account.v1.AccountService.UpdateAccount:output_type -> account.v1.UpdateAccountResponse
+	11, // 16: account.v1.AccountService.DeleteAccount:output_type -> account.v1.DeleteAccountResponse
+	13, // 17: account.v1.AccountService.SyncAccounts:output_type -> account.v1.SyncAccountsResponse
+	13, // [13:18] is the sub-list for method output_type
+	8,  // [8:13] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_account_v1_account_proto_init() }
@@ -809,6 +900,7 @@ func file_account_v1_account_proto_init() {
 	if File_account_v1_account_proto != nil {
 		return
 	}
+	file_account_v1_account_proto_msgTypes[0].OneofWrappers = []any{}
 	file_account_v1_account_proto_msgTypes[2].OneofWrappers = []any{}
 	file_account_v1_account_proto_msgTypes[3].OneofWrappers = []any{}
 	file_account_v1_account_proto_msgTypes[6].OneofWrappers = []any{}
@@ -817,7 +909,7 @@ func file_account_v1_account_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_account_v1_account_proto_rawDesc), len(file_account_v1_account_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
